@@ -40,6 +40,12 @@ object BitcoinSConnector {
     "" + info.blocks
   }
 
+  def getBestBlockHash(): String = {
+    val infoFuture = rpcCli.getBlockChainInfo
+    val info = Await.result(infoFuture, Duration(20, SECONDS))
+    info.bestblockhash.hex
+  }
+
   def getLatestBlock: Future[Int] = rpcCli.getBlockChainInfo.map(_.blocks)
 
   def getBlock(blockHash: String): Future[Block] = {

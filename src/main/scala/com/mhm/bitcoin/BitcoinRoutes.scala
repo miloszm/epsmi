@@ -23,17 +23,29 @@ class BitcoinRoutes(bitcoinApi: ActorRef[BitcoinApi.BitcoinCommand])(implicit va
     def getInfo(): Future[BlockchainInfo] =
       bitcoinApi.ask(GetBlockchainInfo)
 
+    def getBestBlockHash(): Future[BestBlockHash] =
+      bitcoinApi.ask(GetBestBlockHash)
+
     //#all-routes
     //#users-get-post
     //#users-get-delete
     val btcRoutes: Route =
     pathPrefix("info") {
       concat(
-        //#users-get-delete
         pathEnd {
           concat(
             get {
               complete(getInfo())
+            })
+        }
+      )
+    } ~
+    pathPrefix("bestblockhash") {
+      concat(
+        pathEnd {
+          concat(
+            get {
+              complete(getBestBlockHash())
             })
         }
       )
