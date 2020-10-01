@@ -5,6 +5,7 @@ import akka.actor.typed.scaladsl.adapter._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Route
+import com.mhm.connectors.BitcoinSConnector
 
 import scala.util.Failure
 import scala.util.Success
@@ -28,7 +29,7 @@ object BitcoinQuickstartApp {
 
   def main(args: Array[String]): Unit = {
     val rootBehavior = Behaviors.setup[Nothing] { context =>
-      val bitcoinApiActor = context.spawn(BitcoinApi(), "BitcoinApiActor")
+      val bitcoinApiActor = context.spawn(BitcoinApi(BitcoinSConnector), "BitcoinApiActor")
       context.watch(bitcoinApiActor)
 
       val routes = new BitcoinRoutes(bitcoinApiActor)(context.system)

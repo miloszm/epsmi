@@ -8,7 +8,14 @@ import org.bitcoins.core.protocol.blockchain.Block
 import scala.concurrent.duration.{Duration, SECONDS}
 import scala.concurrent.{Await, ExecutionContext, Future}
 
-object BitcoinSConnector {
+
+trait BitcoinConnector {
+  def getInfo(): String
+  def getBestBlockHash(): String
+}
+
+
+object BitcoinSConnector extends BitcoinConnector {
   import org.bitcoins.core.config._
   import org.bitcoins.rpc.config._
   import org.bitcoins.rpc.client.common._
