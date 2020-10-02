@@ -12,7 +12,7 @@ import org.scalatest.{Matchers, WordSpec}
 
 object TestBitcoinConnector extends BitcoinConnector {
   override def getInfo(): String = "abc"
-  override def getBestBlockHash(): String = ???
+  override def getBestBlockHash(): String = "BESTBLOCKHASH"
 }
 
 class BitcoinRoutesSpec extends WordSpec with Matchers with ScalaFutures with ScalatestRouteTest {
@@ -37,19 +37,20 @@ class BitcoinRoutesSpec extends WordSpec with Matchers with ScalaFutures with Sc
 
   "BitcoinRoutes" should {
     "return basic info for (GET /info)" in {
-      // note that there's no need for the host part in the uri:
       val request = HttpRequest(uri = "/info")
-
       request ~> routes ~> check {
         status should ===(StatusCodes.OK)
-
-        // we expect the response to be json:
         contentType should ===(ContentTypes.`application/json`)
-
-        // and no entries should be in the list:
         entityAs[String] should ===("""{"text":"abc"}""")
       }
     }
-
+    "return best block hash for (GET /bestblockhash)" in {
+      val request = HttpRequest(uri = "/bestblockhash")
+      request ~> routes ~> check {
+        status should ===(StatusCodes.OK)
+        contentType should ===(ContentTypes.`application/json`)
+        entityAs[String] should ===("""{"hash":"BESTBLOCKHASH"}""")
+      }
+    }
   }
 }
