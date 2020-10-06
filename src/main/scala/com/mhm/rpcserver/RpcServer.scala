@@ -8,6 +8,7 @@ import javax.net.ServerSocketFactory
 
 trait ElectrumService {
   def testMe(x: Int): Int = x
+  def abc(): Int
 }
 
 class ElectrumServiceImpl extends ElectrumService {
@@ -15,6 +16,7 @@ class ElectrumServiceImpl extends ElectrumService {
     println(s"testme called with $x")
     x
   }
+  override def abc(): Int = 2
 }
 
 object RpcServer extends App {
@@ -34,22 +36,23 @@ object RpcServer extends App {
 
   streamServer.start()
 
-  val socket = new Socket(serverSocket.getInetAddress, serverSocket.getLocalPort)
-  val rpcClient = new JsonRpcClient()
-  val listener = new JsonRpcClient.RequestListener(){
-    override def onBeforeRequestSent(client: JsonRpcClient, request: ObjectNode): Unit = {
-      println(request)
-    }
-    override def onBeforeResponseProcessed(client: JsonRpcClient, response: ObjectNode): Unit = {
-      println(response)
-    }
-  }
-  rpcClient.setRequestListener(listener)
-  val client = ProxyUtil.createClientProxy(this.getClass.getClassLoader, classOf[ElectrumService], rpcClient, socket)
-  for (i <- 0 until 5) {
-    client.testMe(i)
-  }
-  socket.close()
+//  val socket = new Socket(serverSocket.getInetAddress, serverSocket.getLocalPort)
+//  val rpcClient = new JsonRpcClient()
+//  val listener = new JsonRpcClient.RequestListener(){
+//    override def onBeforeRequestSent(client: JsonRpcClient, request: ObjectNode): Unit = {
+//      println(request)
+//    }
+//    override def onBeforeResponseProcessed(client: JsonRpcClient, response: ObjectNode): Unit = {
+//      println(response)
+//    }
+//  }
+//  rpcClient.setRequestListener(listener)
+//  val client = ProxyUtil.createClientProxy(this.getClass.getClassLoader, classOf[ElectrumService], rpcClient, socket)
+//  for (i <- 0 until 5) {
+//    client.testMe(i)
+//  }
+//  socket.close()
+  Thread.sleep(1000000l)
   streamServer.stop()
 
 }

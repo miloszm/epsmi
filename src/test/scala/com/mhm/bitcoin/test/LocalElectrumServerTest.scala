@@ -7,14 +7,15 @@ import java.util
 import java.util.Dictionary
 
 import com.fasterxml.jackson.databind.node.ObjectNode
-import com.googlecode.jsonrpc4j.{JsonRpcClient, JsonRpcHttpClient}
-import com.mhm.rpcserver.RpcServer.serverSocket
+import com.googlecode.jsonrpc4j.{JsonRpcClient, JsonRpcHttpClient, ProxyUtil}
+import com.mhm.rpcserver.ElectrumService
 import javax.net.ssl.{HostnameVerifier, SSLContext, SSLSession, TrustManagerFactory}
 
 import scala.jdk.CollectionConverters._
 
 object LocalElectrumServerTest extends App {
-  val rpcClient = new JsonRpcHttpClient(new URL("https://localhost:50002"))
+//  val rpcClient = new JsonRpcHttpClient(new URL("https://localhost:50002"))
+  val rpcClient = new JsonRpcHttpClient(new URL("http://localhost:8090"))
 
   import java.io.FileInputStream
   import java.io.InputStream
@@ -37,7 +38,7 @@ object LocalElectrumServerTest extends App {
 
   val sslContext = SSLContext.getInstance("TLS")
   sslContext.init(null, tmf.getTrustManagers, new SecureRandom())
-  rpcClient.setSslContext(sslContext)
+//  rpcClient.setSslContext(sslContext)
 
 
   javax.net.ssl.HttpsURLConnection.setDefaultHostnameVerifier(new HostnameVerifier() {
@@ -47,7 +48,6 @@ object LocalElectrumServerTest extends App {
   val listener = new JsonRpcClient.RequestListener(){
     override def onBeforeRequestSent(client: JsonRpcClient, request: ObjectNode): Unit = {
       println(request)
-      println(request.toString.map(a => "" + a.toInt).mkString("|"))
     }
     override def onBeforeResponseProcessed(client: JsonRpcClient, response: ObjectNode): Unit = {
       println(response)
@@ -56,10 +56,8 @@ object LocalElectrumServerTest extends App {
 
   rpcClient.setRequestListener(listener)
 
-
   val params = Array("1.9.5", "0.6")
-  val props = new util.HashMap[String, String]()
-  props.put("a", "b")
-  val response = rpcClient.invoke("server.version", null, classOf[String])
+//  val response = rpcClient.invoke("abc", null, classOf[Int])
+  val response = rpcClient.invoke("server.version", params, classOf[String])
   println(s"response = $response")
 }
