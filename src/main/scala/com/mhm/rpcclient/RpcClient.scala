@@ -9,7 +9,8 @@ import java.util
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.googlecode.jsonrpc4j.{JsonRpcClient, JsonRpcMethod, ProxyUtil}
-import javax.net.ssl.{SSLContext, TrustManagerFactory}
+import com.mhm.securesocket.SecureSocketMetaFactory
+import javax.net.ssl.{SSLContext, SSLSocketFactory, TrustManagerFactory}
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
@@ -36,7 +37,8 @@ object RpcClient extends App {
 
   def doServerVersion: Unit = {
 
-    val port = 50002
+//    val port = 50002
+    val port = 1420
 
     val socket = createSocket(InetAddress.getByName("127.0.0.1"), port)
     val rpcClient = new JsonRpcClient(new LfObjectMapper())
@@ -54,39 +56,23 @@ object RpcClient extends App {
     println(s"result size = ${result.length}")
     result.zipWithIndex.foreach{ case (e, i) => println(s"$i = $e")}
 
-    val hex = client.blockchainBlockHeader(651548)
-    println(s"hex = $hex")
-    val blockHeader = client.blockchainBlockGetHeader(651548)
-    println(s"hex (get_header) size is = ${blockHeader.size}")
-    blockHeader.entrySet().asScala.foreach{ case entry => println(s"${entry.getKey} = ${entry.getValue}")}
+//    val hex = client.blockchainBlockHeader(651548)
+//    println(s"hex = $hex")
+//    val blockHeader = client.blockchainBlockGetHeader(651548)
+//    println(s"hex (get_header) size is = ${blockHeader.size}")
+//    blockHeader.entrySet().asScala.foreach{ case entry => println(s"${entry.getKey} = ${entry.getValue}")}
 
     socket.close()
   }
 
   private def createSocket(address: InetAddress, port: Int): Socket = {
-    import java.io.FileInputStream
-    import java.security.KeyStore
-    val is = new FileInputStream(new File("/Users/miloszm/proj/epsmi/cert.crt"))
-
-    val cf = CertificateFactory.getInstance("X.509")
-    val caCert = cf.generateCertificate(is)
-
-    val tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm)
-    val ks = KeyStore.getInstance(KeyStore.getDefaultType)
-    ks.load(null) // You don't need the KeyStore instance to come from a file.
-
-    ks.setCertificateEntry("ca", caCert)
-
-    tmf.init(ks)
-
-    val sslContext = SSLContext.getInstance("TLS")
-    sslContext.init(null, tmf.getTrustManagers, new SecureRandom())
-
-    val socketFactory = sslContext.getSocketFactory
-
-    val socket = socketFactory.createSocket(address, port)
-    socket
+    val socketFactory = SecureSocketMetaFactory.createSocketFactory(
+      new File("/Users/miloszm/proj/epsmi/cert.crt"),
+      new File("/Users/miloszm/proj/epsmi/cert.key")
+    )
+    socketFactory.createSocket(address, port)
   }
+
 
   doServerVersion
 }
