@@ -57,7 +57,7 @@ object RpcClient extends App {
     println(s"size = ${result.length}")
     result.zipWithIndex.foreach{ case (e, i) => println(s"$i = $e")}
     println
-    val hex = client.blockchainBlockHeader(651548)
+    val hex = client.blockchainBlockHeader(652221)
     println(s"result of blockchain.block.header:")
     println(s"hex = $hex")
 //    val blockHeader = client.blockchainBlockGetHeader(651548)
