@@ -62,33 +62,36 @@ object BitcoinSConnector extends BitcoinConnector {
     rpcCli.getBlockRaw(h)
   }
 
-  def getBlockHeaderHash(blockHeight: Int): String = {
-    val blockHash = Await.result(rpcCli.getBlockHash(blockHeight), Duration(20, SECONDS))
-    val blockHeader = Await.result(rpcCli.getBlockHeader(blockHash), Duration(20, SECONDS))
-    val prevBlockHashArray = Array.fill[Byte](32)(0)
+  def getBlockHeaderHash(blockHeight: Int): Future[String] = {
+    for {
+      blockHash <- rpcCli.getBlockHash(blockHeight)
+      blockHeader <- rpcCli.getBlockHeader(blockHash)
+    } yield {
+      val prevBlockHashArray = Array.fill[Byte](32)(0)
 
-    blockHeader.previousblockhash match {
-      case Some(b) => b.bytes.copyToArray(prevBlockHashArray, 0)
-      case _ => ()
+      blockHeader.previousblockhash match {
+        case Some(b) => b.bytes.copyToArray(prevBlockHashArray, 0)
+        case _ => ()
+      }
+
+      val merkleRootArray = Array.fill[Byte](32)(0)
+      blockHeader.merkleroot.bytes.copyToArray(merkleRootArray, 0)
+
+      println(s"prev block hash: ${DatatypeConverter.printHexBinary(prevBlockHashArray)}")
+      println(s"merkle root hash: ${DatatypeConverter.printHexBinary(merkleRootArray)}")
+
+      val head = ByteBuffer.allocate(80)
+      // <i32s32sIII
+      // little endian int | byte[32] | byte[32] | unsigned int | unsigned int | unsigned int
+      head.put(intToArray(blockHeader.version))
+      head.put(byteVectorOrZeroToArray(blockHeader.previousblockhash.map(_.bytes), 32))
+      head.put(byteVectorToArray(blockHeader.merkleroot.bytes))
+      head.put(uint32ToArray(blockHeader.time))
+      head.put(uint32ToArray(blockHeader.bits))
+      head.put(uint32ToArray(blockHeader.nonce))
+
+      val headHex = DatatypeConverter.printHexBinary(head.array())
+      headHex.toLowerCase
     }
-
-    val merkleRootArray = Array.fill[Byte](32)(0)
-    blockHeader.merkleroot.bytes.copyToArray(merkleRootArray, 0)
-
-    println(s"prev block hash: ${DatatypeConverter.printHexBinary(prevBlockHashArray)}")
-    println(s"merkle root hash: ${DatatypeConverter.printHexBinary(merkleRootArray)}")
-
-    val head = ByteBuffer.allocate(80)
-    // <i32s32sIII
-    // little endian int | byte[32] | byte[32] | unsigned int | unsigned int | unsigned int
-    head.put(intToArray(blockHeader.version))
-    head.put(byteVectorOrZeroToArray(blockHeader.previousblockhash.map(_.bytes),32))
-    head.put(byteVectorToArray(blockHeader.merkleroot.bytes))
-    head.put(uint32ToArray(blockHeader.time))
-    head.put(uint32ToArray(blockHeader.bits))
-    head.put(uint32ToArray(blockHeader.nonce))
-
-    val headHex = DatatypeConverter.printHexBinary(head.array())
-    headHex.toLowerCase
   }
 }

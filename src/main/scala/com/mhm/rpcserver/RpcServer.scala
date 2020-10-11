@@ -10,6 +10,9 @@ import com.mhm.securesocket.SecureSocketMetaFactory
 import javax.net.ServerSocketFactory
 import javax.net.ssl.SSLServerSocket
 
+import scala.concurrent.Await
+import scala.concurrent.duration.{Duration, SECONDS}
+
 trait ElectrumService {
   @JsonRpcMethod("server.version")
   def serverVersion(v1: String, v2: String): Array[String]
@@ -22,7 +25,7 @@ class ElectrumServiceImpl extends ElectrumService {
     return Array("epsmi 0.0.2")
   }
   override def blockchainBlockHeader(height: Int): String = {
-    return BitcoinSConnector.getBlockHeaderHash(height)
+    return Await.result(BitcoinSConnector.getBlockHeaderHash(height), Duration(20, SECONDS))
   }
 }
 
