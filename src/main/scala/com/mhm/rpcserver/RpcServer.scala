@@ -1,41 +1,18 @@
 package com.mhm.rpcserver
 
-import java.io.File
-import java.net.Socket
-
-import com.fasterxml.jackson.databind.node.ObjectNode
-import com.googlecode.jsonrpc4j.{JsonRpcBasicServer, JsonRpcClient, JsonRpcMethod, JsonRpcServer, ProxyUtil}
-import com.mhm.connectors.BitcoinSConnector
+import com.googlecode.jsonrpc4j.JsonRpcBasicServer
+import com.mhm.api4electrum.{Api4Electrum, Api4ElectrumImpl}
 import com.mhm.securesocket.SecureSocketMetaFactory
-import javax.net.ServerSocketFactory
 import javax.net.ssl.SSLServerSocket
-
-import scala.concurrent.Await
-import scala.concurrent.duration.{Duration, SECONDS}
-
-trait ElectrumService {
-  @JsonRpcMethod("server.version")
-  def serverVersion(v1: String, v2: String): Array[String]
-  @JsonRpcMethod("blockchain.block.header")
-  def blockchainBlockHeader(p1: Int): String
-}
-
-class ElectrumServiceImpl extends ElectrumService {
-  override def serverVersion(v1: String, v2: String): Array[String] = {
-    return Array("epsmi 0.0.2")
-  }
-  override def blockchainBlockHeader(height: Int): String = {
-    return Await.result(BitcoinSConnector.getBlockHeaderHash(height), Duration(20, SECONDS))
-  }
-}
 
 object RpcServer extends App {
 
-  val service = new ElectrumServiceImpl
-  val jsonRpcServer = new JsonRpcBasicServer(service, classOf[ElectrumService])
+  val service = new Api4ElectrumImpl
+  val jsonRpcServer = new JsonRpcBasicServer(service, classOf[Api4Electrum])
+
+  import java.net.InetAddress
 
   import com.googlecode.jsonrpc4j.StreamServer
-  import java.net.InetAddress
 
   val maxThreads = 4
   val port = 1420

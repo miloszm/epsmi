@@ -9,20 +9,11 @@ import java.util
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.googlecode.jsonrpc4j.{JsonRpcClient, JsonRpcMethod, ProxyUtil}
+import com.mhm.api4electrum.Api4Electrum
 import com.mhm.securesocket.SecureSocketMetaFactory
 import javax.net.ssl.{SSLContext, SSLSocketFactory, TrustManagerFactory}
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
-
-
-trait ElectrumService2 {
-  @JsonRpcMethod("server.version")
-  def serverVersion(v1: String, v2: String): Array[String]
-  @JsonRpcMethod("blockchain.block.get_header")
-  def blockchainBlockGetHeader(p1: Int): util.LinkedHashMap[String, String]
-  @JsonRpcMethod("blockchain.block.header")
-  def blockchainBlockHeader(p1: Int): String
-}
 
 
 class LfObjectMapper extends ObjectMapper {
@@ -51,7 +42,7 @@ object RpcClient extends App {
       }
     }
     rpcClient.setRequestListener(listener)
-    val client = ProxyUtil.createClientProxy(this.getClass.getClassLoader, classOf[ElectrumService2], rpcClient, socket)
+    val client = ProxyUtil.createClientProxy(this.getClass.getClassLoader, classOf[Api4Electrum], rpcClient, socket)
     val result = client.serverVersion("1.9.5", "1.1")
     println(s"result of server.version:")
     println(s"size = ${result.length}")
@@ -60,10 +51,6 @@ object RpcClient extends App {
     val hex = client.blockchainBlockHeader(652221)
     println(s"result of blockchain.block.header:")
     println(s"hex = $hex")
-//    val blockHeader = client.blockchainBlockGetHeader(651548)
-//    println(s"hex (get_header) size is = ${blockHeader.size}")
-//    blockHeader.entrySet().asScala.foreach{ case entry => println(s"${entry.getKey} = ${entry.getValue}")}
-
     socket.close()
   }
 
