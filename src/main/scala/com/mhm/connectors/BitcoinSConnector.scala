@@ -2,12 +2,12 @@ package com.mhm.connectors
 
 import java.net.URI
 
+import javax.xml.bind.DatatypeConverter
 import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.core.protocol.blockchain.Block
 
 import scala.concurrent.duration.{Duration, SECONDS}
 import scala.concurrent.{Await, ExecutionContext, Future}
-
 
 trait BitcoinConnector {
   def getInfo(): String
@@ -58,5 +58,14 @@ object BitcoinSConnector extends BitcoinConnector {
   def getBlock(blockHash: String): Future[Block] = {
     val h = DoubleSha256Digest(blockHash)
     rpcCli.getBlockRaw(h)
+  }
+
+  def getBlockHeaderHash(blockHeight: Int): String = {
+    val blockHash = Await.result(rpcCli.getBlockHash(blockHeight), Duration(20, SECONDS))
+    val blockHeader = Await.result(rpcCli.getBlockHeader(blockHash), Duration(20, SECONDS))
+    val prevBlockHash = blockHeader.nextblockhash.getOrElse("00"*32)
+
+    //val x = DatatypeConverter.parseHexBinary("AA")
+
   }
 }

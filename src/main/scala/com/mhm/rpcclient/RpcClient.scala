@@ -37,8 +37,8 @@ object RpcClient extends App {
 
   def doServerVersion: Unit = {
 
-//    val port = 50002
-    val port = 1420
+    val port = 50002
+//    val port = 1420
 
     val socket = createSocket(InetAddress.getByName("127.0.0.1"), port)
     val rpcClient = new JsonRpcClient(new LfObjectMapper())
@@ -53,11 +53,13 @@ object RpcClient extends App {
     rpcClient.setRequestListener(listener)
     val client = ProxyUtil.createClientProxy(this.getClass.getClassLoader, classOf[ElectrumService2], rpcClient, socket)
     val result = client.serverVersion("1.9.5", "1.1")
-    println(s"result size = ${result.length}")
+    println(s"result of server.version:")
+    println(s"size = ${result.length}")
     result.zipWithIndex.foreach{ case (e, i) => println(s"$i = $e")}
-
-//    val hex = client.blockchainBlockHeader(651548)
-//    println(s"hex = $hex")
+    println
+    val hex = client.blockchainBlockHeader(651548)
+    println(s"result of blockchain.block.header:")
+    println(s"hex = $hex")
 //    val blockHeader = client.blockchainBlockGetHeader(651548)
 //    println(s"hex (get_header) size is = ${blockHeader.size}")
 //    blockHeader.entrySet().asScala.foreach{ case entry => println(s"${entry.getKey} = ${entry.getValue}")}
@@ -66,10 +68,7 @@ object RpcClient extends App {
   }
 
   private def createSocket(address: InetAddress, port: Int): Socket = {
-    val socketFactory = SecureSocketMetaFactory.createSocketFactory(
-      new File("/Users/miloszm/proj/epsmi/cert.crt"),
-      new File("/Users/miloszm/proj/epsmi/cert.key")
-    )
+    val socketFactory = SecureSocketMetaFactory.createSocketFactory()
     socketFactory.createSocket(address, port)
   }
 

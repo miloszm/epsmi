@@ -12,11 +12,16 @@ import javax.net.ssl.SSLServerSocket
 trait ElectrumService {
   @JsonRpcMethod("server.version")
   def serverVersion(v1: String, v2: String): Array[String]
+  @JsonRpcMethod("blockchain.block.header")
+  def blockchainBlockHeader(p1: Int): String
 }
 
 class ElectrumServiceImpl extends ElectrumService {
   override def serverVersion(v1: String, v2: String): Array[String] = {
-    return Array("epsmi mimu 0.0.2")
+    return Array("epsmi 0.0.2")
+  }
+  override def blockchainBlockHeader(p1: Int): String = {
+    ???
   }
 }
 
@@ -32,10 +37,7 @@ object RpcServer extends App {
   val port = 1420
   val bindAddress = InetAddress.getByName("127.0.0.1")
   val backlog = 0
-  val serverSocketFactory = SecureSocketMetaFactory.createServerSocketFactory(
-    new File("/Users/miloszm/proj/epsmi/cert.crt"),
-    new File("/Users/miloszm/proj/epsmi/cert.key")
-  )
+  val serverSocketFactory = SecureSocketMetaFactory.createServerSocketFactory()
   val serverSocket = serverSocketFactory.createServerSocket(port).asInstanceOf[SSLServerSocket]
   serverSocket.setNeedClientAuth(true)
   val streamServer = new StreamServer(jsonRpcServer, maxThreads, serverSocket)
