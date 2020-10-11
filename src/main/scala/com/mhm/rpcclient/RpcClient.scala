@@ -1,19 +1,15 @@
 package com.mhm.rpcclient
 
-import java.io.{File, OutputStream}
+import java.io.OutputStream
 import java.net.{InetAddress, Socket}
-import java.security.SecureRandom
-import java.security.cert.CertificateFactory
-import java.util
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
-import com.googlecode.jsonrpc4j.{JsonRpcClient, JsonRpcMethod, ProxyUtil}
+import com.googlecode.jsonrpc4j.{JsonRpcClient, JsonRpcClientException, ProxyUtil}
 import com.mhm.api4electrum.Api4Electrum
 import com.mhm.securesocket.SecureSocketMetaFactory
-import javax.net.ssl.{SSLContext, SSLSocketFactory, TrustManagerFactory}
 
-import scala.jdk.CollectionConverters.CollectionHasAsScala
+import scala.util.Try
 
 
 class LfObjectMapper extends ObjectMapper {
@@ -38,7 +34,14 @@ object RpcClient extends App {
         //println(request)
       }
       override def onBeforeResponseProcessed(client: JsonRpcClient, response: ObjectNode): Unit = {
-        //println(response)
+        /**
+         * for compatibility with EPS we want to remove 'data' in 'error'
+         * so that JsonRpcClientException is returned rather than the original server exception
+         */
+        val e = response.get("error")
+        if (e != null) {
+          e.asInstanceOf[ObjectNode].remove("data")
+        }
       }
     }
     rpcClient.setRequestListener(listener)
@@ -49,8 +52,17 @@ object RpcClient extends App {
     result.zipWithIndex.foreach{ case (e, i) => println(s"$i = $e")}
     println
     val hex = client.blockchainBlockHeader(652221)
-    println(s"result of blockchain.block.header:")
-    println(s"hex = $hex")
+    val hexTry = Try(client.blockchainBlockHeader(700000))
+    hexTry.fold(
+      { e =>
+        println(s"json RPC exception caught: $e")
+        if (e.isInstanceOf[JsonRpcClientException]) println(s"code = ${e.asInstanceOf[JsonRpcClientException].getCode}")
+      },
+      { hex =>
+        println(s"result of blockchain.block.header:")
+        println(s"hex = $hex")
+      }
+    )
     socket.close()
   }
 
