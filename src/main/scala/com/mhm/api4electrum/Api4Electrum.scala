@@ -1,6 +1,21 @@
 package com.mhm.api4electrum
 
+import com.fasterxml.jackson.annotation.{JsonCreator, JsonProperty}
+import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import com.googlecode.jsonrpc4j.{JsonRpcError, JsonRpcErrors, JsonRpcMethod}
+
+import scala.beans.BeanProperty
+
+@JsonSerialize
+case class HeaderResult (
+  @BeanProperty @JsonProperty("block_height") blockHeight: Int,
+  @BeanProperty @JsonProperty("prev_block_hash") prevBlockHash: String,
+  @BeanProperty @JsonProperty("timestamp") timestamp: Long,
+  @BeanProperty @JsonProperty("merkle_root") merkleRoot: String,
+  @BeanProperty @JsonProperty("version") version: Long,
+  @BeanProperty @JsonProperty("nonce") nonce: Long,
+  @BeanProperty @JsonProperty("bits") bits: Long
+)
 
 trait Api4Electrum {
   @JsonRpcMethod("server.version")
@@ -12,4 +27,7 @@ trait Api4Electrum {
   @JsonRpcErrors(Array(new JsonRpcError(exception = classOf[IllegalArgumentException], code = -1)))
   @JsonRpcMethod("blockchain.block.header")
   def blockchainBlockHeader(p1: Int): String
+
+  @JsonRpcMethod("blockchain.block.get_header")
+  def blockchainBlockGetHeader(p1: Int): HeaderResult
 }

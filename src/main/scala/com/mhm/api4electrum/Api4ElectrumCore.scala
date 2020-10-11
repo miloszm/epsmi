@@ -43,4 +43,20 @@ object Api4ElectrumCore {
       headHex.toLowerCase
     }
   }
+  def getBlockHeader(blockHeight: Int): Future[HeaderResult] = {
+    for {
+      blockHash <- rpcCli.getBlockHash(blockHeight)
+      blockHeader <- rpcCli.getBlockHeader(blockHash)
+    } yield {
+      HeaderResult(
+        blockHeader.height,
+        blockHeader.previousblockhash.map(_.hex).getOrElse("00"*32),
+        blockHeader.time.toLong,
+        blockHeader.merkleroot.hex,
+        blockHeader.version,
+        blockHeader.nonce.toLong,
+        blockHeader.bits.toLong
+      )
+    }
+  }
 }
