@@ -4,9 +4,9 @@ import java.net.URI
 import java.nio.ByteBuffer
 
 import javax.xml.bind.DatatypeConverter
-import org.bitcoins.core.number.UInt32
 import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.core.protocol.blockchain.Block
+import com.mhm.util.EpsmiDataUtil._
 
 import scala.concurrent.duration.{Duration, SECONDS}
 import scala.concurrent.{Await, ExecutionContext, Future}
@@ -62,27 +62,6 @@ object BitcoinSConnector extends BitcoinConnector {
     rpcCli.getBlockRaw(h)
   }
 
-  def reverse(array: Array[Byte]): Array[Byte] = {
-    val l = array.length
-    val a = Array.ofDim[Byte](l)
-    for (i <- a.indices) a(i) = array(l - 1 - i)
-    a
-  }
-
-  def intToArray(i: Int): Array[Byte] = {
-    val b = ByteBuffer.allocate(4)
-    b.putInt(i)
-    reverse(b.array())
-  }
-
-  def uint32ToArray(i: UInt32): Array[Byte] = {
-    val a = Array.ofDim[Byte](4)
-    val b = ByteBuffer.allocate(4)
-    i.bytes.copyToArray(a, 0)
-    b.put(a)
-    reverse(a)
-  }
-
   def getBlockHeaderHash(blockHeight: Int): String = {
     val blockHash = Await.result(rpcCli.getBlockHash(blockHeight), Duration(20, SECONDS))
     val blockHeader = Await.result(rpcCli.getBlockHeader(blockHash), Duration(20, SECONDS))
@@ -100,17 +79,16 @@ object BitcoinSConnector extends BitcoinConnector {
     println(s"merkle root hash: ${DatatypeConverter.printHexBinary(merkleRootArray)}")
 
     val head = ByteBuffer.allocate(80)
-    //head.put("<i32s32sIII".getBytes)
+    // <i32s32sIII
+    // little endian int | byte[32] | byte[32] | unsigned int | unsigned int | unsigned int
     head.put(intToArray(blockHeader.version))
-    head.put(reverse(prevBlockHashArray))
-    head.put(reverse(merkleRootArray))
+    head.put(byteVectorOrZeroToArray(blockHeader.previousblockhash.map(_.bytes),32))
+    head.put(byteVectorToArray(blockHeader.merkleroot.bytes))
     head.put(uint32ToArray(blockHeader.time))
     head.put(uint32ToArray(blockHeader.bits))
     head.put(uint32ToArray(blockHeader.nonce))
 
     val headHex = DatatypeConverter.printHexBinary(head.array())
-    val s = s"""{"hex":\"$headHex\", "height":${blockHeader.height}""""
-    s
-    headHex
+    headHex.toLowerCase
   }
 }

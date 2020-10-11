@@ -5,6 +5,7 @@ import java.net.Socket
 
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.googlecode.jsonrpc4j.{JsonRpcBasicServer, JsonRpcClient, JsonRpcMethod, JsonRpcServer, ProxyUtil}
+import com.mhm.connectors.BitcoinSConnector
 import com.mhm.securesocket.SecureSocketMetaFactory
 import javax.net.ServerSocketFactory
 import javax.net.ssl.SSLServerSocket
@@ -20,8 +21,8 @@ class ElectrumServiceImpl extends ElectrumService {
   override def serverVersion(v1: String, v2: String): Array[String] = {
     return Array("epsmi 0.0.2")
   }
-  override def blockchainBlockHeader(p1: Int): String = {
-    ???
+  override def blockchainBlockHeader(height: Int): String = {
+    return BitcoinSConnector.getBlockHeaderHash(height)
   }
 }
 
