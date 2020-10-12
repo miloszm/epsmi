@@ -2,11 +2,13 @@ package com.mhm.api4electrum
 
 import java.nio.ByteBuffer
 
-import com.mhm.connectors.BitcoinSConnector.{rpcCli, ec}
+import com.mhm.connectors.BitcoinSConnector.{ec, rpcCli}
 import com.mhm.util.EpsmiDataUtil.{byteVectorOrZeroToArray, byteVectorToArray, intToArray, uint32ToArray}
 import javax.xml.bind.DatatypeConverter
+import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.FeeEstimationMode
 
 import scala.concurrent.Future
+import scala.math.BigDecimal.RoundingMode
 
 /**
  * This class is futurized and does not necessarily conform
@@ -57,6 +59,17 @@ object Api4ElectrumCore {
         blockHeader.nonce.toLong,
         blockHeader.bits.toLong
       )
+    }
+  }
+  def estimateSmartFee(waitBlocks: Int): Future[BigDecimal] = {
+    for {
+      smartFeeResult <- rpcCli.estimateSmartFee(waitBlocks, FeeEstimationMode.Conservative)
+    } yield {
+      val fr = smartFeeResult.feerate match {
+        case Some(fee) => BigDecimal(fee.toLong) / BigDecimal(100000)
+        case _ => BigDecimal(0.0001)
+      }
+      fr.setScale(8, RoundingMode.FLOOR)
     }
   }
 }

@@ -26,8 +26,11 @@ trait Api4Electrum {
    */
   @JsonRpcErrors(Array(new JsonRpcError(exception = classOf[IllegalArgumentException], code = -1)))
   @JsonRpcMethod("blockchain.block.header")
-  def blockchainBlockHeader(p1: Int): String
+  def blockchainBlockHeader(height: Int): String
 
   @JsonRpcMethod("blockchain.block.get_header")
-  def blockchainBlockGetHeader(p1: Int): HeaderResult
+  def blockchainBlockGetHeader(height: Int): HeaderResult
+
+  @JsonRpcMethod("blockchain.estimatefee")
+  def estimateFee(waitBlocks: Int): BigDecimal
 }

@@ -5,10 +5,11 @@ import java.util
 
 import com.fasterxml.jackson.databind.{JsonNode, ObjectMapper}
 import com.googlecode.jsonrpc4j.JsonRpcInterceptor
-import com.mhm.api4electrum.Api4ElectrumCore.{getBlockHeader, getBlockHeaderHash}
+import com.mhm.api4electrum.Api4ElectrumCore.{estimateSmartFee, getBlockHeader, getBlockHeaderHash}
 
 import scala.concurrent.Await
 import scala.concurrent.duration.{Duration, SECONDS}
+import scala.math.BigDecimal.RoundingMode
 import scala.util.Try
 
 /**
@@ -39,6 +40,18 @@ class Api4ElectrumImpl extends Api4Electrum {
       a =>
         a
     )
+  }
+
+  override def estimateFee(waitBlocks: Int): BigDecimal = {
+    Try(Await.result(estimateSmartFee(waitBlocks), Duration(20, SECONDS))).fold(
+      { t =>
+        println(s"server caught: $t")
+        throw new IllegalStateException(s"estimate fee for $waitBlocks block(s) wait failed")
+      },
+      a =>
+        a.setScale(8, RoundingMode.FLOOR)
+    )
+
   }
 
 }
