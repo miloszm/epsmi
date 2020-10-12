@@ -33,4 +33,7 @@ trait Api4Electrum {
 
   @JsonRpcMethod("blockchain.estimatefee")
   def estimateFee(waitBlocks: Int): BigDecimal
+
+  @JsonRpcMethod("blockchain.block.get_chunk")
+  def blockchainBlockGetChunk(index: Int): String
 }
