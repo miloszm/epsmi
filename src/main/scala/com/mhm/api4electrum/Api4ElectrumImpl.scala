@@ -5,7 +5,7 @@ import java.util
 
 import com.fasterxml.jackson.databind.{JsonNode, ObjectMapper}
 import com.googlecode.jsonrpc4j.JsonRpcInterceptor
-import com.mhm.api4electrum.Api4ElectrumCore.{estimateSmartFee, getBlockHeader, getBlockHeaderHash, getBlockChunk}
+import com.mhm.api4electrum.Api4ElectrumCore.{estimateSmartFee, getBlockHeader, getBlockHeaderHash, getBlockChunk, getBlockHeaders}
 
 import scala.concurrent.Await
 import scala.concurrent.duration.{Duration, SECONDS}
@@ -58,6 +58,16 @@ class Api4ElectrumImpl extends Api4Electrum {
       { t =>
         println(s"server caught: $t")
         throw new IllegalStateException(s"get block chunk for index $index failed")
+      },
+      identity
+    )
+  }
+
+  override def blockchainBlockHeaders(startHeight: Int, count: Int): BlockHeadersResult = {
+    Try(Await.result(getBlockHeaders(startHeight, count), Duration(20, SECONDS))).fold(
+      { t =>
+        println(s"server caught: $t")
+        throw new IllegalStateException(s"get block headers for start height $startHeight, count $count failed")
       },
       identity
     )

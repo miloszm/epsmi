@@ -76,6 +76,7 @@ object Api4ElectrumCore {
       )
     }
   }
+
   def estimateSmartFee(waitBlocks: Int): Future[BigDecimal] = {
     for {
       smartFeeResult <- rpcCli.estimateSmartFee(waitBlocks, FeeEstimationMode.Conservative)
@@ -88,26 +89,24 @@ object Api4ElectrumCore {
     }
   }
 
-
-  private def getBlockHeaders(startHeight: Int, count: Int): Future[String] = {
+  private def doGetBlockHeaders(startHeight: Int, count: Int): Future[(String, Int)] = {
     @tailrec
-    def go(blockHashOpt: Option[DoubleSha256DigestBE], headerHashes: List[String], count: Int): List[String] = {
+    def go(blockHashOpt: Option[DoubleSha256DigestBE], headerHashes: List[String], count: Int): (List[String], Int) = {
       if (count > 0 && blockHashOpt.isDefined) {
         val (headerHash, nextBlockHashOpt) = Await.result(getBlockHeaderHashFromBlockHash(blockHashOpt.get), Duration(20, SECONDS))
         go(nextBlockHashOpt, headerHash +: headerHashes, count - 1)
       } else {
-        headerHashes
+        (headerHashes, count)
       }
     }
     if (count <= 0){
-      Future.successful("")
+      Future.successful(("", 0))
     } else {
       val firstBlockHash = Await.result(rpcCli.getBlockHash(startHeight), Duration(20, SECONDS))
-      val headerHashes = go(Some(firstBlockHash), Nil, count)
-      Future.successful(headerHashes.reverse.mkString)
+      val (headerHashes, restCount) = go(Some(firstBlockHash), Nil, count)
+      Future.successful((headerHashes.reverse.mkString, count-restCount))
     }
   }
-
 
   def getBlockChunk(index: Int): Future[String] = {
     val RETARGET_INTERVAL = 2016
@@ -117,9 +116,19 @@ object Api4ElectrumCore {
       nextHeight = tipHeight + 1
       startHeight = Math.min(index*RETARGET_INTERVAL, nextHeight)
       count = Math.min(nextHeight - startHeight, RETARGET_INTERVAL)
-      headersHex <- getBlockHeaders(startHeight, count)
+      (headersHex,_) <- doGetBlockHeaders(startHeight, count)
     } yield {
       headersHex
+    }
+  }
+
+  def getBlockHeaders(startHeight: Int, count: Int): Future[BlockHeadersResult] = {
+    val MAX_CHUNK_SIZE = 2016
+    val minCount = Math.min(count, MAX_CHUNK_SIZE)
+    for {
+      (headersHex, effectiveCount) <- doGetBlockHeaders(startHeight, minCount)
+    } yield {
+      BlockHeadersResult(headersHex, effectiveCount, MAX_CHUNK_SIZE)
     }
   }
 }

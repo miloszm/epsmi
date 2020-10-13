@@ -17,6 +17,13 @@ case class HeaderResult (
   @BeanProperty @JsonProperty("bits") bits: Long
 )
 
+@JsonSerialize
+case class BlockHeadersResult (
+  @BeanProperty @JsonProperty("hex") hex: String,
+  @BeanProperty @JsonProperty("count") count: Int,
+  @BeanProperty @JsonProperty("max") max: Int,
+)
+
 trait Api4Electrum {
   @JsonRpcMethod("server.version")
   def serverVersion(v1: String, v2: String): Array[String]
@@ -36,4 +43,7 @@ trait Api4Electrum {
 
   @JsonRpcMethod("blockchain.block.get_chunk")
   def blockchainBlockGetChunk(index: Int): String
+
+  @JsonRpcMethod("blockchain.block.headers")
+  def blockchainBlockHeaders(startHeight: Int, count: Int): BlockHeadersResult
 }

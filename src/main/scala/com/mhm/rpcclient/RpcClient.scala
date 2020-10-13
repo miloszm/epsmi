@@ -75,9 +75,13 @@ object RpcClient extends App {
 //    val fee = client.estimateFee(1)
 //    println(s"fee=$fee")
 
+//    println
+//    val chunk = client.blockchainBlockGetChunk(323)
+//    println(s"chunk=$chunk")
+
     println
-    val chunk = client.blockchainBlockGetChunk(323)
-    println(s"chunk=$chunk")
+    val headersResult = client.blockchainBlockHeaders(652510, 512)
+    println(s"headers result = $headersResult")
 
     socket.close()
   }
