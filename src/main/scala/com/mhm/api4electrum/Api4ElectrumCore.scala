@@ -7,6 +7,7 @@ import com.mhm.util.EpsmiDataUtil.{byteVectorOrZeroToArray, byteVectorToArray, i
 import javax.xml.bind.DatatypeConverter
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.FeeEstimationMode
 import org.bitcoins.crypto.DoubleSha256DigestBE
+import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
 import scala.concurrent.duration.{Duration, SECONDS}
@@ -131,4 +132,30 @@ object Api4ElectrumCore {
       BlockHeadersResult(headersHex, effectiveCount, MAX_CHUNK_SIZE)
     }
   }
+
+  def getTransaction(txId: String): Future[String] = {
+    val sha = DoubleSha256DigestBE.fromHex(txId.toUpperCase)
+    println(s">>>>>>=${sha.hex}")
+    for {
+      transactionResult <- rpcCli.getRawTransaction(sha)
+    } yield {
+      transactionResult.hex.hex
+    }
+  }
+
+  def trIdFromPos(height: Int, txPos: Int, merkle: Boolean): Future[String] = {
+    for {
+      blockHash <- rpcCli.getBlockHash(height)
+      block <- rpcCli.getBlock(blockHash)
+    } yield {
+      if (merkle){
+        ??? // TODO MM: implement me
+      }
+      else {
+        val txId = block.tx(txPos)
+        txId.hex
+      }
+    }
+  }
+
 }

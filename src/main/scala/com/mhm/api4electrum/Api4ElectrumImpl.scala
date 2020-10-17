@@ -5,7 +5,7 @@ import java.util
 
 import com.fasterxml.jackson.databind.{JsonNode, ObjectMapper}
 import com.googlecode.jsonrpc4j.JsonRpcInterceptor
-import com.mhm.api4electrum.Api4ElectrumCore.{estimateSmartFee, getBlockHeader, getBlockHeaderHash, getBlockChunk, getBlockHeaders}
+import com.mhm.api4electrum.Api4ElectrumCore.{estimateSmartFee, getBlockHeader, getBlockHeaderHash, getBlockChunk, getBlockHeaders, getTransaction, trIdFromPos}
 
 import scala.concurrent.Await
 import scala.concurrent.duration.{Duration, SECONDS}
@@ -68,6 +68,26 @@ class Api4ElectrumImpl extends Api4Electrum {
       { t =>
         println(s"server caught: $t")
         throw new IllegalStateException(s"get block headers for start height $startHeight, count $count failed")
+      },
+      identity
+    )
+  }
+
+  override def blockchainTransactionGet(txId: String): String = {
+    Try(Await.result(getTransaction(txId: String), Duration(20, SECONDS))).fold(
+      { t =>
+        println(s"server caught: $t")
+        throw new IllegalStateException(s"get transaction for $txId failed")
+      },
+      identity
+    )
+  }
+
+  override def blockchainTrIdFromPos(height: Int, txPos: Int, merkle: Boolean): String = {
+    Try(Await.result(trIdFromPos(height, txPos, merkle), Duration(20, SECONDS))).fold(
+      { t =>
+        println(s"server caught: $t")
+        throw new IllegalStateException(s"get transaction id for $height, $txPos, merkle=$merkle failed")
       },
       identity
     )

@@ -79,9 +79,21 @@ object RpcClient extends App {
 //    val chunk = client.blockchainBlockGetChunk(323)
 //    println(s"chunk=$chunk")
 
+//    println
+//    val headersResult = client.blockchainBlockHeaders(652510, 512)
+//    println(s"headers result = $headersResult")
+
     println
-    val headersResult = client.blockchainBlockHeaders(652510, 512)
-    println(s"headers result = $headersResult")
+//    val transactionHex = client.blockchainTransactionGet("b850bd9f727888019ddd5481124b83c17b9dd263fe4c7c007a0a6c0f4c0f1573")
+//    val transactionHex = client.blockchainTransactionGet("4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b")
+//    val transactionHex = client.blockchainTransactionGet("0e3e2357e806b6cdb1f70b54c3a3a17b6714ee1f0e68bebb44a74b1efd512098")
+//    println(s"transaction result = $transactionHex")
+
+    println
+    val transactionId = client.blockchainTrIdFromPos(652742, 5, false)
+    println(s"trIdFromPos = $transactionId")
+    val trHex = client.blockchainTransactionGet(transactionId)
+    println(s"trHex for the above = $trHex")
 
     socket.close()
   }

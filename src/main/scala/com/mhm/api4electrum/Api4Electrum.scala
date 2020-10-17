@@ -46,4 +46,10 @@ trait Api4Electrum {
 
   @JsonRpcMethod("blockchain.block.headers")
   def blockchainBlockHeaders(startHeight: Int, count: Int): BlockHeadersResult
+
+  @JsonRpcMethod("blockchain.transaction.get")
+  def blockchainTransactionGet(txid: String): String
+
+  @JsonRpcMethod("blockchain.transaction.id_from_pos")
+  def blockchainTrIdFromPos(height: Int, txPos: Int, merkle: Boolean): String
 }
