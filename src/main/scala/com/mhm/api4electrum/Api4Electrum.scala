@@ -24,6 +24,12 @@ case class BlockHeadersResult (
   @BeanProperty @JsonProperty("max") max: Int,
 )
 
+@JsonSerialize
+case class MerkleResult (
+  @BeanProperty @JsonProperty("tx_hash") txHash: String,
+  @BeanProperty @JsonProperty("merkle") merkle: Array[String]
+)
+
 trait Api4Electrum {
   @JsonRpcMethod("server.version")
   def serverVersion(v1: String, v2: String): Array[String]
@@ -50,6 +56,10 @@ trait Api4Electrum {
   @JsonRpcMethod("blockchain.transaction.get")
   def blockchainTransactionGet(txid: String): String
 
+  // when merkle is true, will be intercepted and passed to blockchainTrIdFromPosMerkleTrue
   @JsonRpcMethod("blockchain.transaction.id_from_pos")
   def blockchainTrIdFromPos(height: Int, txPos: Int, merkle: Boolean): String
+
+  @JsonRpcMethod("blockchain.transaction.id_from_pos_merkle_true")
+  def blockchainTrIdFromPosMerkleTrue(height: Int, txPos: Int, merkle: Boolean): MerkleResult
 }

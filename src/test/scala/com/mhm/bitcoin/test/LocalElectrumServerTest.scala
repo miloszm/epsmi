@@ -8,7 +8,6 @@ import java.util.Dictionary
 
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.googlecode.jsonrpc4j.{JsonRpcClient, JsonRpcHttpClient, ProxyUtil}
-import com.mhm.rpcserver.ElectrumService
 import javax.net.ssl.{HostnameVerifier, SSLContext, SSLSession, TrustManagerFactory}
 
 import scala.jdk.CollectionConverters._

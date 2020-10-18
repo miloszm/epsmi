@@ -24,14 +24,18 @@ object RpcClient extends App {
 
   def doServerVersion: Unit = {
 
-//    val port = 50002
-    val port = 1420
+    val port = 50002
+//    val port = 1420
 
     val socket = createSocket(InetAddress.getByName("127.0.0.1"), port)
     val rpcClient = new JsonRpcClient(new LfObjectMapper())
     val listener = new JsonRpcClient.RequestListener(){
       override def onBeforeRequestSent(client: JsonRpcClient, request: ObjectNode): Unit = {
         println(s"request=$request")
+        val method = request.get("method")
+        if (method.asText() == "blockchain.transaction.id_from_pos_merkle_true"){
+          request.asInstanceOf[ObjectNode].put("method", "blockchain.transaction.id_from_pos")
+        }
       }
       override def onBeforeResponseProcessed(client: JsonRpcClient, response: ObjectNode): Unit = {
         /**
@@ -89,11 +93,17 @@ object RpcClient extends App {
 //    val transactionHex = client.blockchainTransactionGet("0e3e2357e806b6cdb1f70b54c3a3a17b6714ee1f0e68bebb44a74b1efd512098")
 //    println(s"transaction result = $transactionHex")
 
+//    println
+//    val transactionId = client.blockchainTrIdFromPos(652742, 5, false)
+//    println(s"trIdFromPos = $transactionId")
+//    val trHex = client.blockchainTransactionGet(transactionId)
+//    println(s"trHex for the above = $trHex")
+
     println
-    val transactionId = client.blockchainTrIdFromPos(652742, 5, false)
-    println(s"trIdFromPos = $transactionId")
-    val trHex = client.blockchainTransactionGet(transactionId)
-    println(s"trHex for the above = $trHex")
+    val transactionResponse = client.blockchainTrIdFromPosMerkleTrue(652742, 5, true)
+    println(s"trIdFromPos = ${transactionResponse.txHash}")
+    println("merkle=")
+    transactionResponse.merkle.foreach{println(_)}
 
     socket.close()
   }

@@ -5,7 +5,7 @@ import java.util
 
 import com.fasterxml.jackson.databind.{JsonNode, ObjectMapper}
 import com.googlecode.jsonrpc4j.JsonRpcInterceptor
-import com.mhm.api4electrum.Api4ElectrumCore.{estimateSmartFee, getBlockHeader, getBlockHeaderHash, getBlockChunk, getBlockHeaders, getTransaction, trIdFromPos}
+import com.mhm.api4electrum.Api4ElectrumCore.{estimateSmartFee, getBlockChunk, getBlockHeader, getBlockHeaderHash, getBlockHeaders, getTransaction, trIdFromPos, trIdFromPosMerkleTrue}
 
 import scala.concurrent.Await
 import scala.concurrent.duration.{Duration, SECONDS}
@@ -84,10 +84,20 @@ class Api4ElectrumImpl extends Api4Electrum {
   }
 
   override def blockchainTrIdFromPos(height: Int, txPos: Int, merkle: Boolean): String = {
-    Try(Await.result(trIdFromPos(height, txPos, merkle), Duration(20, SECONDS))).fold(
+    Try(Await.result(trIdFromPos(height, txPos), Duration(20, SECONDS))).fold(
       { t =>
         println(s"server caught: $t")
         throw new IllegalStateException(s"get transaction id for $height, $txPos, merkle=$merkle failed")
+      },
+      identity
+    )
+  }
+
+  override def blockchainTrIdFromPosMerkleTrue(height: Int, txPos: Int, merkle: Boolean): MerkleResult = {
+    Try(Await.result(trIdFromPosMerkleTrue(height, txPos), Duration(20, SECONDS))).fold(
+      { t =>
+        println(s"server caught: $t")
+        throw new IllegalStateException(s"get transaction id for $height, $txPos, merkle=true")
       },
       identity
     )

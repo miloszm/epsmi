@@ -143,18 +143,24 @@ object Api4ElectrumCore {
     }
   }
 
-  def trIdFromPos(height: Int, txPos: Int, merkle: Boolean): Future[String] = {
+  def trIdFromPos(height: Int, txPos: Int): Future[String] = {
     for {
       blockHash <- rpcCli.getBlockHash(height)
       block <- rpcCli.getBlock(blockHash)
     } yield {
-      if (merkle){
-        ??? // TODO MM: implement me
-      }
-      else {
         val txId = block.tx(txPos)
         txId.hex
-      }
+    }
+  }
+
+  def trIdFromPosMerkleTrue(height: Int, txPos: Int): Future[MerkleResult] = {
+    for {
+      blockHash <- rpcCli.getBlockHash(height)
+      block <- rpcCli.getBlock(blockHash)
+    } yield {
+        val txId = block.tx(txPos)
+        txId.hex
+      MerkleResult("", Array())
     }
   }
 
