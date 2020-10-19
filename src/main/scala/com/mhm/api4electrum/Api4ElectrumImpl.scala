@@ -84,7 +84,7 @@ class Api4ElectrumImpl extends Api4Electrum {
   }
 
   override def blockchainTrIdFromPos(height: Int, txPos: Int, merkle: Boolean): String = {
-    Try(Await.result(trIdFromPos(height, txPos), Duration(20, SECONDS))).fold(
+    Try(Await.result(trIdFromPos(height, txPos, merkle), Duration(20, SECONDS))).fold(
       { t =>
         println(s"server caught: $t")
         throw new IllegalStateException(s"get transaction id for $height, $txPos, merkle=$merkle failed")
@@ -93,13 +93,5 @@ class Api4ElectrumImpl extends Api4Electrum {
     )
   }
 
-  override def blockchainTrIdFromPosMerkleTrue(height: Int, txPos: Int, merkle: Boolean): MerkleResult = {
-    Try(Await.result(trIdFromPosMerkleTrue(height, txPos), Duration(20, SECONDS))).fold(
-      { t =>
-        println(s"server caught: $t")
-        throw new IllegalStateException(s"get transaction id for $height, $txPos, merkle=true")
-      },
-      identity
-    )
-  }
+  override def blockchainTrIdFromPosMerkleTrue(height: Int, txPos: Int, merkle: Boolean): MerkleResult = ???
 }

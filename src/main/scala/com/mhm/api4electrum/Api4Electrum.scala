@@ -56,10 +56,10 @@ trait Api4Electrum {
   @JsonRpcMethod("blockchain.transaction.get")
   def blockchainTransactionGet(txid: String): String
 
-  // when merkle is true, will be intercepted and passed to blockchainTrIdFromPosMerkleTrue
   @JsonRpcMethod("blockchain.transaction.id_from_pos")
   def blockchainTrIdFromPos(height: Int, txPos: Int, merkle: Boolean): String
 
+  // for client only - will be intercepted by client and changed to blockchain.transaction.id_from_pos
   @JsonRpcMethod("blockchain.transaction.id_from_pos_merkle_true")
   def blockchainTrIdFromPosMerkleTrue(height: Int, txPos: Int, merkle: Boolean): MerkleResult
 }

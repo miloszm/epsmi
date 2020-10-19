@@ -1,11 +1,14 @@
 package com.mhm.api4electrum
 
+import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.mhm.connectors.BitcoinSConnector.{ec, rpcCli}
 import com.mhm.util.EpsmiDataUtil.{byteVectorOrZeroToArray, byteVectorToArray, intToArray, uint32ToArray}
 import javax.xml.bind.DatatypeConverter
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.FeeEstimationMode
+import org.bitcoins.core.protocol.blockchain.MerkleBlock
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import scodec.bits.ByteVector
 
@@ -143,7 +146,14 @@ object Api4ElectrumCore {
     }
   }
 
-  def trIdFromPos(height: Int, txPos: Int): Future[String] = {
+  def trIdFromPos(height: Int, txPos: Int, merkle: Boolean): Future[String] = {
+    if (merkle)
+      trIdFromPosMerkleTrue(height, txPos)
+    else
+      trIdFromPosMerkleFalse(height, txPos)
+  }
+
+  private def trIdFromPosMerkleFalse(height: Int, txPos: Int): Future[String] = {
     for {
       blockHash <- rpcCli.getBlockHash(height)
       block <- rpcCli.getBlock(blockHash)
@@ -153,14 +163,24 @@ object Api4ElectrumCore {
     }
   }
 
-  def trIdFromPosMerkleTrue(height: Int, txPos: Int): Future[MerkleResult] = {
-    for {
+  private def convertCoreToElectrumMerkleProof(txId: DoubleSha256DigestBE, coreMerkleProof: MerkleBlock): MerkleResult = {
+    MerkleResult(txId.hex, coreMerkleProof.hashes.map(_.hex).toArray)
+  }
+
+  private def trIdFromPosMerkleTrue(height: Int, txPos: Int): Future[String] = {
+    val merkleResutlFuture = for {
       blockHash <- rpcCli.getBlockHash(height)
       block <- rpcCli.getBlock(blockHash)
+      txId = block.tx(txPos)
+      merkleBlock <- rpcCli.getTxOutProof(Vector(txId), blockHash)
     } yield {
-        val txId = block.tx(txPos)
-        txId.hex
-      MerkleResult("", Array())
+      convertCoreToElectrumMerkleProof(txId, merkleBlock)
+    }
+    merkleResutlFuture.map{mr =>
+      val objectMapper = new ObjectMapper()
+      val out = new ByteArrayOutputStream()
+      objectMapper.writeValue(out, mr)
+      out.toString
     }
   }
 

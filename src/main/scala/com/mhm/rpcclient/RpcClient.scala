@@ -6,7 +6,7 @@ import java.net.{InetAddress, Socket}
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.googlecode.jsonrpc4j.{JsonRpcClient, JsonRpcClientException, ProxyUtil}
-import com.mhm.api4electrum.{Api4Electrum, HeaderResult}
+import com.mhm.api4electrum.{Api4Electrum, HeaderResult, MerkleResult}
 import com.mhm.securesocket.SecureSocketMetaFactory
 
 import scala.util.Try
@@ -24,8 +24,8 @@ object RpcClient extends App {
 
   def doServerVersion: Unit = {
 
-    val port = 50002
-//    val port = 1420
+//    val port = 50002
+    val port = 1420
 
     val socket = createSocket(InetAddress.getByName("127.0.0.1"), port)
     val rpcClient = new JsonRpcClient(new LfObjectMapper())
@@ -100,10 +100,17 @@ object RpcClient extends App {
 //    println(s"trHex for the above = $trHex")
 
     println
-    val transactionResponse = client.blockchainTrIdFromPosMerkleTrue(652742, 5, true)
-    println(s"trIdFromPos = ${transactionResponse.txHash}")
+    val merkleResult: MerkleResult =
+      if (port == 50002) {
+        client.blockchainTrIdFromPosMerkleTrue(652742, 5, true)
+      } else {
+        val s = client.blockchainTrIdFromPos(652742, 5, true)
+        val objectMapper = new ObjectMapper()
+        objectMapper.readValue[MerkleResult](s, classOf[MerkleResult])
+      }
+    println(s"txHash= ${merkleResult.txHash}")
     println("merkle=")
-    transactionResponse.merkle.foreach{println(_)}
+    merkleResult.merkle.foreach{println(_)}
 
     socket.close()
   }
