@@ -6,6 +6,7 @@ import java.nio.ByteBuffer
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.mhm.connectors.BitcoinSConnector.{ec, rpcCli}
 import com.mhm.util.EpsmiDataUtil.{byteVectorOrZeroToArray, byteVectorToArray, intToArray, uint32ToArray}
+import com.mhm.util.MerkleProofOps
 import javax.xml.bind.DatatypeConverter
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.FeeEstimationMode
 import org.bitcoins.core.protocol.blockchain.MerkleBlock
@@ -163,9 +164,12 @@ object Api4ElectrumCore {
     }
   }
 
-  private def convertCoreToElectrumMerkleProof(txId: DoubleSha256DigestBE, coreMerkleProof: MerkleBlock): MerkleResult = {
-    MerkleResult(txId.hex, coreMerkleProof.hashes.map(_.hex).toArray)
-  }
+  case class ElectrumMerkleProof(
+    pos: Int,
+    merkle: Array[String],
+    txId: String,
+    merkleRoot: String
+  )
 
   private def trIdFromPosMerkleTrue(height: Int, txPos: Int): Future[String] = {
     val merkleResutlFuture = for {
@@ -174,7 +178,11 @@ object Api4ElectrumCore {
       txId = block.tx(txPos)
       merkleBlock <- rpcCli.getTxOutProof(Vector(txId), blockHash)
     } yield {
-      convertCoreToElectrumMerkleProof(txId, merkleBlock)
+      println("--"*20)
+      println(merkleBlock.hex)
+      println("--"*20)
+      val emp = MerkleProofOps.convertCoreToElectrumMerkleProof(merkleBlock.hex)
+      MerkleResult(txId.hex, emp.merkle)
     }
     merkleResutlFuture.map{mr =>
       val objectMapper = new ObjectMapper()

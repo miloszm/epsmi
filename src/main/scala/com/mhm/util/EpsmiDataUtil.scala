@@ -37,4 +37,14 @@ object EpsmiDataUtil {
     reverse(a)
   }
 
+  def log2(x: Int): Int = {
+    if (x <= 0) 0 else (Math.log(x) / Math.log(2)).toInt
+  }
+
+  def intCeilLog2(x: Int): Int = {
+    if (x <= 0) 0 else
+    Math.ceil(Math.log(x) / Math.log(2)).toInt
+  }
+
+
 }
