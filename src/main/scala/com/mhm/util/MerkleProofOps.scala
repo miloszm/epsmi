@@ -10,10 +10,10 @@ import javax.xml.bind.DatatypeConverter
 import scala.collection.mutable.ArrayBuffer
 
 
-case class MerkleNode(valueOpt: Option[String], left: Option[MerkleNode]=None, right: Option[MerkleNode]=None){
-  def isTuple: Boolean = valueOpt.isEmpty
-  def value: String = valueOpt.getOrElse("") // TODO else should throw
-}
+//case class MerkleNode(valueOpt: Option[String], left: Option[MerkleNode]=None, right: Option[MerkleNode]=None){
+//  def isTuple: Boolean = valueOpt.isEmpty
+//  def value: String = valueOpt.getOrElse("") // TODO else should throw
+//}
 
 object MerkleProofOps {
   def isBitSet(b: Byte, pos: Int): Boolean = (b & (1 << pos)) != 0
@@ -36,7 +36,6 @@ object MerkleProofOps {
   }
 
   def calcTreeWidth(height: Int, txCount: Int): Int = {
-    //Efficently calculates the number of nodes at given merkle tree height
     (txCount + (1 << height) - 1) >> height
   }
 
@@ -47,19 +46,19 @@ object MerkleProofOps {
       nodeValue
   }
 
-  def expandTreeHashing(node: MerkleNode): MerkleNode = {
-    val left = node.left.get
-    val right = node.right.get
+  def expandTreeHashing(node: TupleMerkleNode): MerkleNode = {
+    val left = node.left
+    val right = node.right
     val hashLeft = if (left.isTuple)
-      expandTreeHashing(left)
+      expandTreeHashing(left.asInstanceOf[TupleMerkleNode])
     else
-      MerkleNode(Some(getNodeHash(left.value)))
+      StrMerkleNode(getNodeHash(left.value))
     val hashRight = if (right.isTuple)
-      expandTreeHashing(right)
+      expandTreeHashing(right.asInstanceOf[TupleMerkleNode])
     else
-      MerkleNode(Some(getNodeHash(right.value)))
+      StrMerkleNode(getNodeHash(right.value))
     val hs = hashEncode(doHash(hashDecode(hashLeft.value) ++ hashDecode(hashRight.value)))
-    MerkleNode(Some(hs))
+    StrMerkleNode(hs)
   }
 
 
@@ -91,19 +90,19 @@ object MerkleProofOps {
           descendMerkleTree(hashList, flags, height - 1, txCount, pos * 2 + 1)
         } else {
           if (left.isTuple)
-            expandTreeHashing(left)
+            expandTreeHashing(left.asInstanceOf[TupleMerkleNode])
           else
             left
         }
-        MerkleNode(None, Some(left), Some(right))
+        TupleMerkleNode(left, right)
       }
       else {
-        MerkleNode(Some(hashList.next()))
+        StrMerkleNode(hashList.next())
       }
     }
     else {
       val hs = hashList.next()
-      MerkleNode(Some(if (flag) s"tx:$pos:$hs" else hs))
+      StrMerkleNode(if (flag) s"tx:$pos:$hs" else hs)
     }
   }
 
