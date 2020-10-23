@@ -1,6 +1,7 @@
 package com.mhm.util
 
 import java.nio.ByteBuffer
+import java.security.MessageDigest
 
 import com.mhm.api4electrum.Api4ElectrumCore.ElectrumMerkleProof
 import com.mhm.util.EpsmiDataUtil.intCeilLog2
@@ -11,7 +12,7 @@ import scala.collection.mutable.ArrayBuffer
 
 case class MerkleNode(valueOpt: Option[String], left: Option[MerkleNode]=None, right: Option[MerkleNode]=None){
   def isTuple: Boolean = valueOpt.isEmpty
-  def value: String = valueOpt.getOrElse("")
+  def value: String = valueOpt.getOrElse("") // TODO else should throw
 }
 
 object MerkleProofOps {
@@ -25,7 +26,14 @@ object MerkleProofOps {
     DatatypeConverter.printHexBinary(b)
   }
 
-  def doHash(a: Array[Byte]): Array[Byte] = ???
+  def sha256(a: Array[Byte]): Array[Byte] = {
+    MessageDigest.getInstance("SHA-256")
+      .digest(a)
+  }
+
+  def doHash(a: Array[Byte]): Array[Byte] = {
+    sha256(sha256(a))
+  }
 
   def calcTreeWidth(height: Int, txCount: Int): Int = {
     //Efficently calculates the number of nodes at given merkle tree height
@@ -39,55 +47,72 @@ object MerkleProofOps {
       nodeValue
   }
 
-  def expandTreeHashing(node: MerkleNode): String = {
+  def expandTreeHashing(node: MerkleNode): MerkleNode = {
     val left = node.left.get
     val right = node.right.get
     val hashLeft = if (left.isTuple)
       expandTreeHashing(left)
     else
-      getNodeHash(left.value)
+      MerkleNode(Some(getNodeHash(left.value)))
     val hashRight = if (right.isTuple)
       expandTreeHashing(right)
     else
-      getNodeHash(right.value)
-    hashEncode(doHash(hashDecode(hashLeft) ++ hashDecode(hashRight)))
+      MerkleNode(Some(getNodeHash(right.value)))
+    val hs = hashEncode(doHash(hashDecode(hashLeft.value) ++ hashDecode(hashRight.value)))
+    MerkleNode(Some(hs))
   }
 
 
-  def descendMerkleTree(hashList: List[String], flags: List[Boolean], height: Int, txCount: Int, pos: Int): MerkleNode = {
-    val flag = flags.head
+  case class HashListIter(hashList: List[String]){
+    var pos = 0
+    def next(): String = {
+      val r = hashList(pos)
+      pos += 1
+      r
+    }
+  }
+
+  case class FlagsIter(flagsList: List[Boolean]){
+    var pos = 0
+    def next(): Boolean = {
+      val r = flagsList(pos)
+      pos += 1
+      r
+    }
+  }
+
+
+  def descendMerkleTree(hashList: HashListIter, flags: FlagsIter, height: Int, txCount: Int, pos: Int): MerkleNode = {
+    val flag = flags.next()
     if (height > 0){
       if (flag){
-        val left = descendMerkleTree(hashList, flags.tail, height-1, txCount, pos*2)
+        val left = descendMerkleTree(hashList, flags, height-1, txCount, pos*2)
         val right: MerkleNode = if (pos*2+1 < calcTreeWidth(height-1, txCount)) {
-          descendMerkleTree(hashList, flags.tail, height - 1, txCount, pos * 2 + 1)
+          descendMerkleTree(hashList, flags, height - 1, txCount, pos * 2 + 1)
         } else {
           if (left.isTuple)
             expandTreeHashing(left)
           else
             left
         }
-
-
+        MerkleNode(None, Some(left), Some(right))
       }
       else {
-
+        MerkleNode(Some(hashList.next()))
       }
-
     }
     else {
-
+      val hs = hashList.next()
+      MerkleNode(Some(if (flag) s"tx:$pos:$hs" else hs))
     }
   }
 
-  def deserializeCoreFormatMerkleProof(hashList: Array[String], flagValue: Array[Byte], txCount: Int): Unit = {
+  def deserializeCoreFormatMerkleProof(hashList: Array[String], flagValue: Array[Byte], txCount: Int): MerkleNode = {
     val treeDepth: Int = intCeilLog2(txCount)
 
     val flags = for {b <- flagValue; i <- 0 to 7} yield isBitSet(b, i)
 
-    descendMerkleTree(hashList.toList, flags.toList, treeDepth, txCount, 0)
-
-    println("hi")
+    descendMerkleTree(HashListIter(hashList.toList), FlagsIter(flags.toList), treeDepth, txCount, 0)
   }
 
 
@@ -137,8 +162,9 @@ object MerkleProofOps {
     pos = p4
     val flags = flagsReversed.reverse
 
-    print(s"hashes=${hashes} flags=${flags} txcount=${txCount}")
+    println(s"hashes=$hashes flags=$flags txcount=$txCount")
     val rootNode = deserializeCoreFormatMerkleProof(hashes.toArray, flags, txCount)
+    println(s"scala root node after deserialisation: $rootNode")
 
     ElectrumMerkleProof(0, Array(), "", "")
   }
