@@ -8,22 +8,86 @@ import javax.xml.bind.DatatypeConverter
 
 import scala.collection.mutable.ArrayBuffer
 
+
+case class MerkleNode(valueOpt: Option[String], left: Option[MerkleNode]=None, right: Option[MerkleNode]=None){
+  def isTuple: Boolean = valueOpt.isEmpty
+  def value: String = valueOpt.getOrElse("")
+}
+
 object MerkleProofOps {
-  /**
-  def deserialize_core_format_merkle_proof(hash_list, flag_value, txcount):
-  """Converts core's format for a merkle proof into a tree in memory"""
-  tree_depth = int(ceil(log(txcount, 2)))
-  hashes = iter(hash_list)
-  #one-liner which converts the flags value to a list of True/False bits
-    flags = (flag_value[i//8]&1 << i%8 != 0 for i in range(len(flag_value)*8))
-  try:
-  root_node = decend_merkle_tree(hashes, flags, tree_depth, txcount, 0)
-  return root_node
-  except StopIteration:
-    raise ValueError
-   */
+  def isBitSet(b: Byte, pos: Int): Boolean = (b & (1 << pos)) != 0
+
+  def hashDecode(hs: String): Array[Byte] = {
+    DatatypeConverter.parseHexBinary(hs)
+  }
+
+  def hashEncode(b: Array[Byte]): String = {
+    DatatypeConverter.printHexBinary(b)
+  }
+
+  def doHash(a: Array[Byte]): Array[Byte] = ???
+
+  def calcTreeWidth(height: Int, txCount: Int): Int = {
+    //Efficently calculates the number of nodes at given merkle tree height
+    (txCount + (1 << height) - 1) >> height
+  }
+
+  def getNodeHash(nodeValue: String): String = {
+    if (nodeValue.startsWith("tx"))
+      nodeValue.split(":")(2)
+    else
+      nodeValue
+  }
+
+  def expandTreeHashing(node: MerkleNode): String = {
+    val left = node.left.get
+    val right = node.right.get
+    val hashLeft = if (left.isTuple)
+      expandTreeHashing(left)
+    else
+      getNodeHash(left.value)
+    val hashRight = if (right.isTuple)
+      expandTreeHashing(right)
+    else
+      getNodeHash(right.value)
+    hashEncode(doHash(hashDecode(hashLeft) ++ hashDecode(hashRight)))
+  }
+
+
+  def descendMerkleTree(hashList: List[String], flags: List[Boolean], height: Int, txCount: Int, pos: Int): MerkleNode = {
+    val flag = flags.head
+    if (height > 0){
+      if (flag){
+        val left = descendMerkleTree(hashList, flags.tail, height-1, txCount, pos*2)
+        val right: MerkleNode = if (pos*2+1 < calcTreeWidth(height-1, txCount)) {
+          descendMerkleTree(hashList, flags.tail, height - 1, txCount, pos * 2 + 1)
+        } else {
+          if (left.isTuple)
+            expandTreeHashing(left)
+          else
+            left
+        }
+
+
+      }
+      else {
+
+      }
+
+    }
+    else {
+
+    }
+  }
+
   def deserializeCoreFormatMerkleProof(hashList: Array[String], flagValue: Array[Byte], txCount: Int): Unit = {
-    val treeDepth = intCeilLog2(txCount)
+    val treeDepth: Int = intCeilLog2(txCount)
+
+    val flags = for {b <- flagValue; i <- 0 to 7} yield isBitSet(b, i)
+
+    descendMerkleTree(hashList.toList, flags.toList, treeDepth, txCount, 0)
+
+    println("hi")
   }
 
 
