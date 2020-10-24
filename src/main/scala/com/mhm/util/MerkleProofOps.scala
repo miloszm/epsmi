@@ -7,7 +7,7 @@ import com.mhm.api4electrum.Api4ElectrumCore.ElectrumMerkleProof
 import com.mhm.util.EpsmiDataUtil.intCeilLog2
 import javax.xml.bind.DatatypeConverter
 
-import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
 
 //case class MerkleNode(valueOpt: Option[String], left: Option[MerkleNode]=None, right: Option[MerkleNode]=None){
@@ -115,6 +115,19 @@ object MerkleProofOps {
   }
 
 
+  /**
+   * Recurse down into the tree, adding hashes to the result list in depth order
+   */
+  def expandTreeElectrumFormatMerkleProof(node: TupleMerkleNode, accumulator: List[String]): List[String] = {
+    val left = node.left
+    val right = node.right
+    val acc1 = accumulator ++ (if (left.isTuple) expandTreeElectrumFormatMerkleProof(left.asInstanceOf[TupleMerkleNode], accumulator) else Nil)
+    val acc2 = acc1 ++ (if (right.isTuple) expandTreeElectrumFormatMerkleProof(right.asInstanceOf[TupleMerkleNode], accumulator) else Nil)
+    val acc3 = if (!left.isTuple) acc2 :+ left.value else acc2
+    if (!right.isTuple) acc3 :+ right.value else acc3
+  }
+
+
   def convertCoreToElectrumMerkleProof(merkleBlockHex: String): ElectrumMerkleProof = {
 
     def readAsInt(buf: Array[Byte], pos: Int, bytez: Int): (Int, Int) = {
@@ -139,7 +152,8 @@ object MerkleProofOps {
 
     var pos = 80
     val proof = DatatypeConverter.parseHexBinary(merkleBlockHex)
-    val merkleProof = ByteBuffer.wrap(proof.slice(36, 32))
+    val merkleRoot = Array.ofDim[Byte](32)
+    Array.copy(proof, 36, merkleRoot, 0, 32)
     val (p1, txCount) = readAsInt(proof, pos, 4)
     pos = p1
     println(s"txCount=$txCount")
@@ -165,7 +179,22 @@ object MerkleProofOps {
     val rootNode = deserializeCoreFormatMerkleProof(hashes.toArray, flags, txCount)
     println(s"scala root node after deserialisation: $rootNode")
 
-    ElectrumMerkleProof(0, Array(), "", "")
+    if (rootNode.isTuple) {
+      val hashesList = ListBuffer(expandTreeElectrumFormatMerkleProof(rootNode.asInstanceOf[TupleMerkleNode], Nil): _*)
+      val tx = hashesList.remove(if (hashesList(1).startsWith("tx")) 1 else 0)
+      val tokens = tx.split(":")
+      if (hashesList.head.startsWith("tx")){
+        val h0 = hashesList.remove(0)
+        hashesList.prepend(tokens(2))
+      }
+      val txPos = tokens(1).toIntOption.getOrElse(0)
+      val txId = tokens(2)
+      ElectrumMerkleProof(txPos, hashesList.toArray, txId, DatatypeConverter.printHexBinary(merkleRoot.reverse))
+    }
+    else {
+      val txId = rootNode.value.substring(5) //remove the "tx:0:"
+      ElectrumMerkleProof(0, Array(), txId, txId)
+    }
   }
 
 
