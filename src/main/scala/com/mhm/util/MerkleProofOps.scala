@@ -62,26 +62,16 @@ object MerkleProofOps {
   }
 
 
-  case class HashListIter(hashList: List[String]){
+  case class ListIter[T](list: List[T]){
     var pos = 0
-    def next(): String = {
-      val r = hashList(pos)
+    def next(): T = {
+      val r = list(pos)
       pos += 1
       r
     }
   }
 
-  case class FlagsIter(flagsList: List[Boolean]){
-    var pos = 0
-    def next(): Boolean = {
-      val r = flagsList(pos)
-      pos += 1
-      r
-    }
-  }
-
-
-  def descendMerkleTree(hashList: HashListIter, flags: FlagsIter, height: Int, txCount: Int, pos: Int): MerkleNode = {
+  def descendMerkleTree(hashList: ListIter[String], flags: ListIter[Boolean], height: Int, txCount: Int, pos: Int): MerkleNode = {
     val flag = flags.next()
     if (height > 0){
       if (flag){
@@ -111,7 +101,7 @@ object MerkleProofOps {
 
     val flags = for {b <- flagValue; i <- 0 to 7} yield isBitSet(b, i)
 
-    descendMerkleTree(HashListIter(hashList.toList), FlagsIter(flags.toList), treeDepth, txCount, 0)
+    descendMerkleTree(ListIter(hashList.toList), ListIter(flags.toList), treeDepth, txCount, 0)
   }
 
 
@@ -130,54 +120,52 @@ object MerkleProofOps {
 
   def convertCoreToElectrumMerkleProof(merkleBlockHex: String): ElectrumMerkleProof = {
 
-    def readAsInt(buf: Array[Byte], pos: Int, bytez: Int): (Int, Int) = {
+    case class ReadResult[T](newPos: Int, value: T)
+
+    def readAsInt(buf: Array[Byte], pos: Int, bytez: Int): ReadResult[Int] = {
       val newPos = pos + bytez
       val intBytes = ByteBuffer.wrap(buf.slice(80, 84).reverse)
-      (newPos, intBytes.getInt)
+      ReadResult(newPos, intBytes.getInt)
     }
 
-    def readVarInt(buf: Array[Byte], pos: Int): (Int, Int) = {
+    def readVarInt(buf: Array[Byte], pos: Int): ReadResult[Int] = {
       val v = buf(pos)
-      if ( v < 253) (pos + 1, v) else {
+      if ( v < 253)
+        ReadResult(pos + 1, v)
+      else {
         val newPos = pos + 1 + Math.pow(2.0, v-252).toInt // TODO this `else` part needs to be tested
         val intBytes = ByteBuffer.wrap(buf.slice(newPos, newPos+4).reverse)
-        (newPos, intBytes.getInt)
+        ReadResult(newPos, intBytes.getInt)
       }
     }
 
-    def readBytes(buf: Array[Byte], pos: Int, bytez: Int): (Int, Array[Byte]) = {
+    def readBytes(buf: Array[Byte], pos: Int, bytez: Int): ReadResult[Array[Byte]] = {
       val newPos = pos + bytez
-      (newPos, buf.slice(newPos - bytez, newPos).reverse)
+      ReadResult(newPos, buf.slice(newPos - bytez, newPos).reverse)
     }
 
     var pos = 80
     val proof = DatatypeConverter.parseHexBinary(merkleBlockHex)
     val merkleRoot = Array.ofDim[Byte](32)
     Array.copy(proof, 36, merkleRoot, 0, 32)
-    val (p1, txCount) = readAsInt(proof, pos, 4)
+    val ReadResult(p1, txCount) = readAsInt(proof, pos, 4)
     pos = p1
-    println(s"txCount=$txCount")
 
-    val (p2, hashCount) = readVarInt(proof, pos)
+    val ReadResult(p2, hashCount) = readVarInt(proof, pos)
     pos = p2
-    println(s"hashCount=$hashCount")
 
     val hashes = new ArrayBuffer[String]
     for (_ <- 0 until hashCount){
-      val (p, h) = readBytes(proof, pos, 32)
+      val ReadResult(p, h) = readBytes(proof, pos, 32)
       hashes.addOne(DatatypeConverter.printHexBinary(h))
       pos = p
     }
 
-    val (p3, flagsCount) = readVarInt(proof, pos)
-    pos = p3
-    val (p4, flagsReversed) = readBytes(proof, pos, flagsCount)
-    pos = p4
+    val ReadResult(pos3, flagsCount) = readVarInt(proof, pos)
+    val ReadResult(_, flagsReversed) = readBytes(proof, pos3, flagsCount)
     val flags = flagsReversed.reverse
 
-    println(s"hashes=$hashes flags=$flags txcount=$txCount")
     val rootNode = deserializeCoreFormatMerkleProof(hashes.toArray, flags, txCount)
-    println(s"scala root node after deserialisation: $rootNode")
 
     if (rootNode.isTuple) {
       val hashesList = ListBuffer(expandTreeElectrumFormatMerkleProof(rootNode.asInstanceOf[TupleMerkleNode], Nil): _*)
