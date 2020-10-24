@@ -139,7 +139,6 @@ object Api4ElectrumCore {
 
   def getTransaction(txId: String): Future[String] = {
     val sha = DoubleSha256DigestBE.fromHex(txId.toUpperCase)
-    println(s">>>>>>=${sha.hex}")
     for {
       transactionResult <- rpcCli.getRawTransaction(sha)
     } yield {
@@ -178,9 +177,6 @@ object Api4ElectrumCore {
       txId = block.tx(txPos)
       merkleBlock <- rpcCli.getTxOutProof(Vector(txId), blockHash)
     } yield {
-      println("--"*20)
-      println(merkleBlock.hex)
-      println("--"*20)
       val emp = MerkleProofOps.convertCoreToElectrumMerkleProof(merkleBlock.hex)
       MerkleResult(txId.hex, emp.merkle)
     }
