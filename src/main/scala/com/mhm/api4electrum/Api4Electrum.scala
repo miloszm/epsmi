@@ -30,6 +30,13 @@ case class MerkleResult (
   @BeanProperty @JsonProperty("merkle") merkle: Array[String]
 )
 
+@JsonSerialize
+case class GetMerkleResult (
+  @BeanProperty @JsonProperty("block_height") blockHeight: Int,
+  @BeanProperty @JsonProperty("pos") pos: Int,
+  @BeanProperty @JsonProperty("merkle") merkle: Array[String]
+)
+
 trait Api4Electrum {
   @JsonRpcMethod("server.version")
   def serverVersion(v1: String, v2: String): Array[String]
@@ -60,6 +67,11 @@ trait Api4Electrum {
   def blockchainTrIdFromPos(height: Int, txPos: Int, merkle: Boolean): String
 
   // for client only - will be intercepted by client and changed to blockchain.transaction.id_from_pos
+  // (for the case of merkle = true)
   @JsonRpcMethod("blockchain.transaction.id_from_pos_merkle_true")
   def blockchainTrIdFromPosMerkleTrue(height: Int, txPos: Int, merkle: Boolean): MerkleResult
+
+  @JsonRpcMethod("blockchain.transaction.get_merkle")
+  def blockchainTransactionGetMerkle(txid: String): GetMerkleResult
+
 }

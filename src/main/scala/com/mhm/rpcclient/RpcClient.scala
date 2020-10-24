@@ -24,8 +24,8 @@ object RpcClient extends App {
 
   def doServerVersion: Unit = {
 
-//    val port = 50002
-    val port = 1420
+    val port = 50002
+//    val port = 1420
 
     val socket = createSocket(InetAddress.getByName("127.0.0.1"), port)
     val rpcClient = new JsonRpcClient(new LfObjectMapper())
@@ -99,18 +99,27 @@ object RpcClient extends App {
 //    val trHex = client.blockchainTransactionGet(transactionId)
 //    println(s"trHex for the above = $trHex")
 
+//    println
+//    val merkleResult: MerkleResult =
+//      if (port == 50002) {
+//        client.blockchainTrIdFromPosMerkleTrue(652742, 5, true)
+//      } else {
+//        val s = client.blockchainTrIdFromPos(652742, 5, true)
+//        val objectMapper = new ObjectMapper()
+//        objectMapper.readValue[MerkleResult](s, classOf[MerkleResult])
+//      }
+//    println(s"txHash= ${merkleResult.txHash}")
+//    println("merkle=")
+//    merkleResult.merkle.foreach{println(_)}
+
     println
-    val merkleResult: MerkleResult =
-      if (port == 50002) {
-        client.blockchainTrIdFromPosMerkleTrue(652742, 5, true)
-      } else {
-        val s = client.blockchainTrIdFromPos(652742, 5, true)
-        val objectMapper = new ObjectMapper()
-        objectMapper.readValue[MerkleResult](s, classOf[MerkleResult])
-      }
-    println(s"txHash= ${merkleResult.txHash}")
-    println("merkle=")
-    merkleResult.merkle.foreach{println(_)}
+    val txId4GetMerkle = client.blockchainTrIdFromPos(652742, 5, false) // otherwise it won't be found
+    val merkle = client.blockchainTransactionGetMerkle(txId4GetMerkle)
+    println(s"get merkle result = ")
+    println(s"   blockHeight=${merkle.blockHeight}")
+    println(s"   pos=${merkle.pos}")
+    println(s"   merkle=")
+    merkle.merkle.foreach{println(_)}
 
     socket.close()
   }

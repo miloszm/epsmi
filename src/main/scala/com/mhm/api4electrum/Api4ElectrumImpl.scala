@@ -94,4 +94,6 @@ class Api4ElectrumImpl extends Api4Electrum {
   }
 
   override def blockchainTrIdFromPosMerkleTrue(height: Int, txPos: Int, merkle: Boolean): MerkleResult = ???
+
+  override def blockchainTransactionGetMerkle(txid: String): GetMerkleResult = ???
 }
