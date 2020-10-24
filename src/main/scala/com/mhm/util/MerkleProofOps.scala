@@ -9,12 +9,6 @@ import javax.xml.bind.DatatypeConverter
 
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
-
-//case class MerkleNode(valueOpt: Option[String], left: Option[MerkleNode]=None, right: Option[MerkleNode]=None){
-//  def isTuple: Boolean = valueOpt.isEmpty
-//  def value: String = valueOpt.getOrElse("") // TODO else should throw
-//}
-
 object MerkleProofOps {
   def isBitSet(b: Byte, pos: Int): Boolean = (b & (1 << pos)) != 0
 
@@ -61,7 +55,6 @@ object MerkleProofOps {
     StrMerkleNode(hs)
   }
 
-
   case class ListIter[T](list: List[T]){
     var pos = 0
     def next(): T = {
@@ -97,13 +90,10 @@ object MerkleProofOps {
   }
 
   def deserializeCoreFormatMerkleProof(hashList: Array[String], flagValue: Array[Byte], txCount: Int): MerkleNode = {
-    val treeDepth: Int = intCeilLog2(txCount)
-
+    val treeDepth = intCeilLog2(txCount)
     val flags = for {b <- flagValue; i <- 0 to 7} yield isBitSet(b, i)
-
     descendMerkleTree(ListIter(hashList.toList), ListIter(flags.toList), treeDepth, txCount, 0)
   }
-
 
   /**
    * Recurse down into the tree, adding hashes to the result list in depth order
@@ -133,7 +123,7 @@ object MerkleProofOps {
       if ( v < 253)
         ReadResult(pos + 1, v)
       else {
-        val newPos = pos + 1 + Math.pow(2.0, v-252).toInt // TODO this `else` part needs to be tested
+        val newPos = pos + 1 + Math.pow(2.0, v-252).toInt // TODO make sure this `else` part is tested
         val intBytes = ByteBuffer.wrap(buf.slice(newPos, newPos+4).reverse)
         ReadResult(newPos, intBytes.getInt)
       }
@@ -184,6 +174,5 @@ object MerkleProofOps {
       ElectrumMerkleProof(0, Array(), txId, txId)
     }
   }
-
 
 }
