@@ -24,8 +24,8 @@ object RpcClient extends App {
 
   def doServerVersion: Unit = {
 
-    val port = 50002
-//    val port = 1420
+//    val port = 50002
+    val port = 1420
 
     val socket = createSocket(InetAddress.getByName("127.0.0.1"), port)
     val rpcClient = new JsonRpcClient(new LfObjectMapper())
