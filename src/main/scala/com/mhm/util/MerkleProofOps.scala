@@ -20,6 +20,14 @@ object MerkleProofOps {
     DatatypeConverter.printHexBinary(b)
   }
 
+  def hashDecodeRev(hs: String): Array[Byte] = {
+    DatatypeConverter.parseHexBinary(hs).reverse
+  }
+
+  def hashEncodeRev(b: Array[Byte]): String = {
+    DatatypeConverter.printHexBinary(b.reverse)
+  }
+
   def sha256(a: Array[Byte]): Array[Byte] = {
     MessageDigest.getInstance("SHA-256")
       .digest(a)
