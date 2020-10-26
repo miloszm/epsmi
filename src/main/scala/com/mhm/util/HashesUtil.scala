@@ -1,7 +1,8 @@
 package com.mhm.util
 
-import com.mhm.util.MerkleProofOps.{doHash, hashDecode, hashDecodeRev}
-import javax.xml.bind.DatatypeConverter
+import java.security.MessageDigest
+
+import com.mhm.util.MerkleProofOps.hashDecodeRev
 
 object HashesUtil {
 
@@ -15,6 +16,15 @@ object HashesUtil {
         doHash(h ++ hashDecodeRev(item))
     }
     MerkleProofOps.hashEncodeRev(h)
+  }
+
+  def sha256(a: Array[Byte]): Array[Byte] = {
+    MessageDigest.getInstance("SHA-256")
+      .digest(a)
+  }
+
+  def doHash(a: Array[Byte]): Array[Byte] = {
+    sha256(sha256(a))
   }
 
 }
