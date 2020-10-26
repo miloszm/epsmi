@@ -192,16 +192,11 @@ object Api4ElectrumCore {
     val sha = DoubleSha256DigestBE.fromHex(txId.toUpperCase)
     for {
       transactionResult <- rpcCli.getRawTransaction(sha)
-      _ = println(s"tra res = $transactionResult")
       blockHeader <- rpcCli.getBlockHeader(transactionResult.blockhash.getOrElse(throw new IllegalStateException(s"blockhash missing for $txId")))
-      _ = println(s"blockHeader = $blockHeader")
       coreProof <- rpcCli.getTxOutProof(Vector(sha), transactionResult.blockhash.getOrElse(throw new IllegalStateException(s"blockhash missing for $txId")))
-      _ = println(s"coreProof = $coreProof")
     } yield {
       val electrumProof = MerkleProofOps.convertCoreToElectrumMerkleProof(coreProof.hex)
-      println(s"electrumProof=$electrumProof")
       val impliedMerkleRoot = HashesUtil.hashMerkleRoot(electrumProof.merkle, txId, electrumProof.pos)
-      println(s"impliedMerkleRoot=$impliedMerkleRoot  xxxxxxx  ${electrumProof.merkleRoot}")
       if (impliedMerkleRoot != electrumProof.merkleRoot)
         throw new IllegalStateException(s"value error in get merkle for $txId")
       GetMerkleResult(blockHeader.height, electrumProof.pos, electrumProof.merkle)
