@@ -8,8 +8,8 @@ import org.bitcoins.commons.jsonmodels.bitcoind.LabelResult
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LabelPurpose
 import org.bitcoins.commons.serializers.JsonReaders.LabelPurposeReads
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.rpc.client.common.BitcoindVersion
-import org.bitcoins.rpc.client.v17.BitcoindV17RpcClient
+import org.bitcoins.rpc.client.common.BitcoindRpcClient
+import org.bitcoins.rpc.client.v17.V17LabelRpc
 import org.scalatest.FlatSpec
 
 import scala.concurrent.duration.DurationInt
@@ -39,11 +39,11 @@ class SetupTest extends FlatSpec {
   "setup" should "obtain list of script pub keys to monitor" in {
     val config = ConfigFactory.load()
     implicit val system = ActorSystem.create("bitcoind-rpc-client-created-by-bitcoin-s")
-    val btcRpcClient = new BitcoindV17RpcClient(BitcoinSConnector.bitcoindInstance) {
+    val btcRpcClient = new BitcoindRpcClient(BitcoinSConnector.bitcoindInstance) with V17LabelRpc {
       /**
        * need to override version as bitcoin-s fails on current btc not being v17
        */
-      override def version: BitcoindVersion = BitcoindVersion.Unknown
+      //override def version: BitcoindVersion = BitcoindVersion.Unknown
 
       /**
        * need to override get addresses by label to be able to override deserialization
