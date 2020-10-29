@@ -1,12 +1,9 @@
 package com.mhm.connectors
 
 import java.net.URI
-import java.nio.ByteBuffer
 
-import javax.xml.bind.DatatypeConverter
 import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.core.protocol.blockchain.Block
-import com.mhm.util.EpsmiDataUtil._
 
 import scala.concurrent.duration.{Duration, SECONDS}
 import scala.concurrent.{Await, ExecutionContext, Future}
