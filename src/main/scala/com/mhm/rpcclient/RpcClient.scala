@@ -20,13 +20,15 @@ class LfObjectMapper extends ObjectMapper {
 }
 
 
+case class EpsmiClient(client: Api4Electrum, socket: Socket){
+  def close(): Unit = socket.close()
+}
+
 object RpcClient extends App {
-
-  def doServerVersion: Unit = {
-
 //    val port = 50002
     val port = 1420
 
+  def createClient(port: Int = port): EpsmiClient = {
     val socket = createSocket(InetAddress.getByName("127.0.0.1"), port)
     val rpcClient = new JsonRpcClient(new LfObjectMapper())
     val listener = new JsonRpcClient.RequestListener(){
@@ -51,6 +53,12 @@ object RpcClient extends App {
     }
     rpcClient.setRequestListener(listener)
     val client = ProxyUtil.createClientProxy(this.getClass.getClassLoader, classOf[Api4Electrum], rpcClient, socket)
+    EpsmiClient(client, socket)
+  }
+
+  def doServerVersion: Unit = {
+    val epsmiClient = createClient()
+    val client = epsmiClient.client
 
 //    println
 //    val result = client.serverVersion("1.9.5", "1.1")
@@ -121,7 +129,7 @@ object RpcClient extends App {
     println(s"   merkle=")
     merkle.merkle.foreach{println(_)}
 
-    socket.close()
+    epsmiClient.close()
   }
 
   private def createSocket(address: InetAddress, port: Int): Socket = {
