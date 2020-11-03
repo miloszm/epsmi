@@ -3,6 +3,7 @@ package com.mhm.util
 import java.security.MessageDigest
 
 import com.mhm.util.MerkleProofOps.hashDecodeRev
+import scodec.bits.ByteVector
 
 object HashesUtil {
 
@@ -25,6 +26,10 @@ object HashesUtil {
 
   def doHash(a: Array[Byte]): Array[Byte] = {
     sha256(sha256(a))
+  }
+
+  def binDblSha256(v: ByteVector): ByteVector = {
+    ByteVector(doHash(v.toArray))
   }
 
 }

@@ -4,6 +4,7 @@ import com.mhm.util.HashesUtil
 import javax.xml.bind.DatatypeConverter
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers.convertToAnyShouldWrapper
+import scodec.bits.HexStringSyntax
 
 class HashesUtilTest extends FlatSpec {
 
@@ -38,6 +39,11 @@ class HashesUtilTest extends FlatSpec {
     val in = "A9F44FFFEB404F994D4D0BB5EA924CFF7521FCFAE4D8F9874348A7440A1E1A15D2C8126F10B5B3F4EBC6AE310CC83F5904E9D4DA53314C0DBCFA7818FA17E15C"
     val doubleHashed = HashesUtil.doHash(DatatypeConverter.parseHexBinary(in))
     DatatypeConverter.printHexBinary(doubleHashed) shouldBe "3365A6D9582C22E89060433F8FF6AB11467071F6831E96FEC70D769EA0AA0DC0"
+  }
+
+  "binDblSha256" should "produce valid double hash" in {
+    val dblSha = HashesUtil.binDblSha256(hex"043587cf000000000000000000d801acec5ee718de5c99b50791e2febecf2490733ebbf16128ab6b56b48303ec026fca11cede24f656a8dd74564a9e7fd5307378688ae41c8912dab6562761fb37")
+    dblSha shouldBe hex"a4565d6fee32837dcd44133ffa67b8373ef10ecc9e2a5eda5b5c3729acb5370c"
   }
 
 }

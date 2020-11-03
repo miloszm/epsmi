@@ -1,6 +1,7 @@
 package com.mhm.wallet
 
-import scodec.bits.ByteVector
+import com.mhm.util.{BaseOps, HashesUtil}
+import scodec.bits.{ByteVector, HexStringSyntax}
 
 object WalletUtil {
 
@@ -20,10 +21,27 @@ object WalletUtil {
     key: ByteVector           // 026fca11cede24f656a8dd74564a9e7fd5307378688ae41c8912dab6562761fb37
   )
 
-  def bip32Serialize(rawTuple: KeyRawTuple): String = {
-    ""
 
-    // 'xpub661MyMwAqRbcGhAeY18rMj6JevW3rDnrwVkk8ARBrmEN94E71a6qZefwwNZuLG1JUVDYNwxNPWZBbRq2EiHG86zQRb1PZecWm192dyCt7SJ'
+  val MAINNET_PRIVATE = hex"0488ADE4"
+  val TESTNET_PRIVATE = hex"04358394"
+  val PRIVATE = Set(MAINNET_PRIVATE, TESTNET_PRIVATE)
+
+
+  def bip32Serialize(rawTuple: KeyRawTuple): String = {
+    val iEnc = BaseOps.encodeBase256(BigInt(rawTuple.i), 4)
+    val chaincodeEnc = BaseOps.encodeBase256(hashToInt(rawTuple.chaincode), 32)
+    val keydata = if (PRIVATE.contains(rawTuple.vbytes)) 0.toByte +: rawTuple.key.init else rawTuple.key
+    val bindata = rawTuple.vbytes ++ ByteVector((rawTuple.depth % 256).toByte) ++ rawTuple.fingerprint ++ iEnc ++ chaincodeEnc ++ keydata
+    BaseOps.changebase256to58(bindata ++ HashesUtil.binDblSha256(bindata).take(4))
   }
+
+  def hashToInt(v: ByteVector): BigInt = {
+    if (v.length == 40 || v.length == 64)
+      BaseOps.decodeBytesBase16(v)
+    else
+      BaseOps.decodeBytesBase256(v)
+  }
+
+
 
 }
