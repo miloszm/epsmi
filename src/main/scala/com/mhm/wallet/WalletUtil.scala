@@ -1,5 +1,6 @@
 package com.mhm.wallet
 
+import com.mhm.util.BaseOps.{decodeBytesBase256, encodeBase256}
 import com.mhm.util.{BaseOps, HashesUtil}
 import scodec.bits.{ByteVector, HexStringSyntax}
 
@@ -12,7 +13,7 @@ object WalletUtil {
   }
 
 
-  case class KeyRawTuple(
+  case class XKeyRawTuple(
     vbytes: ByteVector,       // 0488b21e
     depth: Int,               // 0
     fingerprint: ByteVector,  // 00000000
@@ -27,12 +28,25 @@ object WalletUtil {
   val PRIVATE = Set(MAINNET_PRIVATE, TESTNET_PRIVATE)
 
 
-  def bip32Serialize(rawTuple: KeyRawTuple): String = {
-    val iEnc = BaseOps.encodeBase256(BigInt(rawTuple.i), 4)
-    val chaincodeEnc = BaseOps.encodeBase256(hashToInt(rawTuple.chaincode), 32)
+  def bip32Serialize(rawTuple: XKeyRawTuple): String = {
+    val iEnc = encodeBase256(BigInt(rawTuple.i), 4)
+    val chaincodeEnc = encodeBase256(hashToInt(rawTuple.chaincode), 32)
     val keydata = if (PRIVATE.contains(rawTuple.vbytes)) 0.toByte +: rawTuple.key.init else rawTuple.key
     val bindata = rawTuple.vbytes ++ ByteVector((rawTuple.depth % 256).toByte) ++ rawTuple.fingerprint ++ iEnc ++ chaincodeEnc ++ keydata
     BaseOps.changebase256to58(bindata ++ HashesUtil.binDblSha256(bindata).take(4))
+  }
+
+  def bip32Deserialize(data: String): XKeyRawTuple = {
+    val dataIn = BaseOps.changebase58to256(data)
+    if (HashesUtil.binDblSha256(dataIn.dropRight(4)).take(4) != dataIn.takeRight(4))
+      throw new IllegalStateException("Invalid checksum")
+    val vbytes = dataIn.take(4)
+    val depth: Int = dataIn(4).toInt & 0xff
+    val fingerprint = dataIn.slice(5, 9)
+    val i = decodeBytesBase256(dataIn.slice(9, 13)).toInt
+    val chaincode = dataIn.slice(13, 45)
+    val key = if (PRIVATE.contains(vbytes)) dataIn.slice(46, 78) :+ 0x01.toByte else dataIn.slice(45, 78)
+    XKeyRawTuple(vbytes, depth, fingerprint, i, chaincode, key)
   }
 
   def hashToInt(v: ByteVector): BigInt = {

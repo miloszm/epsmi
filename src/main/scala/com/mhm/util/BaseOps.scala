@@ -50,4 +50,8 @@ object BaseOps {
     encodeBase58(decodeBytesBase256(v))
   }
 
+  def changebase58to256(s: String): ByteVector = {
+    encodeBase256(decodeBase58(s))
+  }
+
 }
