@@ -1,7 +1,8 @@
 package com.mhm.wallet
 
 import com.mhm.connectors.BitcoindRpcExtendedClient
-import org.bitcoins.commons.jsonmodels.bitcoind.DeriveAddressesResult
+import org.bitcoins.commons.jsonmodels.bitcoind.{DeriveAddressesResult, ValidateAddressResult}
+import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import scodec.bits.{ByteVector, HexStringSyntax}
 
@@ -11,8 +12,25 @@ import scala.concurrent.duration.DurationInt
 
 case class XpubDescTempl(xpub: String, descTempl: String)
 
+case class AddrsSpks(addrs: Seq[String], spks: Seq[String])
+
 trait DeterministicWallet {
   def deriveAddresses(rpcCliExt: BitcoindRpcExtendedClient, change: Int, fromIndex: Int, count: Int): Seq[String]
+  def getAddresses(rpcCli: BitcoindRpcClient, rpcCliExt: BitcoindRpcExtendedClient, change: Int, fromIndex: Int, count: Int): AddrsSpks = {
+    val addrs = deriveAddresses(rpcCliExt, change, fromIndex, count)
+    val spks = addrs.map{ addr =>
+      val valAddr: ValidateAddressResult = Await.result(rpcCli.validateAddress(BitcoinAddress(addr)), 20.seconds)
+      val spk = valAddr.scriptPubKey.getOrElse(throw new IllegalArgumentException("missing script pub key"))
+      spk.hex
+    }
+    spks.indices.foreach{ index =>
+      scriptPubKeyIndex.put(spks(index), Seq(change, fromIndex + index))
+    }
+    nextIndex.put(change, Math.max(nextIndex.getOrElse(change, 0), fromIndex+count))
+    AddrsSpks(addrs, spks)
+  }
+  val scriptPubKeyIndex = scala.collection.mutable.Map[String, Seq[Int]]()
+  val nextIndex = scala.collection.mutable.Map[Int, Int]()
 }
 
 abstract class DescriptorDeterministicWallet(xpubVbytes: ByteVector, args: XpubDescTempl) extends DeterministicWallet() {

@@ -1,17 +1,15 @@
 package com.mhm.setup
 
 import com.mhm.connectors.BitcoindRpcExtendedClient
-import com.mhm.wallet.DeterministicWallet
+import com.mhm.wallet.{AddrsSpks, DeterministicWallet}
 import com.typesafe.config.Config
 import grizzled.slf4j.Logging
-import org.bitcoins.commons.jsonmodels.bitcoind.LabelResult
 import org.bitcoins.core.config.{MainNet, NetworkParameters, RegTest, TestNet3}
-import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.client.v17.V17LabelRpc
 
+import scala.concurrent.Await
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Await, Future}
 import scala.jdk.CollectionConverters.SetHasAsScala
 
 
@@ -19,8 +17,8 @@ case class ScriptPubKeysToMonitorResult(spksToMonitor:Seq[String], wallets:Seq[D
 
 object Setup extends Logging {
   def getScriptPubKeysToMonitor(rpcCli: BitcoindRpcClient, rpcCliExt: BitcoindRpcExtendedClient with V17LabelRpc, config: Config): ScriptPubKeysToMonitorResult = {
-//    val m = rpcCliExt.getAddressesByLabel("electrum-watchonly-addresses")
-//    m
+    val importedAddresses = Await.result(rpcCliExt.getAddressesByLabel("electrum-watchonly-addresses"), 20.seconds).keySet
+
     val wallets = obtainDeterministicWallets(rpcCli, rpcCliExt, config)
 
     val TEST_ADDR_COUNT = 3
@@ -28,12 +26,19 @@ object Setup extends Logging {
 
     val mpkConfig = config.getConfig("epsmi.master-public-keys")
     val mpks = mpkConfig.entrySet()
-    val keyAndWallets = mpks.asScala.map{ _.getKey}.zip(wallets)
-//    val walletsToImport = keyAndWallets.map { case (key, wal) =>
-//      wal.getAddresses(0, 0, TEST_ADDR_COUNT)
-//    }
+    val keyAndWallets = mpks.asScala.toSeq.map{ _.getKey}.zip(wallets)
+    val walletsToImport = keyAndWallets.flatMap { case (key, wal) =>
+      val AddrsSpks(firstAddrs, firstSpk) = wal.getAddresses(rpcCli, rpcCliExt, 0, 0, TEST_ADDR_COUNT)
+      val fromIndex = config.getInt("epsmi.initial-import-count")
+      val AddrsSpks(lastAddrs, lastSpk) = wal.getAddresses(rpcCli, rpcCliExt, 0, fromIndex-1, 1)
+      if (!(firstAddrs ++ lastAddrs).toSet.subsetOf(importedAddresses.map(_.value))){
+        Some(wal)
+      } else {
+        None
+      }
+    }
 
-    ScriptPubKeysToMonitorResult(Nil, Nil)
+    ScriptPubKeysToMonitorResult(Nil, walletsToImport)
   }
 
   def networkString(network: NetworkParameters) =
