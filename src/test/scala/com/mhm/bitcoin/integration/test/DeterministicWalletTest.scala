@@ -37,7 +37,11 @@ class DeterministicWalletTest extends FlatSpec with IntTestFixture {
   }
 
   "SingleSigWallet" should "have derive addresses functionality" in {
-
+    val args = XpubDescTempl("xpub661MyMwAqRbcGr3NH9q81huWmqC31HMwJ5PqDzHqGnYghQy9QgvxS86qZcBjJVCXbe2uvbP3nG7P8qKkeFp86AwS8vWzdbsoRXTimc7aAZj", "pkh({xpub}/{change}/*)")
+    val singleSigWallet = new SingleSigWallet(BitcoinSConnector.rpcCliExt, hex"0488b21e", args)
+    val addresses: Seq[String] = singleSigWallet.deriveAddresses(BitcoinSConnector.rpcCliExt, change = 0, fromIndex = 0, count = 2)
+    addresses.isEmpty shouldBe false
+    println(addresses)
   }
 
 }

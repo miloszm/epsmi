@@ -1,6 +1,7 @@
 package com.mhm.wallet
 
 import com.mhm.connectors.BitcoindRpcExtendedClient
+import org.bitcoins.commons.jsonmodels.bitcoind.DeriveAddressesResult
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import scodec.bits.{ByteVector, HexStringSyntax}
 
@@ -10,7 +11,9 @@ import scala.concurrent.duration.DurationInt
 
 case class XpubDescTempl(xpub: String, descTempl: String)
 
-abstract class DeterministicWallet()
+trait DeterministicWallet {
+  def deriveAddresses(rpcCliExt: BitcoindRpcExtendedClient, change: Int, fromIndex: Int, count: Int): Seq[String]
+}
 
 abstract class DescriptorDeterministicWallet(xpubVbytes: ByteVector, args: XpubDescTempl) extends DeterministicWallet() {
   def obtainDescriptorsWithoutChecksum(args: XpubDescTempl): Seq[String]
@@ -25,6 +28,12 @@ abstract class DescriptorDeterministicWallet(xpubVbytes: ByteVector, args: XpubD
     })
   }
   var descriptors: List[String] = Nil
+  def deriveAddresses(rpcCliExt: BitcoindRpcExtendedClient, change: Int, fromIndex: Int, count: Int): Seq[String] = {
+    val range: Vector[Double] = Vector(fromIndex, fromIndex + count - 1)
+    val resultFut = rpcCliExt.deriveAddresses(descriptors(change), Some(range))
+    val result: DeriveAddressesResult = Await.result(resultFut, 20.seconds) // TODO await is ugly, to be removed!!!
+    result.addresses.map(_.value)
+  }
 }
 
 class SingleSigWallet(rpcCliExt: BitcoindRpcExtendedClient, xpubVbytes: ByteVector, args: XpubDescTempl) extends DescriptorDeterministicWallet(xpubVbytes, args){
@@ -43,7 +52,9 @@ class MultisigWallet(xpubVbytes: ByteVector, args: XpubDescTempl) extends Descri
   override def obtainDescriptorsWithoutChecksum(args: XpubDescTempl): Seq[String] = ???
 }
 
-class SingleSigOldMnemonicWallet extends DeterministicWallet
+class SingleSigOldMnemonicWallet extends DeterministicWallet {
+  override def deriveAddresses(rpcCliExt: BitcoindRpcExtendedClient, change: Int, fromIndex: Int, count: Int): Seq[String] = ???
+}
 
 object DeterministicWallet {
   def parseElectrumMasterPublicKey(rpcCliExt: BitcoindRpcExtendedClient, keyData: String, gapLimit: Int, chain: String): DescriptorDeterministicWallet = {

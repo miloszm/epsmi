@@ -1,8 +1,8 @@
 package com.mhm.connectors
 
 import akka.actor.ActorSystem
-import org.bitcoins.commons.jsonmodels.bitcoind.LabelResult
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LabelPurpose
+import org.bitcoins.commons.jsonmodels.bitcoind.{DeriveAddressesResult, LabelResult}
 import org.bitcoins.commons.serializers.JsonReaders.LabelPurposeReads
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, DescriptorRpc}
@@ -31,5 +31,13 @@ class BitcoindRpcExtendedClient(bitcoindInstance: BitcoindInstance, actorSystem:
 
   override def getAddressesByLabel(label: String): Future[Map[BitcoinAddress, LabelResult]] = {
     bitcoindCall[Map[BitcoinAddress, LabelResult]]("getaddressesbylabel", List(JsString(label)))(mapAddressesByLabelReadsWithDefault)
+  }
+
+  override def deriveAddresses(descriptor: String, range: Option[Vector[Double]]): Future[DeriveAddressesResult] = {
+    val params =
+      if (range.isDefined) List(JsString(descriptor), Json.toJson(range))
+      else List(JsString(descriptor))
+    val resultFut = bitcoindCall[Array[String]]("deriveaddresses", params)
+    resultFut.map(result => DeriveAddressesResult(result.toVector.map(a => BitcoinAddress(a))))
   }
 }
