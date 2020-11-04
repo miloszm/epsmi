@@ -10,9 +10,8 @@ class WalletUtilTest extends FlatSpec {
 
   "convertToStandardXpub" should "return standard xpub" in {
     val mpk = "tpubD6NzVbkrYhZ4YVMVzC7wZeRfz3bhqcHvV8M3UiULCfzFtLtp5nwvi6LnBQegrkxYGPkSzXUEvcPEHcKdda8W1YShVBkhFBGkLxjSQ1Nx3cJ"
-    val xpub = WalletUtil.convertToStandardXpub(mpk)
-    //xpub shouldBe "xpub661MyMwAqRbcGhAeY18rMj6JevW3rDnrwVkk8ARBrmEN94E71a6qZefwwNZuLG1JUVDYNwxNPWZBbRq2EiHG86zQRb1PZecWm192dyCt7SJ"
-    println(xpub)
+    val xpub = WalletUtil.convertToStandardXpub(mpk, hex"0488b21e")
+    xpub shouldBe "xpub661MyMwAqRbcGhAeY18rMj6JevW3rDnrwVkk8ARBrmEN94E71a6qZefwwNZuLG1JUVDYNwxNPWZBbRq2EiHG86zQRb1PZecWm192dyCt7SJ"
   }
 
   "bip32Serialize for extended key" should "return serialized extended key given elements as in BIP32 serialization format" in {

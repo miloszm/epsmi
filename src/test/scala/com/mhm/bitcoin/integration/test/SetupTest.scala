@@ -13,8 +13,7 @@ class SetupTest extends FlatSpec {
 
   "setup" should "obtain list of script pub keys to monitor" in {
     val config = ConfigFactory.load()
-    val resultFut = Setup.getScriptPubKeysToMonitor(BitcoinSConnector.rpcCliExt, config)
-    val result = Await.result(resultFut, 20.seconds)
+    val result = Setup.getScriptPubKeysToMonitor(BitcoinSConnector.rpcCli, BitcoinSConnector.rpcCliExt, config)
     println(s"setup result=$result")
   }
 

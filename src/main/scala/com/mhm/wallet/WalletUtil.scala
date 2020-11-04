@@ -6,10 +6,9 @@ import scodec.bits.{ByteVector, HexStringSyntax}
 
 object WalletUtil {
 
-  def convertToStandardXpub(mpk: String): String = {
-//    return btc.bip32_serialize((self.xpub_vbytes, *btc.bip32_deserialize(
-//      mpk)[1:]))
-    "xxxsjhs"
+  def convertToStandardXpub(mpk: String, xpubVBytes: ByteVector): String = {
+    val xkrt = bip32Deserialize(mpk).copy(vbytes = xpubVBytes)
+    bip32Serialize(xkrt)
   }
 
 

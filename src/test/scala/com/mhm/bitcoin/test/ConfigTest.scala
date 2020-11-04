@@ -14,7 +14,7 @@ class ConfigTest extends FlatSpec {
     val mpks = mpkConfig.entrySet()
     println(s"size of mpks=${mpks.size()}")
     mpks.asScala.foreach{ e =>
-      println(s"key=${e.getKey} value=${e.getValue.render()}")
+      println(s"key=${e.getKey} value=${e.getValue.unwrapped().toString}")
     }
     mpks should have size 1
     mpks.asScala.head.getKey shouldBe "my_default_wallet"
