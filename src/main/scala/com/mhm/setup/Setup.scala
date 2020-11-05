@@ -13,23 +13,25 @@ import scala.concurrent.duration.DurationInt
 import scala.jdk.CollectionConverters.SetHasAsScala
 
 
-case class ScriptPubKeysToMonitorResult(spksToMonitor:Seq[String], wallets:Seq[DeterministicWallet])
+case class ScriptPubKeysToMonitorResult(importNeeded: Boolean, spksToMonitor:Seq[String], wallets:Seq[DeterministicWallet])
 
 object Setup extends Logging {
   def getScriptPubKeysToMonitor(rpcCli: BitcoindRpcClient, rpcCliExt: BitcoindRpcExtendedClient with V17LabelRpc, config: Config): ScriptPubKeysToMonitorResult = {
     val importedAddresses = Await.result(rpcCliExt.getAddressesByLabel("electrum-watchonly-addresses"), 20.seconds).keySet
 
-    val wallets = obtainDeterministicWallets(rpcCli, rpcCliExt, config)
+    val deterministicWallets = obtainDeterministicWallets(rpcCli, rpcCliExt, config)
 
     val TEST_ADDR_COUNT = 3
     logger.info("Displaying first " + TEST_ADDR_COUNT + " addresses of " + "each master public key:")
 
+    val initialImportCount = config.getInt("epsmi.initial-import-count")
+
     val mpkConfig = config.getConfig("epsmi.master-public-keys")
     val mpks = mpkConfig.entrySet()
-    val keyAndWallets = mpks.asScala.toSeq.map{ _.getKey}.zip(wallets)
+    val keyAndWallets = mpks.asScala.toSeq.map{ _.getKey}.zip(deterministicWallets)
     val walletsToImport = keyAndWallets.flatMap { case (key, wal) =>
       val AddrsSpks(firstAddrs, firstSpk) = wal.getAddresses(rpcCli, rpcCliExt, 0, 0, TEST_ADDR_COUNT)
-      val fromIndex = config.getInt("epsmi.initial-import-count")
+      val fromIndex = initialImportCount
       val AddrsSpks(lastAddrs, lastSpk) = wal.getAddresses(rpcCli, rpcCliExt, 0, fromIndex-1, 1)
       if (!(firstAddrs ++ lastAddrs).toSet.subsetOf(importedAddresses.map(_.value))){
         Some(wal)
@@ -37,8 +39,19 @@ object Setup extends Logging {
         None
       }
     }
-
-    ScriptPubKeysToMonitorResult(Nil, walletsToImport)
+    val importNeeded = walletsToImport.nonEmpty
+    if (importNeeded){
+      ScriptPubKeysToMonitorResult(importNeeded, Nil, walletsToImport)
+    } else {
+      val spksToMonitor = (for{
+        wal <- deterministicWallets
+        change <- 0 to 1
+      } yield {
+        val AddrsSpks(addrs, spks) = wal.getAddresses(rpcCli, rpcCliExt, change, 0, initialImportCount)
+        spks
+      }).flatten
+      ScriptPubKeysToMonitorResult(false, spksToMonitor, deterministicWallets)
+    }
   }
 
   def networkString(network: NetworkParameters) =

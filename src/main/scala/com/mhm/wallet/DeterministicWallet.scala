@@ -31,6 +31,12 @@ trait DeterministicWallet {
   }
   val scriptPubKeyIndex = scala.collection.mutable.Map[String, Seq[Int]]()
   val nextIndex = scala.collection.mutable.Map[Int, Int]()
+  def getNewAddresses(rpcCli: BitcoindRpcClient, rpcCliExt: BitcoindRpcExtendedClient, change: Int, count: Int): AddrsSpks = {
+    getAddresses(rpcCli, rpcCliExt, change, nextIndex.getOrElse(change, 0), count)
+  }
+  def rewindOne(change: Int): Unit = {
+    nextIndex.put(change, nextIndex.getOrElse(change, 1) - 1)
+  }
 }
 
 abstract class DescriptorDeterministicWallet(xpubVbytes: ByteVector, args: XpubDescTempl) extends DeterministicWallet() {
