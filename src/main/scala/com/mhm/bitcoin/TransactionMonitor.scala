@@ -1,7 +1,14 @@
 package com.mhm.bitcoin
 
-trait TransactionMonitor {
+import com.mhm.util.HashOps
 
-  def buildAddressHistory(monitoredScriptPubKeys: Seq[String])
+object TransactionMonitor {
+
+  def buildAddressHistory(monitoredScriptPubKeys: Seq[String]): AddressHistory = {
+    val ah = new AddressHistory(
+      scala.collection.mutable.HashMap.from(monitoredScriptPubKeys.map(k => HashOps.script2ScriptHash(k) -> HistoryEntry(false, Nil)))
+    )
+    ah
+  }
 
 }
