@@ -96,14 +96,10 @@ object DeterministicWallet {
 
     val wallet = descriptorTemplateOpt match {
       case Some(descriptorTemplate) =>
-        val w = new SingleSigWallet(rpcCliExt, xpubVBytes, XpubDescTempl(keyData, descriptorTemplate))
-        w
-        // todo init descriptors inside SingleSigWallet
+        new SingleSigWallet(rpcCliExt, xpubVBytes, XpubDescTempl(keyData, descriptorTemplate))
       case None =>
         throw new IllegalArgumentException("SingleSigOldMnemonicWallet not implemented yet")
     }
-    //SingleSigWallet(Nil, gapLimit, Nil, Map(), xpubVBytes)
-    // new SingleSigWallet(xpubVBytes, null)
     wallet
   }
 }

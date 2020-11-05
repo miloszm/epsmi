@@ -1,13 +1,13 @@
 package com.mhm.bitcoin.test
 
-import com.mhm.util.EpsmiDataUtil
+import com.mhm.util.EpsmiDataOps
 import org.scalatest.Matchers.convertToAnyShouldWrapper
 import org.scalatest.{FlatSpec, WordSpec}
 
-class EpsmiDataUtilTest extends FlatSpec {
+class EpsmiDataOpsTest extends FlatSpec {
 
   "log2" should "calculate log of base 2 " in {
-    val f = EpsmiDataUtil.log2 _
+    val f = EpsmiDataOps.log2 _
     f(-4) shouldBe 0
     f(0) shouldBe 0
     f(1) shouldBe 0
@@ -20,7 +20,7 @@ class EpsmiDataUtilTest extends FlatSpec {
   }
 
   "intCeilLog2" should "calculate int ceiling of log of base 2 " in {
-    val f = EpsmiDataUtil.log2 _
+    val f = EpsmiDataOps.log2 _
     f(-4) shouldBe 0
     f(0) shouldBe 0
     f(1) shouldBe 0

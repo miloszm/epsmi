@@ -5,7 +5,7 @@ import java.nio.ByteBuffer
 import org.bitcoins.core.number.UInt32
 import scodec.bits.ByteVector
 
-object EpsmiDataUtil {
+object EpsmiDataOps {
   def reverse(array: Array[Byte]): Array[Byte] = {
     val l = array.length
     val a = Array.ofDim[Byte](l)

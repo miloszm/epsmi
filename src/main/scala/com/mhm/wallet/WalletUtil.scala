@@ -1,7 +1,7 @@
 package com.mhm.wallet
 
 import com.mhm.util.BaseOps.{decodeBytesBase256, encodeBase256}
-import com.mhm.util.{BaseOps, HashesUtil}
+import com.mhm.util.{BaseOps, HashOps}
 import scodec.bits.{ByteVector, HexStringSyntax}
 
 object WalletUtil {
@@ -32,12 +32,12 @@ object WalletUtil {
     val chaincodeEnc = encodeBase256(hashToInt(rawTuple.chaincode), 32)
     val keydata = if (PRIVATE.contains(rawTuple.vbytes)) 0.toByte +: rawTuple.key.init else rawTuple.key
     val bindata = rawTuple.vbytes ++ ByteVector((rawTuple.depth % 256).toByte) ++ rawTuple.fingerprint ++ iEnc ++ chaincodeEnc ++ keydata
-    BaseOps.changebase256to58(bindata ++ HashesUtil.binDblSha256(bindata).take(4))
+    BaseOps.changebase256to58(bindata ++ HashOps.binDblSha256(bindata).take(4))
   }
 
   def bip32Deserialize(data: String): XKeyRawTuple = {
     val dataIn = BaseOps.changebase58to256(data)
-    if (HashesUtil.binDblSha256(dataIn.dropRight(4)).take(4) != dataIn.takeRight(4))
+    if (HashOps.binDblSha256(dataIn.dropRight(4)).take(4) != dataIn.takeRight(4))
       throw new IllegalStateException("Invalid checksum")
     val vbytes = dataIn.take(4)
     val depth: Int = dataIn(4).toInt & 0xff

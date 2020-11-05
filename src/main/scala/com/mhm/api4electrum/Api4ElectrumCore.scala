@@ -5,8 +5,8 @@ import java.nio.ByteBuffer
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.mhm.connectors.BitcoinSConnector.{ec, rpcCli}
-import com.mhm.util.EpsmiDataUtil.{byteVectorOrZeroToArray, byteVectorToArray, intToArray, uint32ToArray}
-import com.mhm.util.{HashesUtil, MerkleProofOps}
+import com.mhm.util.EpsmiDataOps.{byteVectorOrZeroToArray, byteVectorToArray, intToArray, uint32ToArray}
+import com.mhm.util.{HashOps, MerkleProofOps}
 import javax.xml.bind.DatatypeConverter
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.FeeEstimationMode
 import org.bitcoins.core.protocol.blockchain.MerkleBlock
@@ -196,7 +196,7 @@ object Api4ElectrumCore {
       coreProof <- rpcCli.getTxOutProof(Vector(sha), transactionResult.blockhash.getOrElse(throw new IllegalStateException(s"blockhash missing for $txId")))
     } yield {
       val electrumProof = MerkleProofOps.convertCoreToElectrumMerkleProof(coreProof.hex)
-      val impliedMerkleRoot = HashesUtil.hashMerkleRoot(electrumProof.merkle, txId, electrumProof.pos)
+      val impliedMerkleRoot = HashOps.hashMerkleRoot(electrumProof.merkle, txId, electrumProof.pos)
       if (impliedMerkleRoot != electrumProof.merkleRoot)
         throw new IllegalStateException(s"value error in get merkle for $txId")
       GetMerkleResult(blockHeader.height, electrumProof.pos, electrumProof.merkle)

@@ -4,8 +4,8 @@ import java.nio.ByteBuffer
 import java.security.MessageDigest
 
 import com.mhm.api4electrum.Api4ElectrumCore.ElectrumMerkleProof
-import com.mhm.util.EpsmiDataUtil.intCeilLog2
-import com.mhm.util.HashesUtil.{doHash, sha256}
+import com.mhm.util.EpsmiDataOps.intCeilLog2
+import com.mhm.util.HashOps.{doHash, sha256}
 import javax.xml.bind.DatatypeConverter
 
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
