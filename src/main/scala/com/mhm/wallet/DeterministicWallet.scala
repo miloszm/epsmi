@@ -14,7 +14,9 @@ case class XpubDescTempl(xpub: String, descTempl: String)
 
 case class AddrsSpks(addrs: Seq[String], spks: Seq[String])
 
-trait DeterministicWallet {
+case class ChangeIndex(change: Int, index: Int)
+
+abstract class DeterministicWallet(gapLimit: Int) {
   def deriveAddresses(rpcCliExt: BitcoindRpcExtendedClient, change: Int, fromIndex: Int, count: Int): Seq[String]
   def getAddresses(rpcCli: BitcoindRpcClient, rpcCliExt: BitcoindRpcExtendedClient, change: Int, fromIndex: Int, count: Int): AddrsSpks = {
     val addrs = deriveAddresses(rpcCliExt, change, fromIndex, count)
@@ -24,12 +26,12 @@ trait DeterministicWallet {
       spk.hex
     }
     spks.indices.foreach{ index =>
-      scriptPubKeyIndex.put(spks(index), Seq(change, fromIndex + index))
+      scriptPubKeyIndex.put(spks(index), ChangeIndex(change, fromIndex + index))
     }
     nextIndex.put(change, Math.max(nextIndex.getOrElse(change, 0), fromIndex+count))
     AddrsSpks(addrs, spks)
   }
-  val scriptPubKeyIndex = scala.collection.mutable.Map[String, Seq[Int]]()
+  val scriptPubKeyIndex = scala.collection.mutable.Map[String, ChangeIndex]()
   val nextIndex = scala.collection.mutable.Map[Int, Int]()
   def getNewAddresses(rpcCli: BitcoindRpcClient, rpcCliExt: BitcoindRpcExtendedClient, change: Int, count: Int): AddrsSpks = {
     getAddresses(rpcCli, rpcCliExt, change, nextIndex.getOrElse(change, 0), count)
@@ -37,9 +39,25 @@ trait DeterministicWallet {
   def rewindOne(change: Int): Unit = {
     nextIndex.put(change, nextIndex.getOrElse(change, 1) - 1)
   }
+
+  /**
+   * called when a new tx of ours arrives
+   * to see if we need to import more addresses
+   */
+  def haveScriptpubkeysOverrunGaplimit(scriptpubkeys: Seq[String]): Map[Int, Int] = {
+    val result = scala.collection.mutable.Map[Int, Int]()
+    scriptpubkeys.foreach { spk =>
+      scriptPubKeyIndex.get(spk).map { case ChangeIndex(change, index) =>
+        val distanceFromNext = this.nextIndex.getOrElse(change, 0) - index
+        if (distanceFromNext <= this.gapLimit)
+          result.put(change, Math.max(result.getOrElse(change, 0), this.gapLimit - distanceFromNext + 1))
+      }
+    }
+    result.toMap
+  }
 }
 
-abstract class DescriptorDeterministicWallet(xpubVbytes: ByteVector, args: XpubDescTempl) extends DeterministicWallet() {
+abstract class DescriptorDeterministicWallet(xpubVbytes: ByteVector, args: XpubDescTempl, gapLimit: Int) extends DeterministicWallet(gapLimit) {
   def obtainDescriptorsWithoutChecksum(args: XpubDescTempl): Seq[String]
   def obtainDescriptors(rpcCliExt: BitcoindRpcExtendedClient): Future[Seq[String]] = {
     val dwc = obtainDescriptorsWithoutChecksum(args)
@@ -60,7 +78,7 @@ abstract class DescriptorDeterministicWallet(xpubVbytes: ByteVector, args: XpubD
   }
 }
 
-class SingleSigWallet(rpcCliExt: BitcoindRpcExtendedClient, xpubVbytes: ByteVector, args: XpubDescTempl) extends DescriptorDeterministicWallet(xpubVbytes, args){
+class SingleSigWallet(rpcCliExt: BitcoindRpcExtendedClient, xpubVbytes: ByteVector, args: XpubDescTempl, gapLimit: Int) extends DescriptorDeterministicWallet(xpubVbytes, args, gapLimit){
   override def obtainDescriptorsWithoutChecksum(args: XpubDescTempl): Seq[String] = {
     val xpub = WalletUtil.convertToStandardXpub(args.xpub, xpubVbytes)
     val descriptorsWithoutChecksum = (0 to 1).map{ change =>
@@ -72,11 +90,11 @@ class SingleSigWallet(rpcCliExt: BitcoindRpcExtendedClient, xpubVbytes: ByteVect
   this.descriptors = Await.result(this.obtainDescriptors(rpcCliExt), 20.seconds).toList // TODO very very ugly!!!!!
 }
 
-class MultisigWallet(xpubVbytes: ByteVector, args: XpubDescTempl) extends DescriptorDeterministicWallet(xpubVbytes, args){
+class MultisigWallet(xpubVbytes: ByteVector, args: XpubDescTempl) extends DescriptorDeterministicWallet(xpubVbytes, args, gapLimit = 0){
   override def obtainDescriptorsWithoutChecksum(args: XpubDescTempl): Seq[String] = ???
 }
 
-class SingleSigOldMnemonicWallet extends DeterministicWallet {
+class SingleSigOldMnemonicWallet extends DeterministicWallet(gapLimit = 0) {
   override def deriveAddresses(rpcCliExt: BitcoindRpcExtendedClient, change: Int, fromIndex: Int, count: Int): Seq[String] = ???
 }
 
@@ -96,7 +114,7 @@ object DeterministicWallet {
 
     val wallet = descriptorTemplateOpt match {
       case Some(descriptorTemplate) =>
-        new SingleSigWallet(rpcCliExt, xpubVBytes, XpubDescTempl(keyData, descriptorTemplate))
+        new SingleSigWallet(rpcCliExt, xpubVBytes, XpubDescTempl(keyData, descriptorTemplate), gapLimit)
       case None =>
         throw new IllegalArgumentException("SingleSigOldMnemonicWallet not implemented yet")
     }
