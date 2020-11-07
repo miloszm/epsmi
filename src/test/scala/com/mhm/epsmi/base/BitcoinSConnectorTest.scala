@@ -1,4 +1,4 @@
-package com.mhm.bitcoin.test
+package com.mhm.epsmi.base
 
 import com.mhm.api4electrum.Api4ElectrumImpl
 import com.mhm.connectors.BitcoinSConnector

@@ -1,4 +1,4 @@
-package com.mhm.bitcoin.integration.test
+package com.mhm.integration.epsmi.api
 
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers.convertToAnyShouldWrapper

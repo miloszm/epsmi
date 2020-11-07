@@ -1,9 +1,9 @@
-package com.mhm.bitcoin.integration.test
+package com.mhm.integration.epsmi.api
 
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers.{contain, convertToAnyShouldWrapper}
 
-class GetMerkleTest extends FlatSpec with IntTestFixture {
+class GetMerkleApiTest extends FlatSpec with IntTestFixture {
   "get merkle api" should "return correct merkle" in {
 
     /**

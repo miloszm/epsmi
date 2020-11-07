@@ -80,7 +80,7 @@ abstract class DescriptorDeterministicWallet(xpubVbytes: ByteVector, args: XpubD
 
 class SingleSigWallet(rpcCliExt: BitcoindRpcExtendedClient, xpubVbytes: ByteVector, args: XpubDescTempl, gapLimit: Int) extends DescriptorDeterministicWallet(xpubVbytes, args, gapLimit){
   override def obtainDescriptorsWithoutChecksum(args: XpubDescTempl): Seq[String] = {
-    val xpub = WalletUtil.convertToStandardXpub(args.xpub, xpubVbytes)
+    val xpub = WalletOps.convertToStandardXpub(args.xpub, xpubVbytes)
     val descriptorsWithoutChecksum = (0 to 1).map{ change =>
       val s = args.descTempl.replaceFirst("\\{change\\}", change.toString)
       s.replaceFirst("\\{xpub\\}",xpub)

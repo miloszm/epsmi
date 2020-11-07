@@ -1,4 +1,4 @@
-package com.mhm.bitcoin.integration.test
+package com.mhm.integration.epsmi.api
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.mhm.api4electrum.MerkleResult

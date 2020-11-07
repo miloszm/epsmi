@@ -1,4 +1,4 @@
-package com.mhm.bitcoin.test
+package com.mhm.epsmi.base
 
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.FlatSpec

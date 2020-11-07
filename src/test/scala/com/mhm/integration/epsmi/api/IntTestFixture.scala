@@ -1,4 +1,4 @@
-package com.mhm.bitcoin.integration.test
+package com.mhm.integration.epsmi.api
 
 import com.googlecode.jsonrpc4j.StreamServer
 import com.mhm.api4electrum.Api4Electrum
@@ -14,7 +14,7 @@ trait IntTestFixture extends FlatSpecLike with BeforeAndAfterAll {
 
   // -Djavax.net.ssl.keyStore=/Users/miloszm/proj/epsmi/rpcserver2.jks -Djavax.net.ssl.keyStorePassword=123456
 
-  case class Fixture( server: StreamServer, epsmiClient: EpsmiClient) {
+  case class Fixture(server: StreamServer, epsmiClient: EpsmiClient) {
     def client(): Api4Electrum = epsmiClient.client
   }
 

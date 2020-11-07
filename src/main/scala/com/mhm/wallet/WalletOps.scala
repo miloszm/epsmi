@@ -4,7 +4,7 @@ import com.mhm.util.BaseOps.{decodeBytesBase256, encodeBase256}
 import com.mhm.util.{BaseOps, HashOps}
 import scodec.bits.{ByteVector, HexStringSyntax}
 
-object WalletUtil {
+object WalletOps {
 
   def convertToStandardXpub(mpk: String, xpubVBytes: ByteVector): String = {
     val xkrt = bip32Deserialize(mpk).copy(vbytes = xpubVBytes)

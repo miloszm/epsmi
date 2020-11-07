@@ -1,8 +1,9 @@
-package com.mhm.bitcoin.integration.test
+package com.mhm.epsmi.modules
 
 import com.mhm.bitcoin.{AddressHistory, HistoryEntry, TransactionMonitor}
 import com.mhm.connectors.BitcoinSConnector
 import com.mhm.connectors.BitcoinSConnector.rpcCliExt
+import com.mhm.integration.epsmi.api.IntTestFixture
 import com.mhm.util.HashOps
 import com.mhm.wallet.{SingleSigWallet, XpubDescTempl}
 import org.bitcoins.crypto.DoubleSha256DigestBE

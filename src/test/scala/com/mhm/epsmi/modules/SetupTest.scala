@@ -1,13 +1,10 @@
-package com.mhm.bitcoin.integration.test
+package com.mhm.epsmi.modules
 
 import com.mhm.connectors.BitcoinSConnector
 import com.mhm.setup.Setup
 import com.typesafe.config.ConfigFactory
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers.convertToAnyShouldWrapper
-
-import scala.concurrent.Await
-import scala.concurrent.duration.DurationInt
 
 
 class SetupTest extends FlatSpec {

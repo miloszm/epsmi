@@ -1,4 +1,4 @@
-package com.mhm.bitcoin.test
+package com.mhm.epsmi.base
 
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, File}
 import java.net.{InetAddress, Socket, URL}

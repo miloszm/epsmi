@@ -1,4 +1,4 @@
-package com.mhm.bitcoin.integration.test
+package com.mhm.epsmi.modules
 
 import com.mhm.connectors.BitcoinSConnector.{rpcCli, rpcCliExt}
 import com.mhm.wallet.{DeterministicWallet, SingleSigWallet, XpubDescTempl}
@@ -6,7 +6,7 @@ import org.scalatest.FlatSpec
 import org.scalatest.Matchers.{contain, convertToAnyShouldWrapper, have}
 import scodec.bits.HexStringSyntax
 
-class DeterministicWalletTest extends FlatSpec with IntTestFixture {
+class DeterministicWalletTest extends FlatSpec {
 
   "parseElectrumMasterPublicKey" should "return wallet" in {
     val wallet = DeterministicWallet.parseElectrumMasterPublicKey(

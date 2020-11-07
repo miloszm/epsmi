@@ -1,4 +1,4 @@
-package com.mhm.bitcoin.test
+package com.mhm.epsmi.base
 
 import com.mhm.util.MerkleProofOps
 import org.scalatest.FlatSpec

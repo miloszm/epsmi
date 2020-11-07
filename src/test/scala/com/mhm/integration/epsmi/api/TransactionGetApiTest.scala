@@ -1,9 +1,9 @@
-package com.mhm.bitcoin.integration.test
+package com.mhm.integration.epsmi.api
 
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers.convertToAnyShouldWrapper
 
-class TransactionGetTest extends FlatSpec with IntTestFixture {
+class TransactionGetApiTest extends FlatSpec with IntTestFixture {
 
   "transaction get api" should "return correct transaction hex" in {
     val transactionHex = fixture.client.blockchainTransactionGet("b850bd9f727888019ddd5481124b83c17b9dd263fe4c7c007a0a6c0f4c0f1573")

@@ -1,9 +1,9 @@
-package com.mhm.bitcoin.integration.test
+package com.mhm.integration.epsmi.api
 
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers.convertToAnyShouldWrapper
 
-class BlockTest extends FlatSpec with IntTestFixture {
+class BlockApiTest extends FlatSpec with IntTestFixture {
 
   "blockchain.block.headers" should "return block headers" in {
     val headersResult = fixture.client.blockchainBlockHeaders(652510, 512)
