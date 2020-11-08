@@ -1,6 +1,6 @@
 package com.mhm.epsmi.modules
 
-import com.mhm.bitcoin.{AddressHistory, HistoryEntry, TransactionMonitor}
+import com.mhm.bitcoin.{HistoryEntry, TransactionMonitor}
 import com.mhm.connectors.BitcoinSConnector
 import com.mhm.connectors.BitcoinSConnector.rpcCli
 import com.mhm.integration.epsmi.api.IntTestFixture
@@ -23,7 +23,7 @@ class TransactionMonitorTest extends FlatSpec with IntTestFixture {
       "76a9143fe7f4ee744d330cbcc8ec5d68925e63ce03f77888ac",
       "76a914a2946db89edc09f56960cee76dab97604f7ffef088ac"
     )
-    val addressHistory = TransactionMonitor.buildAddressHistory(BitcoinSConnector.rpcCli, monitoredScriptPubKeys, deterministicWallets)
+    val addressHistory = new TransactionMonitor(BitcoinSConnector.rpcCli).buildAddressHistory(monitoredScriptPubKeys, deterministicWallets)
     monitoredScriptPubKeys.foreach { k =>
       addressHistory.m(HashOps.script2ScriptHash(k)) shouldBe HistoryEntry(subscribed = false, Nil)
     }
@@ -31,8 +31,7 @@ class TransactionMonitorTest extends FlatSpec with IntTestFixture {
   }
 
   "transaction monitor" should "have functionality for getInputAndOutputScriptpubkeys" in {
-    val(outputScriptpubkeys, inputScriptpubkeys, tr) = TransactionMonitor.getInputAndOutputScriptpubkeys(
-      BitcoinSConnector.rpcCli,
+    val(outputScriptpubkeys, inputScriptpubkeys, tr) = new TransactionMonitor(BitcoinSConnector.rpcCli).getInputAndOutputScriptpubkeys(
       DoubleSha256DigestBE.fromHex("22667c482f0f69daefabdf0969be53b8d539e1d2abbfc1c7a193ae38ec0d3e31")
     )
     outputScriptpubkeys should contain theSameElementsAs Seq( // TODO remove these values as they may change

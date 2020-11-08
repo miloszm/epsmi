@@ -1,23 +1,27 @@
 package com.mhm.setup
 
 import com.mhm.connectors.BitcoindRpcExtendedClient
+import com.mhm.connectors.RpcWrap.wrap
 import com.mhm.wallet.{AddrsSpks, DeterministicWallet}
 import com.typesafe.config.Config
 import grizzled.slf4j.Logging
 import org.bitcoins.core.config.{MainNet, NetworkParameters, RegTest, TestNet3}
-import org.bitcoins.rpc.client.common.BitcoindRpcClient
+import org.bitcoins.rpc.client.common.{BlockchainRpc, DescriptorRpc, UtilRpc}
 import org.bitcoins.rpc.client.v17.V17LabelRpc
 
-import scala.concurrent.Await
-import scala.concurrent.duration.DurationInt
 import scala.jdk.CollectionConverters.SetHasAsScala
 
 
 case class ScriptPubKeysToMonitorResult(importNeeded: Boolean, spksToMonitor:Seq[String], wallets:Seq[DeterministicWallet])
 
-object Setup extends Logging {
-  def getScriptPubKeysToMonitor(rpcCli: BitcoindRpcExtendedClient with V17LabelRpc, config: Config): ScriptPubKeysToMonitorResult = {
-    val importedAddresses = Await.result(rpcCli.getAddressesByLabel("electrum-watchonly-addresses"), 20.seconds).keySet
+
+
+class Setup(rpcCli: BitcoindRpcExtendedClient, config: Config) extends Logging {
+
+  type SetupRpc = BlockchainRpc with DescriptorRpc with V17LabelRpc with UtilRpc
+
+  def getScriptPubKeysToMonitor(): ScriptPubKeysToMonitorResult = {
+    val importedAddresses = wrap(rpcCli.getAddressesByLabel("electrum-watchonly-addresses"), "getAddressesByLabel 1").keySet
 
     val deterministicWallets = obtainDeterministicWallets(rpcCli, config)
 
@@ -61,10 +65,10 @@ object Setup extends Logging {
       case TestNet3 => "test"
     }
 
-  def obtainDeterministicWallets(rpcCli: BitcoindRpcExtendedClient, config: Config): Seq[DeterministicWallet] = {
+  def obtainDeterministicWallets(rpcCli: BlockchainRpc with DescriptorRpc, config: Config): Seq[DeterministicWallet] = {
     val mpkConfig = config.getConfig("epsmi.master-public-keys")
     val mpks = mpkConfig.entrySet()
-    val chain = networkString(Await.result(rpcCli.getBlockChainInfo, 20.seconds).chain)
+    val chain = networkString(wrap(rpcCli.getBlockChainInfo, "getBlockChainInfo 0").chain)
     val wallets = mpks.asScala.map { mpkEntry =>
       val mpk = mpkEntry.getValue.unwrapped().toString
       val gapLimit = config.getInt("epsmi.gap-limit")

@@ -11,7 +11,7 @@ class SetupTest extends FlatSpec {
 
   "setup" should "obtain list of script pub keys to monitor" in {
     val config = ConfigFactory.load()
-    val result = Setup.getScriptPubKeysToMonitor(BitcoinSConnector.rpcCli, config)
+    val result = new Setup(BitcoinSConnector.rpcCli, config).getScriptPubKeysToMonitor()
     result.spksToMonitor.isEmpty shouldBe false
     result.wallets.isEmpty shouldBe false
     println(s"setup result=$result")
