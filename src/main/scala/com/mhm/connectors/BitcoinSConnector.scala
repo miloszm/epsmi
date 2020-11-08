@@ -52,13 +52,13 @@ object BitcoinSConnector extends BitcoinConnector {
 
   implicit val system = ActorSystem.create(actorSystemName)
 
-  val rpcCli = BitcoindRpcClient.withActorSystem(bitcoindInstance)
+  //val rpcCli = BitcoindRpcClient.withActorSystem(bitcoindInstance)
 
   /**
    * extended rpc client with more APIs - due to the strangeness of bitcoin-s not covering
    * newer APIs easily, for example, getaddressesbylabel
    */
-  val rpcCliExt = new BitcoindRpcExtendedClient(bitcoindInstance, implicitly[ActorSystem])
+  val rpcCli = new BitcoindRpcExtendedClient(bitcoindInstance, implicitly[ActorSystem])
 
   def getInfo(): String = {
     val infoFuture = rpcCli.getBlockChainInfo

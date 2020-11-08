@@ -2,7 +2,7 @@ package com.mhm.epsmi.modules
 
 import com.mhm.bitcoin.{AddressHistory, HistoryEntry, TransactionMonitor}
 import com.mhm.connectors.BitcoinSConnector
-import com.mhm.connectors.BitcoinSConnector.rpcCliExt
+import com.mhm.connectors.BitcoinSConnector.rpcCli
 import com.mhm.integration.epsmi.api.IntTestFixture
 import com.mhm.util.HashOps
 import com.mhm.wallet.{SingleSigWallet, XpubDescTempl}
@@ -15,7 +15,7 @@ class TransactionMonitorTest extends FlatSpec with IntTestFixture {
 
   "transaction monitor" should "gather history of transactions" in {
     val args = XpubDescTempl("xpub661MyMwAqRbcGr3NH9q81huWmqC31HMwJ5PqDzHqGnYghQy9QgvxS86qZcBjJVCXbe2uvbP3nG7P8qKkeFp86AwS8vWzdbsoRXTimc7aAZj", "pkh({xpub}/{change}/*)")
-    val singleSigWallet = new SingleSigWallet(rpcCliExt, hex"0488b21e", args, gapLimit = 25)
+    val singleSigWallet = new SingleSigWallet(rpcCli, hex"0488b21e", args, gapLimit = 25)
     val deterministicWallets = Seq(singleSigWallet)
 
     val monitoredScriptPubKeys = Seq(
