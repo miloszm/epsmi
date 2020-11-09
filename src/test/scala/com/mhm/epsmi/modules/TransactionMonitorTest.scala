@@ -15,7 +15,7 @@ class TransactionMonitorTest extends FlatSpec with IntTestFixture {
 
   "transaction monitor" should "gather history of transactions" in {
     val args = XpubDescTempl("xpub661MyMwAqRbcGr3NH9q81huWmqC31HMwJ5PqDzHqGnYghQy9QgvxS86qZcBjJVCXbe2uvbP3nG7P8qKkeFp86AwS8vWzdbsoRXTimc7aAZj", "pkh({xpub}/{change}/*)")
-    val singleSigWallet = new SingleSigWallet(rpcCli, hex"0488b21e", args, gapLimit = 25)
+    val singleSigWallet = new SingleSigWallet(rpcCli, hex"0488b21e", args, gapLimit = 25, "wallet-1")
     val deterministicWallets = Seq(singleSigWallet)
 
     val monitoredScriptPubKeys = Seq(

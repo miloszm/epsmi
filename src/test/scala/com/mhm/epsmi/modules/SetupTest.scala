@@ -14,7 +14,9 @@ class SetupTest extends FlatSpec {
     val result = new Setup(BitcoinSConnector.rpcCli, config).getScriptPubKeysToMonitor()
     result.spksToMonitor.isEmpty shouldBe false
     result.wallets.isEmpty shouldBe false
-    println(s"setup result=$result")
+    println(s"getScriptPubKeysToMonitor result:")
+    println(s"${result.spksToMonitor.size} spks to monitor, head is ${result.spksToMonitor.head}")
+    println(s"wallets=${result.wallets}")
   }
 
 }
