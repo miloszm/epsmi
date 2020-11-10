@@ -114,17 +114,21 @@ class TransactionMonitor(rpcCli: BitcoindRpcExtendedClient, rawMode: Boolean) ex
   def generateNewHistoryElement(tx: Tx4HistoryGen, txd: RpcTransaction): HistoryElement = {
     if (tx.confirmations == 0){
       var unconfirmedInput = false
-      var totalInputValue: Bitcoins = Bitcoins(0)
+      var totalInputValue = BigDecimal(0)
       for (inn <- txd.vin){
-        val utxo = wrap(rpcCli.getTxOut(inn.previousOutput.txIdBE, inn.previousOutput.vout.toInt), "getTxOut 2")
-        totalInputValue = Bitcoins((totalInputValue + utxo.value).satoshis)
+        val utxo = wrap(rpcCli.getTxOut(inn.previousOutput.txIdBE, inn.previousOutput.vout.toInt), "getTxOut")
+        totalInputValue = totalInputValue + utxo.value.toBigDecimal
         unconfirmedInput = unconfirmedInput || utxo.confirmations == 0
       }
-      HistoryElement("", 0)
+      val height = if (unconfirmedInput) -1 else 0
+      val totalOut = (
+        for {out <- txd.vout} yield out.value.toBigDecimal
+      ).foldLeft(BigDecimal(0))(_ + _)
+      val fee = totalInputValue - totalOut
+      HistoryElement(tx.txid, height, fee)
     }
     else {
       val blockHeader: GetBlockHeaderResult = wrap(rpcCli.getBlockHeader(tx.blockhash))
-      // new_history_element = ({"tx_hash": tx["txid"], "height": blockheader["height"]})
       HistoryElement(tx.txid, blockHeader.height)
     }
   }

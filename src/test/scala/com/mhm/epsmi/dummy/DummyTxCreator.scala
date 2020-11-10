@@ -11,7 +11,7 @@ object DummyTxCreator {
   def createDummyFundingTx(
     confirmations: Int = 1,
     outputSpkOpt: Option[String] = None,
-    inputTxid: String = "placeholder-unknown-input-txid",
+    inputTxid: String = "e0"*32,
     coinbase: Boolean = false,
     inputConfirmations: Int = 1): (String, Int, Map[String, Any]) = {
     val dummyId = masterDummyId.getAndIncrement()
@@ -19,7 +19,7 @@ object DummyTxCreator {
       case Some(outputSpk) => outputSpk
       case None => "deadbeef" + dummyId //scriptpubkey
     }
-    val dummyContainingBlock = "blockhash-placeholder" + dummyId
+    val dummyContainingBlock = "bb"*32
     val containingBlockHeight = dummyId
     val category = if (!coinbase) "receive" else {
       if (confirmations < 1) "orphan"
@@ -29,25 +29,25 @@ object DummyTxCreator {
     val vin = scala.collection.mutable.Map (
       "txid" -> inputTxid,
       "vout" -> 0,
-      "value" -> 1,
+      "value" -> 100,
       "confirmations" -> inputConfirmations,
     )
     if (coinbase)
       vin.put("coinbase", "nonce")
     val vout = Map (
-      "value" -> 1,
+      "value" -> 98,
       "scriptPubKey" -> dummySpk
     )
 
     val dummyTx = Map(
-      "txid" -> s"placeholder-test-txid$dummyId",
+      "txid" -> "a0"*32,
       "vin" -> vin.toMap,
       "vout" -> vout,
       "address" -> dummySpkToAddress(dummySpk),
       "category" -> category,
       "confirmations" -> confirmations,
       "blockhash" -> dummyContainingBlock,
-      "hex" -> s"placeholder-test-txhex$dummyId"
+      "hex" -> s"aacc$dummyId"
     )
 
     (dummySpk, containingBlockHeight, dummyTx)
