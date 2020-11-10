@@ -36,7 +36,7 @@ object DummyTxCreator {
       vin.put("coinbase", "nonce")
     val vout = Map (
       "value" -> 1,
-      "scriptPubKey" -> """{"hex": dummy_spk}"""
+      "scriptPubKey" -> dummySpk
     )
 
     val dummyTx = Map(
