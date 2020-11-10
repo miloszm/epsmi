@@ -1,11 +1,13 @@
 package com.mhm.epsmi.modules
 
-import com.mhm.bitcoin.{HistoryEntry, TransactionMonitor}
+import com.mhm.bitcoin.{HistoryEntry, TransactionMonitor, Tx4HistoryGen}
 import com.mhm.connectors.BitcoinSConnector
 import com.mhm.connectors.BitcoinSConnector.rpcCli
+import com.mhm.connectors.RpcWrap.wrap
 import com.mhm.integration.epsmi.api.IntTestFixture
 import com.mhm.util.HashOps
 import com.mhm.wallet.{SingleSigWallet, XpubDescTempl}
+import org.bitcoins.commons.jsonmodels.bitcoind.{GetRawTransactionResult, ListTransactionsResult}
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers.{contain, convertToAnyShouldWrapper}
@@ -42,6 +44,19 @@ class TransactionMonitorTest extends FlatSpec {
       "76a914d5a77c5d45adf40f610d1fe600a437a80649815b88ac"
     )
     tr.txid.hex shouldBe "22667c482f0f69daefabdf0969be53b8d539e1d2abbfc1c7a193ae38ec0d3e31"
+  }
+
+  "transaction monitor" should "have functionality for generating new history element" in {
+    val transactionMonitor = new TransactionMonitor(BitcoinSConnector.rpcCli, rawMode = true)
+
+    val txid = "22667c482f0f69daefabdf0969be53b8d539e1d2abbfc1c7a193ae38ec0d3e31"
+    val rawTx: GetRawTransactionResult = wrap(rpcCli.getRawTransaction(DoubleSha256DigestBE.fromHex(txid)))
+    val tx = Tx4HistoryGen(rawTx.confirmations.getOrElse(fail), txid, rawTx.blockhash.getOrElse(fail))
+    val txd = wrap(rpcCli.decodeRawTransaction(rawTx.hex))
+
+    val newHistoryElement = transactionMonitor.generateNewHistoryElement(tx, txd)
+    newHistoryElement.height shouldBe 654929
+    newHistoryElement.txHash shouldBe "22667c482f0f69daefabdf0969be53b8d539e1d2abbfc1c7a193ae38ec0d3e31"
   }
 
 }

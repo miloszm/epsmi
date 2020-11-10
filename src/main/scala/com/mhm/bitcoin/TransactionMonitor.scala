@@ -5,11 +5,13 @@ import com.mhm.connectors.RpcWrap.wrap
 import com.mhm.util.HashOps
 import com.mhm.wallet.DeterministicWallet
 import grizzled.slf4j.Logging
-import org.bitcoins.commons.jsonmodels.bitcoind.{ListTransactionsResult, RpcTransaction}
+import org.bitcoins.commons.jsonmodels.bitcoind.{GetBlockHeaderResult, ListTransactionsResult, RpcTransaction}
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.crypto.DoubleSha256DigestBE
 
 import scala.util.{Failure, Success, Try}
+
+case class Tx4HistoryGen(confirmations: Int, txid: String, blockhash: DoubleSha256DigestBE)
 
 /**
  * @param rpcCli bitcoin core client
@@ -56,7 +58,12 @@ class TransactionMonitor(rpcCli: BitcoindRpcExtendedClient, rawMode: Boolean) ex
               val overrunDepths = wal.haveScriptpubkeysOverrunGaplimit(outputScriptpubkeys)
               if (overrunDepths.nonEmpty) throw new IllegalStateException("not enough addresses imported, see transactionmonitor.py line 155")
             }
-            val newHistoryElement = generateNewHistoryElement(tx, txd)
+            val tx4HistoryGen = Tx4HistoryGen(
+              tx.confirmations.getOrElse(throw new IllegalArgumentException("missing confirmations")),
+              tx.txid.map(_.hex).getOrElse(throw new IllegalArgumentException("missing txid")),
+              tx.blockhash.getOrElse(throw new IllegalArgumentException("missing blockhash"))
+            )
+            val newHistoryElement = generateNewHistoryElement(tx4HistoryGen, txd)
             tx.txid.map(_.hex)
           }
         }
@@ -104,8 +111,8 @@ class TransactionMonitor(rpcCli: BitcoindRpcExtendedClient, rawMode: Boolean) ex
     (outputScriptpubkeys, inputScriptpubkeys, txd)
   }
 
-  def generateNewHistoryElement(tx: ListTransactionsResult, txd: RpcTransaction): Unit = {
-    if (tx.confirmations.contains(0)){
+  def generateNewHistoryElement(tx: Tx4HistoryGen, txd: RpcTransaction): HistoryElement = {
+    if (tx.confirmations == 0){
       var unconfirmedInput = false
       var totalInputValue: Bitcoins = Bitcoins(0)
       for (inn <- txd.vin){
@@ -113,9 +120,12 @@ class TransactionMonitor(rpcCli: BitcoindRpcExtendedClient, rawMode: Boolean) ex
         totalInputValue = Bitcoins((totalInputValue + utxo.value).satoshis)
         unconfirmedInput = unconfirmedInput || utxo.confirmations == 0
       }
+      HistoryElement("", 0)
     }
     else {
-
+      val blockHeader: GetBlockHeaderResult = wrap(rpcCli.getBlockHeader(tx.blockhash))
+      // new_history_element = ({"tx_hash": tx["txid"], "height": blockheader["height"]})
+      HistoryElement(tx.txid, blockHeader.height)
     }
   }
 }

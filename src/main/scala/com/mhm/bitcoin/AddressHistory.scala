@@ -2,8 +2,7 @@ package com.mhm.bitcoin
 
 case class HistoryElement (
   txHash: String,
-  height: Int,
-  fee: Int
+  height: Int
 )
 
 case class HistoryEntry(
