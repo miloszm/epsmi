@@ -50,19 +50,15 @@ class TransactionMonitorDummyTest extends FlatSpec {
   }
 
   "transaction monitor" should "have functionality for getInputAndOutputScriptpubkeys" in {
-    val InputTxid = "a0"*32
-    val ThisTxid = "b0"*32
     val ThisOutSpk = "abab"
     val ThisInSpk = "cdcd"
 
     val(_, _, inputTx) = DummyTxCreator.createDummyFundingTx(outputSpkOpt = Some(ThisInSpk), hexDifferentiator = 3)
-    assert(inputTx.txId == InputTxid)
     assert(inputTx.vout.scriptPubKey == ThisInSpk)
 
-    val(_, _, tx) = DummyTxCreator.createDummyFundingTx(outputSpkOpt = Some(ThisOutSpk), inputTxid = InputTxid, txId = ThisTxid, hexDifferentiator = 4)
-    assert(tx.txId == ThisTxid)
+    val(_, _, tx) = DummyTxCreator.createDummyFundingTx(outputSpkOpt = Some(ThisOutSpk), inputTxid = inputTx.txId, hexDifferentiator = 4)
     assert(tx.vout.scriptPubKey == ThisOutSpk)
-    assert(tx.vin.txId == InputTxid)
+    assert(tx.vin.txId == inputTx.txId)
 
     val dummyBtcRpc = new DummyBtcRpc(Seq(tx, inputTx))
 
@@ -71,6 +67,6 @@ class TransactionMonitorDummyTest extends FlatSpec {
     )
     outputScriptpubkeys should contain theSameElementsAs Seq(ThisOutSpk)
     inputScriptpubkeys should contain theSameElementsAs Seq(ThisInSpk)
-    tr.txid.hex shouldBe ThisTxid
+    tr.txid.hex shouldBe tx.txId
   }
 }

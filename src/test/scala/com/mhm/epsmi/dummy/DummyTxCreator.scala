@@ -45,9 +45,9 @@ object DummyTxCreator {
     val dummyId = masterDummyId.getAndIncrement()
     val dummySpk = outputSpkOpt match {
       case Some(outputSpk) => outputSpk
-      case None => "a9"*32
+      case None => f"$dummyId%04x"*16
     }
-    val dummyContainingBlock = "bb"*32
+    val dummyContainingBlock = f"${dummyId+1000}%04x"*16
     val containingBlockHeight = dummyId
     val category = if (!coinbase) "receive" else {
       if (confirmations < 1) "orphan"
@@ -67,7 +67,7 @@ object DummyTxCreator {
     )
 
     val dummyTx = DummyTx(
-      txId = txId,
+      txId = f"${dummyId+2000}%04x"*16,
       vin = vin,
       vout = vout,
       address = dummySpkToAddress(dummySpk),
