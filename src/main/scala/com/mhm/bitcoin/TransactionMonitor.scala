@@ -2,11 +2,10 @@ package com.mhm.bitcoin
 
 import com.mhm.connectors.BitcoindRpcExtendedClient
 import com.mhm.connectors.RpcWrap.wrap
-import com.mhm.util.HashOps
+import com.mhm.util.HashOps.script2ScriptHash
 import com.mhm.wallet.DeterministicWallet
 import grizzled.slf4j.Logging
 import org.bitcoins.commons.jsonmodels.bitcoind.{GetBlockHeaderResult, ListTransactionsResult, RpcTransaction}
-import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.crypto.DoubleSha256DigestBE
 
 import scala.util.{Failure, Success, Try}
@@ -19,13 +18,19 @@ case class Tx4HistoryGen(confirmations: Int, txid: String, blockhash: DoubleSha2
  */
 class TransactionMonitor(rpcCli: BitcoindRpcExtendedClient, rawMode: Boolean) extends Logging {
 
+  def isTxHistoryEligible(tx: ListTransactionsResult, obtainedTxids: Set[String]): Boolean = {
+    tx.txid.isDefined && Set("receive", "send", "generate", "immature").contains(tx.category) &&
+    (tx.confirmations.isDefined && tx.confirmations.get >= 0) &&
+    !obtainedTxids.contains(tx.txid.get.hex)
+  }
+
   def buildAddressHistory(
     monitoredScriptPubKeys: Seq[String],
     deterministicWallets: Seq[DeterministicWallet]
   ): AddressHistory = {
     logger.info("started buildAddressHistory")
     val ah = new AddressHistory(
-      scala.collection.mutable.HashMap.from(monitoredScriptPubKeys.map(k => HashOps.script2ScriptHash(k) -> HistoryEntry(false, Nil)))
+      scala.collection.mutable.HashMap.from(monitoredScriptPubKeys.map(k => script2ScriptHash(k) -> HistoryEntry(false, Nil)))
     )
     logger.info(s"initialized address history keys with ${ah.m.keySet.size} keys, head entry is ${ah.m.head}")
 
@@ -38,32 +43,25 @@ class TransactionMonitor(rpcCli: BitcoindRpcExtendedClient, rawMode: Boolean) ex
       logger.info(s"obtained ${transactions.size} transactions (skip=$skip)")
       val lastTx = if ((transactions.size < BATCH_SIZE) && skip == 0) Some(transactions.last) else None
       val newTxids = (transactions.flatMap{ tx: ListTransactionsResult =>
-        if (tx.txid.isDefined
-            && Set("receive", "send", "generate", "immature").contains(tx.category)
-            && tx.confirmations.isDefined
-            && tx.confirmations.get >= 0
-            && tx.txid.isDefined
-            && !obtainedTxids.contains(tx.txid.get.hex)
-            ){
+        if (isTxHistoryEligible(tx, obtainedTxids)){
           logger.debug(s"tx ${tx.txid} checked for category: '${tx.category}', confirmations '${tx.confirmations}' and more")
-
           val(outputScriptpubkeys, inputScriptpubkeys, txd) = getInputAndOutputScriptpubkeys(tx.txid.get)
-          val outputScriptHashes = outputScriptpubkeys.map(HashOps.script2ScriptHash)
-          val shToAddOut = walletAddrScripthashes.intersect(outputScriptHashes.toSet)
-          val inputScriptHashes = inputScriptpubkeys.map(HashOps.script2ScriptHash)
-          val shToAddIn = walletAddrScripthashes.intersect(inputScriptHashes.toSet)
+          val shToAddOut = walletAddrScripthashes.intersect(outputScriptpubkeys.map(script2ScriptHash).toSet)
+          val shToAddIn = walletAddrScripthashes.intersect(inputScriptpubkeys.map(script2ScriptHash).toSet)
           val shToAdd = shToAddIn ++ shToAddOut
           if (shToAdd.isEmpty) None else {
             for(wal <- deterministicWallets){
               val overrunDepths = wal.haveScriptpubkeysOverrunGaplimit(outputScriptpubkeys)
               if (overrunDepths.nonEmpty) throw new IllegalStateException("not enough addresses imported, see transactionmonitor.py line 155")
             }
-            val tx4HistoryGen = Tx4HistoryGen(
-              tx.confirmations.getOrElse(throw new IllegalArgumentException("missing confirmations")),
-              tx.txid.map(_.hex).getOrElse(throw new IllegalArgumentException("missing txid")),
-              tx.blockhash.getOrElse(throw new IllegalArgumentException("missing blockhash"))
-            )
+            val tx4HistoryGen = Tx4HistoryGen(tx.confirmations.get, tx.txid.map(_.hex).get, tx.blockhash.get)
             val newHistoryElement = generateNewHistoryElement(tx4HistoryGen, txd)
+            shToAdd.foreach{ scriptHash =>
+              ah.m.get(scriptHash) match {
+                case Some(he: HistoryEntry) => ah.m.put(scriptHash, he.copy(history = he.history :+ newHistoryElement))
+                case None => ah.m.put(scriptHash, HistoryEntry(false, Seq(newHistoryElement)))
+              }
+            }
             tx.txid.map(_.hex)
           }
         }

@@ -1,6 +1,6 @@
 package com.mhm.epsmi.modules
 
-import com.mhm.bitcoin.{HistoryEntry, TransactionMonitor, Tx4HistoryGen}
+import com.mhm.bitcoin.{HistoryElement, HistoryEntry, TransactionMonitor, Tx4HistoryGen}
 import com.mhm.connectors.BitcoinSConnector
 import com.mhm.connectors.BitcoinSConnector.rpcCli
 import com.mhm.connectors.RpcWrap.wrap
@@ -15,22 +15,25 @@ import scodec.bits.HexStringSyntax
 
 class TransactionMonitorTest extends FlatSpec {
 
-//  "transaction monitor" should "build history of transactions" in {
-//    val args = XpubDescTempl("xpub661MyMwAqRbcGr3NH9q81huWmqC31HMwJ5PqDzHqGnYghQy9QgvxS86qZcBjJVCXbe2uvbP3nG7P8qKkeFp86AwS8vWzdbsoRXTimc7aAZj", "pkh({xpub}/{change}/*)")
-//    val singleSigWallet = new SingleSigWallet(rpcCli, hex"0488b21e", args, gapLimit = 25, "wallet-1")
-//    val deterministicWallets = Seq(singleSigWallet)
-//
-//    val monitoredScriptPubKeys = Seq(
-//      "76a91414c45115d49cf4568d0d7229a9a0c58b64041c5388ac",
-//      "76a9143fe7f4ee744d330cbcc8ec5d68925e63ce03f77888ac",
-//      "76a914a2946db89edc09f56960cee76dab97604f7ffef088ac"
-//    )
-//    val addressHistory = new TransactionMonitor(BitcoinSConnector.rpcCli, rawMode = true).buildAddressHistory(monitoredScriptPubKeys, deterministicWallets)
-//    monitoredScriptPubKeys.foreach { k =>
-//      addressHistory.m(HashOps.script2ScriptHash(k)) shouldBe HistoryEntry(subscribed = false, Nil)
-//    }
-//    print(addressHistory.m)
-//  }
+  "transaction monitor" should "build history of transactions" in {
+    val args = XpubDescTempl("xpub661MyMwAqRbcGr3NH9q81huWmqC31HMwJ5PqDzHqGnYghQy9QgvxS86qZcBjJVCXbe2uvbP3nG7P8qKkeFp86AwS8vWzdbsoRXTimc7aAZj", "pkh({xpub}/{change}/*)")
+    val singleSigWallet = new SingleSigWallet(rpcCli, hex"0488b21e", args, gapLimit = 25, "wallet-1")
+    val deterministicWallets = Seq(singleSigWallet)
+
+    val monitoredScriptPubKeys = Seq(
+      "76a91414c45115d49cf4568d0d7229a9a0c58b64041c5388ac",
+      "76a9143fe7f4ee744d330cbcc8ec5d68925e63ce03f77888ac",
+      "76a914a2946db89edc09f56960cee76dab97604f7ffef088ac"
+    )
+    val addressHistory = new TransactionMonitor(BitcoinSConnector.rpcCli, rawMode = true).buildAddressHistory(monitoredScriptPubKeys, deterministicWallets)
+    monitoredScriptPubKeys.take(1).foreach { k =>
+      addressHistory.m(HashOps.script2ScriptHash(k)) shouldBe HistoryEntry(subscribed = false, List(HistoryElement("22667c482f0f69daefabdf0969be53b8d539e1d2abbfc1c7a193ae38ec0d3e31",654929,0)))
+    }
+    monitoredScriptPubKeys.drop(1).foreach { k =>
+      addressHistory.m(HashOps.script2ScriptHash(k)) shouldBe HistoryEntry(subscribed = false, Nil)
+    }
+    print(addressHistory.m)
+  }
 
   "transaction monitor" should "have functionality for getInputAndOutputScriptpubkeys" in {
     val(outputScriptpubkeys, inputScriptpubkeys, tr) = new TransactionMonitor(BitcoinSConnector.rpcCli, rawMode = true).getInputAndOutputScriptpubkeys(
