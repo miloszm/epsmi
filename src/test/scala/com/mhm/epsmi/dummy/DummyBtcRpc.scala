@@ -15,7 +15,7 @@ class DummyBtcRpc(txList: Seq[Map[String, Any]], utxoSet: Seq[Map[String, Any]] 
   extends BitcoindRpcExtendedClient(BitcoinSConnector.bitcoindInstance, BitcoinSConnector.system){
 
   def toListTransactionsResult(tx: Map[String, Any]): ListTransactionsResult = {
-    val voutMap: Map[String, Any] = tx.get("vout").asInstanceOf[Map[String, Any]]
+    val voutMap: Map[String, Any] = tx("vout").asInstanceOf[Map[String, Any]]
     val voutValueOpt: Option[Int] = voutMap.get("value").map(_.asInstanceOf[Int])
 
     ListTransactionsResult(

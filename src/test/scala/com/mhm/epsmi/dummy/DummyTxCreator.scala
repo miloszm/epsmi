@@ -8,7 +8,7 @@ object DummyTxCreator {
 
   val masterDummyId = new AtomicInteger(1000)
 
-  def dummySpkToAddress(spk: String): String = spk + "-address"
+  def dummySpkToAddress(spk: String): String = "1FpeH5RojTMpaUS8oreYBRtMpCk1mfVxcf"
 
   def createDummyFundingTx(
     confirmations: Int = 1,
@@ -21,7 +21,7 @@ object DummyTxCreator {
     val dummyId = masterDummyId.getAndIncrement()
     val dummySpk = outputSpkOpt match {
       case Some(outputSpk) => outputSpk
-      case None => "deadbeef" + dummyId //scriptpubkey
+      case None => "a9"*32
     }
     val dummyContainingBlock = "bb"*32
     val containingBlockHeight = dummyId

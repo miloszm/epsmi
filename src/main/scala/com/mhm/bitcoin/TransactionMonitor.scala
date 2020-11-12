@@ -49,6 +49,7 @@ class TransactionMonitor(rpcCli: BitcoindRpcExtendedClient, rawMode: Boolean) ex
           val shToAddOut = walletAddrScripthashes.intersect(outputScriptpubkeys.map(script2ScriptHash).toSet)
           val shToAddIn = walletAddrScripthashes.intersect(inputScriptpubkeys.map(script2ScriptHash).toSet)
           val shToAdd = shToAddIn ++ shToAddOut
+          logger.debug(s"${shToAdd.size} scripthashes to add")
           if (shToAdd.isEmpty) None else {
             for(wal <- deterministicWallets){
               val overrunDepths = wal.haveScriptpubkeysOverrunGaplimit(outputScriptpubkeys)
@@ -57,6 +58,7 @@ class TransactionMonitor(rpcCli: BitcoindRpcExtendedClient, rawMode: Boolean) ex
             val tx4HistoryGen = Tx4HistoryGen(tx.confirmations.get, tx.txid.map(_.hex).get, tx.blockhash.get)
             val newHistoryElement = generateNewHistoryElement(tx4HistoryGen, txd)
             shToAdd.foreach{ scriptHash =>
+              logger.debug(s"adding history element (${newHistoryElement.txHash}, ${newHistoryElement.height}) to $scriptHash")
               ah.m.get(scriptHash) match {
                 case Some(he: HistoryEntry) => ah.m.put(scriptHash, he.copy(history = he.history :+ newHistoryElement))
                 case None => ah.m.put(scriptHash, HistoryEntry(false, Seq(newHistoryElement)))
@@ -76,6 +78,7 @@ class TransactionMonitor(rpcCli: BitcoindRpcExtendedClient, rawMode: Boolean) ex
     }
     go(skip = 0, obtainedTxids = Set())
 
+    logger.debug(s"finished buildAddressHistory, history size = ${ah.m.size}")
     ah
   }
 
