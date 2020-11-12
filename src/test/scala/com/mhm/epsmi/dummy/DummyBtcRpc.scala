@@ -1,6 +1,7 @@
 package com.mhm.epsmi.dummy
 
 import com.mhm.connectors.{BitcoinSConnector, BitcoindRpcExtendedClient}
+import com.mhm.epsmi.dummy.DummyTxCreator.{DummyTx, DummyVin, DummyVout}
 import org.bitcoins.commons.jsonmodels.bitcoind._
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.number.UInt32
@@ -11,28 +12,25 @@ import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 
 import scala.concurrent.Future
 
-class DummyBtcRpc(txList: Seq[Map[String, Any]], utxoSet: Seq[Map[String, Any]] = Nil, blockHeights: Map[String, Int] = Map())
+class DummyBtcRpc(txList: Seq[DummyTx], utxoSet: Seq[DummyVin] = Nil, blockHeights: Map[String, Int] = Map())
   extends BitcoindRpcExtendedClient(BitcoinSConnector.bitcoindInstance, BitcoinSConnector.system){
 
-  def toListTransactionsResult(tx: Map[String, Any]): ListTransactionsResult = {
-    val voutMap: Map[String, Any] = tx("vout").asInstanceOf[Map[String, Any]]
-    val voutValueOpt: Option[Int] = voutMap.get("value").map(_.asInstanceOf[Int])
-
+  def toListTransactionsResult(tx: DummyTx): ListTransactionsResult = {
     ListTransactionsResult(
       account = None,
-      address = Some(BitcoinAddress(tx("address").asInstanceOf[String])),
-      category = tx("category").asInstanceOf[String],
+      address = Some(BitcoinAddress(tx.address)),
+      category = tx.category,
       amount = Bitcoins(0),
       label = None,
-      vout = voutValueOpt,
+      vout = Some(tx.vout.value),
       fee = None,
-      confirmations = Some(tx("confirmations").asInstanceOf[Int]),
+      confirmations = Some(tx.confirmations),
       trusted = None,
       generated = None,
-      blockhash = Some(DoubleSha256DigestBE.fromHex(tx("blockhash").asInstanceOf[String])),
+      blockhash = Some(DoubleSha256DigestBE.fromHex(tx.blockhash)),
       blockindex = None,
       blocktime = None,
-      txid = Some(DoubleSha256DigestBE.fromHex(tx("txid").asInstanceOf[String])),
+      txid = Some(DoubleSha256DigestBE.fromHex(tx.txId)),
       walletconflicts = None,
       time = UInt32(0),
       timereceived = None,
@@ -44,16 +42,16 @@ class DummyBtcRpc(txList: Seq[Map[String, Any]], utxoSet: Seq[Map[String, Any]] 
     )
   }
 
-  def toGetTransactionResult(tx: Map[String, Any]): GetTransactionResult = {
+  def toGetTransactionResult(tx: DummyTx): GetTransactionResult = {
     GetTransactionResult(
       amount = Bitcoins(0),
       fee = None,
-      confirmations = tx("confirmations").asInstanceOf[Int],
+      confirmations = tx.confirmations,
       generated = None,
-      blockhash = Some(DoubleSha256DigestBE.fromHex(tx("blockhash").asInstanceOf[String])),
+      blockhash = Some(DoubleSha256DigestBE.fromHex(tx.blockhash)),
       blockindex = None,
       blocktime = None,
-      txid = DoubleSha256DigestBE.fromHex(tx("txid").asInstanceOf[String]),
+      txid = DoubleSha256DigestBE.fromHex(tx.txId),
       walletconflicts = Vector(),
       time = UInt32(0),
       timereceived = UInt32(0),
@@ -61,19 +59,18 @@ class DummyBtcRpc(txList: Seq[Map[String, Any]], utxoSet: Seq[Map[String, Any]] 
       to = None,
       bip125_replaceable = "",
       details = Vector(),
-      hex = tx("hex").asInstanceOf[BaseTransaction]
+      hex = tx.hex
     )
   }
 
-  def toGetRawTransactionResult(tx: Map[String, Any]): GetRawTransactionResult = {
-    val voutMap: Map[String, Any] = tx.get("vout").asInstanceOf[Map[String, Any]]
-    val voutValue: Int = voutMap("value").asInstanceOf[Int]
-    val voutSpk = voutMap("scriptPubKey").asInstanceOf[String]
+  def toGetRawTransactionResult(tx: DummyTx): GetRawTransactionResult = {
+    val voutValue: Int = tx.vout.value
+    val voutSpk = tx.vout.scriptPubKey
     val voutRpcSpk = RpcScriptPubKey("", hex=voutSpk, None, PUBKEYHASH, None)
 
     val transactionInput = GetRawTransactionVin(
-      txid = Some(DoubleSha256DigestBE.fromHex(tx("vin").asInstanceOf[Map[String,Any]]("txid").asInstanceOf[String])),
-      vout = Some(tx("vin").asInstanceOf[Map[String,Any]]("vout").asInstanceOf[Int]),
+      txid = Some(DoubleSha256DigestBE.fromHex(tx.vin.txId)),
+      vout = Some(tx.vin.vout),
       scriptSig = None,
       sequence = None,
       txinwitness = None
@@ -83,38 +80,37 @@ class DummyBtcRpc(txList: Seq[Map[String, Any]], utxoSet: Seq[Map[String, Any]] 
 
     GetRawTransactionResult(
       in_active_blockchain = None,
-      hex = Transaction.fromHex(tx("hex").asInstanceOf[String]),
-      txid = DoubleSha256DigestBE.fromHex(tx("txid").asInstanceOf[String]),
-      hash = DoubleSha256DigestBE.fromHex(tx("txid").asInstanceOf[String]),
+      hex = tx.hex,
+      txid = DoubleSha256DigestBE.fromHex(tx.txId),
+      hash = DoubleSha256DigestBE.fromHex(tx.txId),
       size = 0,
       vsize = 0,
       version = 0,
       locktime = UInt32(0),
       vin = Vector(transactionInput),
       vout = Vector(transactionOutput),
-      blockhash = Some(DoubleSha256DigestBE.fromHex(tx("blockhash").asInstanceOf[String])),
-      confirmations = Some(tx("confirmations").asInstanceOf[Int]),
+      blockhash = Some(DoubleSha256DigestBE.fromHex(tx.blockhash)),
+      confirmations = Some(tx.confirmations),
       time = None,
       blocktime = None
     )
   }
 
-  def toRpcTransaction(tx: Map[String, Any]): RpcTransaction = {
-    val voutMap: Map[String, Any] = tx("vout").asInstanceOf[Map[String, Any]]
-    val voutValue: Int = voutMap("value").asInstanceOf[Int]
-    val voutSpk = voutMap("scriptPubKey").asInstanceOf[String]
+  def toRpcTransaction(tx: DummyTx): RpcTransaction = {
+    val voutValue: Int = tx.vout.value
+    val voutSpk = tx.vout.scriptPubKey
     val voutRpcSpk = RpcScriptPubKey("", hex=voutSpk, None, PUBKEYHASH, None)
 
     val transactionInput = TransactionInput.fromTxidAndVout(
-      DoubleSha256DigestBE.fromHex(tx("vin").asInstanceOf[Map[String,Any]]("txid").asInstanceOf[String]),
-      UInt32(tx("vin").asInstanceOf[Map[String,Any]]("vout").asInstanceOf[Int])
+      DoubleSha256DigestBE.fromHex(tx.vin.txId),
+      UInt32(tx.vin.vout)
     )
 
     val transactionOutput = RpcTransactionOutput(Bitcoins(voutValue), voutValue, voutRpcSpk)
 
     RpcTransaction(
-      txid = DoubleSha256DigestBE.fromHex(tx("txid").asInstanceOf[String]),
-      hash = DoubleSha256DigestBE.fromHex(tx("txid").asInstanceOf[String]),
+      txid = DoubleSha256DigestBE.fromHex(tx.txId),
+      hash = DoubleSha256DigestBE.fromHex(tx.txId),
       version = 0,
       size = 0,
       vsize = 0,
@@ -125,11 +121,11 @@ class DummyBtcRpc(txList: Seq[Map[String, Any]], utxoSet: Seq[Map[String, Any]] 
     )
   }
 
-  def toGetTxOutResult(u: Map[String, Any]): GetTxOutResult = {
+  def toGetTxOutResult(u: DummyVin): GetTxOutResult = {
     GetTxOutResult(
       //value = Bitcoins(BigDecimal(u("value").asInstanceOf[Int])/BigDecimal(100000000)),
-      value = Bitcoins(u("value").asInstanceOf[Int]),
-      confirmations = u("confirmations").asInstanceOf[Int],
+      value = Bitcoins(u.value),
+      confirmations = u.confirmations,
       bestblock = null,
       scriptPubKey = null,
       coinbase = false
@@ -151,13 +147,13 @@ class DummyBtcRpc(txList: Seq[Map[String, Any]], utxoSet: Seq[Map[String, Any]] 
   }
 
   override def decodeRawTransaction(transaction: Transaction): Future[RpcTransaction] = {
-    val filtered = txList.filter(m => m("hex").asInstanceOf[BaseTransaction].lockTime == transaction.lockTime)
+    val filtered = txList.filter(m => m.hex.lockTime == transaction.lockTime)
     val tx = filtered.headOption.getOrElse(throw new IllegalArgumentException("tx not found"))
     Future.successful(toRpcTransaction(tx))
   }
 
   override def getTxOut(txid: DoubleSha256DigestBE, vout: Int, includeMemPool: Boolean = true): Future[GetTxOutResult] = {
-    val filtered = utxoSet.filter(m => m("txid").asInstanceOf[String] == txid.hex && m("vout").asInstanceOf[Int] == vout)
+    val filtered = utxoSet.filter(m => m.txId == txid.hex && m.vout == vout)
     val u = filtered.headOption.getOrElse(throw new IllegalArgumentException("utxo not found"))
     Future.successful(toGetTxOutResult(u))
   }

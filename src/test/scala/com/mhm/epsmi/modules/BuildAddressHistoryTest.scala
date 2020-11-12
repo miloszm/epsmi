@@ -26,10 +26,10 @@ class BuildAddressHistoryTest extends FlatSpec {
     val deterministicWallets = Seq(singleSigWallet)
 
     val (dummySpk, blockHeight, dummyTx) = DummyTxCreator.createDummyFundingTx()
-    val rpc = new DummyBtcRpc(Seq(dummyTx), Nil, Map(dummyTx("blockhash").asInstanceOf[String] -> blockHeight))
+    val rpc = new DummyBtcRpc(Seq(dummyTx), Nil, Map(dummyTx.blockhash -> blockHeight))
     val monitor = new TransactionMonitor(rpc, false)
     val addressHistory = monitor.buildAddressHistory(Seq(dummySpk), deterministicWallets)
     addressHistory.m.size shouldBe 1
-    assertAddressHistoryTx(addressHistory, dummySpk, blockHeight, dummyTx("txid").asInstanceOf[String], subscribed = false)
+    assertAddressHistoryTx(addressHistory, dummySpk, blockHeight, dummyTx.txId, subscribed = false)
   }
 }

@@ -10,6 +10,30 @@ object DummyTxCreator {
 
   def dummySpkToAddress(spk: String): String = "1FpeH5RojTMpaUS8oreYBRtMpCk1mfVxcf"
 
+  case class DummyVin(
+    txId: String,
+    vout: Int,
+    value: Int,
+    confirmations: Int,
+    coinbase: Option[String] = None
+  )
+
+  case class DummyVout(
+    value: Int,
+    scriptPubKey: String
+  )
+
+  case class DummyTx(
+    txId: String,
+    vin: DummyVin,
+    vout: DummyVout,
+    address: String,
+    category: String,
+    confirmations: Int,
+    blockhash: String,
+    hex: BaseTransaction
+  )
+
   def createDummyFundingTx(
     confirmations: Int = 1,
     outputSpkOpt: Option[String] = None,
@@ -17,7 +41,7 @@ object DummyTxCreator {
     txId: String = "a0"*32,
     coinbase: Boolean = false,
     inputConfirmations: Int = 1,
-    hexDifferentiator: Int = 15900): (String, Int, Map[String, Any]) = {
+    hexDifferentiator: Int = 15900): (String, Int, DummyTx) = {
     val dummyId = masterDummyId.getAndIncrement()
     val dummySpk = outputSpkOpt match {
       case Some(outputSpk) => outputSpk
@@ -30,28 +54,27 @@ object DummyTxCreator {
       else if (confirmations <= 100) "immature"
       else "generate"
     }
-    val vin = scala.collection.mutable.Map (
-      "txid" -> inputTxid,
-      "vout" -> 0,
-      "value" -> 100,
-      "confirmations" -> inputConfirmations,
+    val vin = DummyVin(
+      txId = inputTxid,
+      vout = 0,
+      value = 100,
+      inputConfirmations,
+      if (coinbase) Some("nonce") else None
     )
-    if (coinbase)
-      vin.put("coinbase", "nonce")
-    val vout = Map (
-      "value" -> 98,
-      "scriptPubKey" -> dummySpk
+    val vout = DummyVout(
+      value = 98,
+      scriptPubKey = dummySpk
     )
 
-    val dummyTx = Map(
-      "txid" -> txId,
-      "vin" -> vin.toMap,
-      "vout" -> vout,
-      "address" -> dummySpkToAddress(dummySpk),
-      "category" -> category,
-      "confirmations" -> confirmations,
-      "blockhash" -> dummyContainingBlock,
-      "hex" -> BaseTransaction(org.bitcoins.core.number.Int32(0), Nil, Nil, org.bitcoins.core.number.UInt32(hexDifferentiator))
+    val dummyTx = DummyTx(
+      txId = txId,
+      vin = vin,
+      vout = vout,
+      address = dummySpkToAddress(dummySpk),
+      category = category,
+      confirmations = confirmations,
+      blockhash = dummyContainingBlock,
+      hex = BaseTransaction(org.bitcoins.core.number.Int32(0), Nil, Nil, org.bitcoins.core.number.UInt32(hexDifferentiator))
     )
 
     (dummySpk, containingBlockHeight, dummyTx)

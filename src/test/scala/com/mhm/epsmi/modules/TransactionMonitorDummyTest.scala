@@ -12,40 +12,40 @@ class TransactionMonitorDummyTest extends FlatSpec {
     val BlockHeight = 133
     val(_, _, dummyTx) = DummyTxCreator.createDummyFundingTx()
 
-    val dummyBtcRpc = new DummyBtcRpc(Seq(dummyTx), Nil, Map(dummyTx("blockhash").asInstanceOf[String] -> BlockHeight))
+    val dummyBtcRpc = new DummyBtcRpc(Seq(dummyTx), Nil, Map(dummyTx.blockhash -> BlockHeight))
 
     val transactionMonitor = new TransactionMonitor(dummyBtcRpc, rawMode = false)
 
     val tx = Tx4HistoryGen(
-      dummyTx("confirmations").asInstanceOf[Int],
-      dummyTx("txid").asInstanceOf[String],
-      DoubleSha256DigestBE.fromHex(dummyTx("blockhash").asInstanceOf[String])
+      dummyTx.confirmations,
+      dummyTx.txId,
+      DoubleSha256DigestBE.fromHex(dummyTx.blockhash)
     )
     val txd = dummyBtcRpc.toRpcTransaction(dummyTx)
 
     val newHistoryElement = transactionMonitor.generateNewHistoryElement(tx, txd)
     newHistoryElement.height shouldBe BlockHeight
-    newHistoryElement.txHash shouldBe dummyTx("txid").asInstanceOf[String]
+    newHistoryElement.txHash shouldBe dummyTx.txId
   }
 
   "transaction monitor" should "have functionality for generating new history element when number of confirmations is zero" in {
     val(_, _, dummyTx) = DummyTxCreator.createDummyFundingTx(confirmations = 0)
 
-    val utxoSet = Seq(dummyTx("vin").asInstanceOf[Map[String, Any]])
-    val dummyBtcRpc = new DummyBtcRpc(Seq(dummyTx), utxoSet, Map(dummyTx("blockhash").asInstanceOf[String] -> 133))
+    val utxoSet = Seq(dummyTx.vin)
+    val dummyBtcRpc = new DummyBtcRpc(Seq(dummyTx), utxoSet, Map(dummyTx.blockhash -> 133))
 
     val transactionMonitor = new TransactionMonitor(dummyBtcRpc, rawMode = false)
 
     val tx = Tx4HistoryGen(
-      dummyTx("confirmations").asInstanceOf[Int],
-      dummyTx("txid").asInstanceOf[String],
-      DoubleSha256DigestBE.fromHex(dummyTx("blockhash").asInstanceOf[String])
+      dummyTx.confirmations,
+      dummyTx.txId,
+      DoubleSha256DigestBE.fromHex(dummyTx.blockhash)
     )
     val txd = dummyBtcRpc.toRpcTransaction(dummyTx)
 
     val newHistoryElement = transactionMonitor.generateNewHistoryElement(tx, txd)
     newHistoryElement.height shouldBe 0
-    newHistoryElement.txHash shouldBe dummyTx("txid").asInstanceOf[String]
+    newHistoryElement.txHash shouldBe dummyTx.txId
     newHistoryElement.fee shouldBe BigDecimal(2)
   }
 
@@ -56,18 +56,18 @@ class TransactionMonitorDummyTest extends FlatSpec {
     val ThisInSpk = "cdcd"
 
     val(_, _, inputTx) = DummyTxCreator.createDummyFundingTx(outputSpkOpt = Some(ThisInSpk), hexDifferentiator = 3)
-    assert(inputTx("txid") == InputTxid)
-    assert(inputTx("vout").asInstanceOf[Map[String,Any]]("scriptPubKey").asInstanceOf[String] == ThisInSpk)
+    assert(inputTx.txId == InputTxid)
+    assert(inputTx.vout.scriptPubKey == ThisInSpk)
 
     val(_, _, tx) = DummyTxCreator.createDummyFundingTx(outputSpkOpt = Some(ThisOutSpk), inputTxid = InputTxid, txId = ThisTxid, hexDifferentiator = 4)
-    assert(tx("txid") == ThisTxid)
-    assert(tx("vout").asInstanceOf[Map[String,Any]]("scriptPubKey").asInstanceOf[String] == ThisOutSpk)
-    assert(tx("vin").asInstanceOf[Map[String,Any]]("txid").asInstanceOf[String] == InputTxid)
+    assert(tx.txId == ThisTxid)
+    assert(tx.vout.scriptPubKey == ThisOutSpk)
+    assert(tx.vin.txId == InputTxid)
 
     val dummyBtcRpc = new DummyBtcRpc(Seq(tx, inputTx))
 
     val(outputScriptpubkeys, inputScriptpubkeys, tr) = new TransactionMonitor(dummyBtcRpc, rawMode = false).getInputAndOutputScriptpubkeys(
-      DoubleSha256DigestBE.fromHex(tx("txid").asInstanceOf[String])
+      DoubleSha256DigestBE.fromHex(tx.txId)
     )
     outputScriptpubkeys should contain theSameElementsAs Seq(ThisOutSpk)
     inputScriptpubkeys should contain theSameElementsAs Seq(ThisInSpk)
