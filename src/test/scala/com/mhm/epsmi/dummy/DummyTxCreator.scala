@@ -6,7 +6,7 @@ import org.bitcoins.core.protocol.transaction.BaseTransaction
 
 object DummyTxCreator {
 
-  val masterDummyId = new AtomicInteger(1000)
+  lazy val masterDummyId = new AtomicInteger(1000)
 
   def dummySpkToAddress(spk: String): String = "1FpeH5RojTMpaUS8oreYBRtMpCk1mfVxcf"
 
@@ -38,10 +38,8 @@ object DummyTxCreator {
     confirmations: Int = 1,
     outputSpkOpt: Option[String] = None,
     inputTxid: String = "e0"*32,
-    txId: String = "a0"*32,
     coinbase: Boolean = false,
-    inputConfirmations: Int = 1,
-    hexDifferentiator: Int = 15900): (String, Int, DummyTx) = {
+    inputConfirmations: Int = 1): (String, Int, DummyTx) = {
     val dummyId = masterDummyId.getAndIncrement()
     val dummySpk = outputSpkOpt match {
       case Some(outputSpk) => outputSpk
@@ -74,7 +72,7 @@ object DummyTxCreator {
       category = category,
       confirmations = confirmations,
       blockhash = dummyContainingBlock,
-      hex = BaseTransaction(org.bitcoins.core.number.Int32(0), Nil, Nil, org.bitcoins.core.number.UInt32(hexDifferentiator))
+      hex = BaseTransaction(org.bitcoins.core.number.Int32(0), Nil, Nil, org.bitcoins.core.number.UInt32(dummyId))
     )
 
     (dummySpk, containingBlockHeight, dummyTx)

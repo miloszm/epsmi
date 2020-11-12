@@ -53,10 +53,10 @@ class TransactionMonitorDummyTest extends FlatSpec {
     val ThisOutSpk = "abab"
     val ThisInSpk = "cdcd"
 
-    val(_, _, inputTx) = DummyTxCreator.createDummyFundingTx(outputSpkOpt = Some(ThisInSpk), hexDifferentiator = 3)
+    val(_, _, inputTx) = DummyTxCreator.createDummyFundingTx(outputSpkOpt = Some(ThisInSpk))
     assert(inputTx.vout.scriptPubKey == ThisInSpk)
 
-    val(_, _, tx) = DummyTxCreator.createDummyFundingTx(outputSpkOpt = Some(ThisOutSpk), inputTxid = inputTx.txId, hexDifferentiator = 4)
+    val(_, _, tx) = DummyTxCreator.createDummyFundingTx(outputSpkOpt = Some(ThisOutSpk), inputTxid = inputTx.txId)
     assert(tx.vout.scriptPubKey == ThisOutSpk)
     assert(tx.vin.txId == inputTx.txId)
 
