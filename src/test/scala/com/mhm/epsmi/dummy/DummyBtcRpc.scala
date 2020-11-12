@@ -5,13 +5,13 @@ import org.bitcoins.commons.jsonmodels.bitcoind._
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput}
+import org.bitcoins.core.protocol.transaction.{BaseTransaction, Transaction, TransactionInput}
 import org.bitcoins.core.script.ScriptType.PUBKEYHASH
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 
 import scala.concurrent.Future
 
-class DummyBtcRpc(txList: Seq[Map[String, Any]], utxoSet: Seq[Map[String, Any]], blockHeights: Map[String, Int])
+class DummyBtcRpc(txList: Seq[Map[String, Any]], utxoSet: Seq[Map[String, Any]] = Nil, blockHeights: Map[String, Int] = Map())
   extends BitcoindRpcExtendedClient(BitcoinSConnector.bitcoindInstance, BitcoinSConnector.system){
 
   def toListTransactionsResult(tx: Map[String, Any]): ListTransactionsResult = {
@@ -61,7 +61,7 @@ class DummyBtcRpc(txList: Seq[Map[String, Any]], utxoSet: Seq[Map[String, Any]],
       to = None,
       bip125_replaceable = "",
       details = Vector(),
-      hex = Transaction.fromHex(tx("hex").asInstanceOf[String])
+      hex = tx("hex").asInstanceOf[BaseTransaction]
     )
   }
 
@@ -141,7 +141,8 @@ class DummyBtcRpc(txList: Seq[Map[String, Any]], utxoSet: Seq[Map[String, Any]],
   }
 
   override def getTransaction(txid: DoubleSha256DigestBE, watchOnly: Boolean): Future[GetTransactionResult] = {
-    val tx = txList.map(toGetTransactionResult).filter(_.txid == txid)
+    val converted = txList.map(toGetTransactionResult)
+    val tx = converted.filter(_.txid == txid)
     Future.successful(tx.headOption.getOrElse(throw new IllegalArgumentException("tx not found")))
   }
 
@@ -150,7 +151,7 @@ class DummyBtcRpc(txList: Seq[Map[String, Any]], utxoSet: Seq[Map[String, Any]],
   }
 
   override def decodeRawTransaction(transaction: Transaction): Future[RpcTransaction] = {
-    val filtered = txList.filter(m => m.get("hex").map(_.asInstanceOf[String]).getOrElse("") == transaction.hex)
+    val filtered = txList.filter(m => m("hex").asInstanceOf[BaseTransaction].lockTime == transaction.lockTime)
     val tx = filtered.headOption.getOrElse(throw new IllegalArgumentException("tx not found"))
     Future.successful(toRpcTransaction(tx))
   }
