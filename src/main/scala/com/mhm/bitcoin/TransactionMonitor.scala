@@ -14,6 +14,7 @@ import org.bitcoins.crypto.DoubleSha256DigestBE
 
 import scala.annotation.tailrec
 import scala.collection.mutable.ListBuffer
+import scala.jdk.CollectionConverters.ConcurrentMapHasAsScala
 import scala.util.{Failure, Success, Try}
 
 case class Tx4HistoryGen(confirmations: Int, txid: String, blockhash: DoubleSha256DigestBE)
@@ -151,7 +152,6 @@ class TransactionMonitor(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed: Bo
   }
 
   /**
-   *
    * @return set of updated scripthashes
    */
   def checkForNewTxs(ah: AddressHistory): Set[String] = {
@@ -223,5 +223,44 @@ class TransactionMonitor(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed: Bo
       }).flatten
       updatedScripthashes.toSet
     }
+  }
+
+  /**
+   * @return set of updated scripthashes
+   */
+  def checkForConfirmations(ah: AddressHistory): Set[String] = {
+
+    val removedFromMempool: Seq[(String, Seq[String])] = (for {(txid, shs) <- unconfirmedTxes.asScala.toList} yield {
+      val tx = wrap(rpcCli.getTransaction(DoubleSha256DigestBE.fromHex(txid)))
+      logger.debug(s"uc_txid=$txid => $tx")
+      val blockHeightOpt = if (tx.confirmations == 0) None // still unconfirmed
+      else if (tx.confirmations > 0){
+        logger.info(s"Trnsaction confirmed: $txid")
+        val block = wrap(rpcCli.getBlockHeader(tx.blockhash.getOrElse(throw new IllegalArgumentException("missing blockhash"))))
+        Some(block.height)
+      } else {
+        logger.warn(s"Transaction conflicted: $txid")
+        None
+      }
+      if (tx.confirmations > 0) {
+        shs.foreach {sh =>
+          //delete the old unconfirmed entry in address_history
+          ah.m.get(sh).foreach { he =>
+            he.copy(history = he.history.filterNot(_.txHash == txid))
+          }
+        }
+        reorganizableTxes.addOne((txid, tx.blockhash.map(_.hex).getOrElse(throw new IllegalArgumentException("missing blockhash")), blockHeightOpt.get, shs))
+        Some((txid, shs))
+      }
+      else
+        None
+    }).flatten
+
+    removedFromMempool.foreach{ case (txid,_) =>
+      unconfirmedTxes.remove(txid)
+    }
+
+    val updatedScriptHashes = removedFromMempool.map{case (_, shs) => shs.toSet}.foldLeft(Set[String]())(_ ++ _)
+    updatedScriptHashes
   }
 }
