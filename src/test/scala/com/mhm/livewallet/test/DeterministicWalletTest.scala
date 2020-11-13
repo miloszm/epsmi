@@ -6,6 +6,12 @@ import org.scalatest.FlatSpec
 import org.scalatest.Matchers.{contain, convertToAnyShouldWrapper, have}
 import scodec.bits.HexStringSyntax
 
+
+/**
+ * NOTE TODO
+ * These tests work with a particular existing wallet
+ * Make sure they work in general, with a vanilla rpc node setup
+ */
 class DeterministicWalletTest extends FlatSpec {
 
   "parseElectrumMasterPublicKey" should "return wallet" in {

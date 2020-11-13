@@ -36,4 +36,48 @@ class BuildAddressHistoryTest extends FlatSpec {
     assertAddressHistoryTx(addressHistory, dummySpk1, containingBlockHeight1, dummyTx1.txId, subscribed = false)
     assertAddressHistoryTx(addressHistory, dummySpk2, containingBlockHeight2, dummyTx2.txId, subscribed = false)
   }
+
+  "transaction monitor" should " build address history with many entries" in {
+    val(inputSpk, inputBlockHeight1, inputTx) = DummyTxCreator.createDummyFundingTx()
+    val(dummySpk, containingBlockHeight, dummyTx) = DummyTxCreator.createDummyFundingTx(
+        confirmations = 0, inputTxid = inputTx.vin.txId
+    )
+    val sh = HashOps.script2ScriptHash(dummySpk)
+    val InitialTxCount = 1100 // we want to exceed the batch size of 1000
+    val txs = for (_ <- 0 until InitialTxCount) yield {
+      val (_, _, tx) = DummyTxCreator.createDummyFundingTx(
+        outputSpkOpt = Some(dummySpk),
+        inputTxid = inputTx.vin.txId,
+        confirmations = 0
+      )
+      tx
+    }
+    txs.length shouldBe InitialTxCount
+
+    val rpc = new DummyBtcRpc(txs, Seq(dummyTx.vin))
+    val monitor = new TransactionMonitor(rpc, nonWalletAllowed = false)
+    val addressHistory = monitor.buildAddressHistory(Seq(dummySpk), Seq(new DummyDeterministicWallet))
+    addressHistory.m.size shouldBe 1
+    // todo assert len(list(txmonitor.check_for_updated_txes())) == 0
+    addressHistory.m(sh).history.length shouldBe InitialTxCount
+
+    val AddedTxCount = 130
+    val newTxs = for (_ <- 0 until AddedTxCount) yield {
+      val (_, _, tx) = DummyTxCreator.createDummyFundingTx(
+        outputSpkOpt = Some(dummySpk),
+        inputTxid = inputTx.vin.txId,
+        confirmations = 0
+      )
+      tx
+    }
+
+    val newRpc = rpc.copy(txList = rpc.txList ++ newTxs)
+    // TODO finish this after
+    //    check_for_new_txes
+    //    check_for_confirmations
+    //    check_for_reorganizations
+    //    are implemented in transaction monitor
+    //    test_transactionmonitor.py line 257
+  }
+
 }
