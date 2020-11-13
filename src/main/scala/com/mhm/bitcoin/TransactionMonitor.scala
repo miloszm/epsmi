@@ -1,13 +1,19 @@
 package com.mhm.bitcoin
 
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicReference
+
 import com.mhm.connectors.BitcoindRpcExtendedClient
 import com.mhm.connectors.RpcWrap.wrap
+import com.mhm.util.HashOps
 import com.mhm.util.HashOps.script2ScriptHash
 import com.mhm.wallet.DeterministicWallet
 import grizzled.slf4j.Logging
 import org.bitcoins.commons.jsonmodels.bitcoind.{GetBlockHeaderResult, ListTransactionsResult, RpcTransaction}
 import org.bitcoins.crypto.DoubleSha256DigestBE
 
+import scala.annotation.tailrec
+import scala.collection.mutable.ListBuffer
 import scala.util.{Failure, Success, Try}
 
 case class Tx4HistoryGen(confirmations: Int, txid: String, blockhash: DoubleSha256DigestBE)
@@ -17,6 +23,16 @@ case class Tx4HistoryGen(confirmations: Int, txid: String, blockhash: DoubleSha2
  * @param nonWalletAllowed if true allows extracting input transactions when they are not wallet transactions
  */
 class TransactionMonitor(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed: Boolean) extends Logging {
+
+  case class TxidAddress(txid: String, address: String)
+
+  case class LastKnown(lastKnownTx: Option[TxidAddress])
+
+  val lastKnown = new AtomicReference[LastKnown](LastKnown(None))
+
+  val unconfirmedTxes: ConcurrentHashMap[String,Seq[String]] = new java.util.concurrent.ConcurrentHashMap[String, Seq[String]]()
+
+  val reorganizableTxes = ListBuffer[(String, String, Int, Seq[String])]()
 
   def isTxHistoryEligible(tx: ListTransactionsResult, obtainedTxids: Set[String]): Boolean = {
     tx.txid.isDefined && Set("receive", "send", "generate", "immature").contains(tx.category) &&
@@ -131,6 +147,81 @@ class TransactionMonitor(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed: Bo
     else {
       val blockHeader: GetBlockHeaderResult = wrap(rpcCli.getBlockHeader(tx.blockhash))
       HistoryElement(tx.txid, blockHeader.height)
+    }
+  }
+
+  /**
+   *
+   * @return set of updated scripthashes
+   */
+  def checkForNewTxs(ah: AddressHistory): Set[String] = {
+    val MaxTxRequestCount = 256
+    val txRequestCount = 2
+    val maxAttempts = 8 // log base 2 of 256
+
+    @tailrec
+    def go(attempt: Int, maxAttempts: Int, count: Int, v: Vector[ListTransactionsResult], lastKnownTx: Option[TxidAddress]): (Int, Vector[ListTransactionsResult]) = {
+      if (attempt == maxAttempts)
+        (0, v)
+      else {
+        val transactions = wrap(rpcCli.listTransactions("*", count, 0, includeWatchOnly = true), "listTransactions").reverse
+        lastKnownTx match {
+          case None =>
+            (transactions.size, transactions)
+          case Some(ln) =>
+            val found = transactions.zipWithIndex.find{ case (t, _) => t.txid == ln.txid && t.address.map(_.value).contains(ln.address) }
+            found match {
+              case Some((_, recentTxIndex)) => (recentTxIndex, transactions)
+              case None => go(attempt+1, maxAttempts, count * 2, transactions, lastKnownTx)
+            }
+        }
+      }
+    }
+    val (recentTxIndex, ret) = go(0, maxAttempts, 2, Vector(), lastKnown.get().lastKnownTx)
+    if (ret.nonEmpty){
+      lastKnown.set(LastKnown(Some(TxidAddress(
+        ret.head.txid.map(_.hex).getOrElse(throw new IllegalArgumentException("missing txid")),
+        ret.head.address.map(_.value).getOrElse(throw new IllegalArgumentException("missing address"))
+      ))))
+    }
+    if(recentTxIndex == 0){
+      Set()
+    } else {
+      val newTxs = ret.slice(0, recentTxIndex).reverse
+      logger.debug(s"new transactions=${newTxs.map(_.txid).mkString("|")}")
+      val relevantTxs = newTxs
+        .filter(_.txid.isDefined)
+        .filter(tx => Set("receive", "send", "generate", "immature").contains(tx.category))
+        .filter(_.confirmations.getOrElse(0) >= 0)
+      val updatedScripthashes = (for {
+        tx <- relevantTxs
+      } yield {
+          val txid = tx.txid.map(_.hex).getOrElse(throw new IllegalArgumentException("missing txid"))
+          val blockhash = tx.blockhash.getOrElse(throw new IllegalArgumentException("missing blockhash"))
+          val (outputScriptpubkeys, inputScriptpubkeys, txd) = getInputAndOutputScriptpubkeys(tx.txid.get)
+          val matchingScripthashes = (outputScriptpubkeys ++ inputScriptpubkeys)
+            .map(HashOps.script2ScriptHash).filter(ah.m.keySet.contains)
+          val newHistoryElement = generateNewHistoryElement(Tx4HistoryGen(
+            tx.confirmations.getOrElse(throw new IllegalArgumentException("missing confirmations")),
+            txid,
+            blockhash
+          ), txd)
+          logger.info(s"Found new tx: $newHistoryElement")
+          matchingScripthashes.foreach {ms =>
+            ah.m.get(ms) match {
+              case Some(he) => ah.m.put(ms, he.copy(history = he.history :+ newHistoryElement))
+              case None => ah.m.put(ms, HistoryEntry(false, Seq(newHistoryElement)))
+            }
+            if (newHistoryElement.height <= 0){
+              unconfirmedTxes.put(txid, unconfirmedTxes.getOrDefault(txid, Nil) :+ ms)
+            }
+          }
+          if (tx.confirmations.getOrElse(-1) > 0){
+            reorganizableTxes.addOne((txid, blockhash.hex, newHistoryElement.height, matchingScripthashes))
+          }
+          matchingScripthashes
+      }).flatten
+      updatedScripthashes.toSet
     }
   }
 }
