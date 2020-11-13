@@ -12,6 +12,7 @@ import grizzled.slf4j.Logging
 import org.bitcoins.commons.jsonmodels.bitcoind.{GetBlockHeaderResult, ListTransactionsResult, RpcTransaction}
 import org.bitcoins.crypto.DoubleSha256DigestBE
 
+import scala.Predef.Set
 import scala.annotation.tailrec
 import scala.collection.mutable.ListBuffer
 import scala.jdk.CollectionConverters.ConcurrentMapHasAsScala
@@ -24,6 +25,8 @@ case class Tx4HistoryGen(confirmations: Int, txid: String, blockhash: DoubleSha2
  * @param nonWalletAllowed if true allows extracting input transactions when they are not wallet transactions
  */
 class TransactionMonitor(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed: Boolean) extends Logging {
+
+  val ConfirmationsSafeFromReorg = 100
 
   case class TxidAddress(txid: String, address: String)
 
@@ -47,7 +50,7 @@ class TransactionMonitor(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed: Bo
   ): AddressHistory = {
     logger.info("started buildAddressHistory")
     val ah = new AddressHistory(
-      scala.collection.mutable.HashMap.from(monitoredScriptPubKeys.map(k => script2ScriptHash(k) -> HistoryEntry(false, Nil)))
+      scala.collection.mutable.HashMap.from[String, HistoryEntry](monitoredScriptPubKeys.map(k => (script2ScriptHash(k), HistoryEntry(false, Nil))))
     )
     logger.info(s"initialized address history keys with ${ah.m.keySet.size} keys, head entry is ${ah.m.head}")
 
@@ -169,7 +172,7 @@ class TransactionMonitor(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed: Bo
           case None =>
             (transactions.size, transactions)
           case Some(ln) =>
-            val found = transactions.zipWithIndex.find{ case (t, _) => t.txid == ln.txid && t.address.map(_.value).contains(ln.address) }
+            val found = transactions.zipWithIndex.find{ case (t, _) => t.txid.map(_.hex).getOrElse(throw new IllegalArgumentException("missing txid")) == ln.txid && t.address.map(_.value).contains(ln.address) }
             found match {
               case Some((_, recentTxIndex)) => (recentTxIndex, transactions)
               case None => go(attempt+1, maxAttempts, count * 2, transactions, lastKnownTx)
@@ -220,8 +223,8 @@ class TransactionMonitor(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed: Bo
             reorganizableTxes.addOne((txid, blockhash.hex, newHistoryElement.height, matchingScripthashes))
           }
           matchingScripthashes
-      }).flatten
-      updatedScripthashes.toSet
+      })
+      updatedScripthashes.foldLeft(Set[String]())((a,b) => a ++ b.toSet)
     }
   }
 
@@ -263,4 +266,66 @@ class TransactionMonitor(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed: Bo
     val updatedScriptHashes = removedFromMempool.map{case (_, shs) => shs.toSet}.foldLeft(Set[String]())(_ ++ _)
     updatedScriptHashes
   }
+
+  /**
+   * @return set of updated scripthashes
+   */
+  def checkForReorganizations(ah: AddressHistory): Set[String] = {
+    val updatedScripthashes = scala.collection.mutable.Set[String]()
+    val removedFromReorganizableTxes = (for {reorgableTx@(txid, blockhash, height, matchingShs) <- reorganizableTxes} yield {
+      val tx = wrap(rpcCli.getTransaction(DoubleSha256DigestBE.fromHex(txid)))
+      if (tx.confirmations >= ConfirmationsSafeFromReorg){
+        logger.debug(s"Transaction considered safe from reorg: $txid")
+        Some(reorgableTx)
+      }
+      else if (tx.confirmations < 1){
+        updatedScripthashes.addAll(matchingShs)
+        if (tx.confirmations == 0){
+          // transaction became unconfirmed in reorg
+          logger.info(s"Transaction was reorg'd out: $txid")
+          unconfirmedTxes.put(txid, unconfirmedTxes.getOrDefault(txid, Nil) ++ matchingShs)
+          if (tx.details.head.category != "orphan"){ // TODO not sure why details is a vector and if this category extraction is correct here
+            val txd = wrap(rpcCli.decodeRawTransaction(tx.hex))
+            val newHistoryElement = generateNewHistoryElement(Tx4HistoryGen(tx.confirmations, tx.txid.hex, tx.blockhash.getOrElse(throw new IllegalArgumentException("missing blockhash"))), txd)
+            matchingShs.foreach { ms =>
+              ah.m.get(ms) match {
+                case Some(he) => ah.m.put(ms, he.copy(history = he.history :+ newHistoryElement))
+                case None => ah.m.put(ms, HistoryEntry(false, Seq(newHistoryElement)))
+              }
+            }
+          }
+          Some(reorgableTx)
+        } else { // confirmations < 0
+          logger.info(s"Transaction was double spent! $txid")
+          Some(reorgableTx)
+        }
+      } else if (!tx.blockhash.map(_.hex).contains(blockhash)){
+        val block = wrap(rpcCli.getBlockHeader(tx.blockhash.getOrElse(throw new IllegalArgumentException("missing blockhash"))))
+        if (block.height == height) { //reorg but height is the same
+          logger.debug(s"Transaction was reorg'd but still confirmed at same height: $txid")
+          None
+        }
+        else {
+          //reorged but still confirmed at a different height
+          updatedScripthashes.addAll(matchingShs)
+          logger.debug("Transaction was reorg'd but still confirmed to a new block and different height: $txid")
+          //update history with the new height
+          matchingShs.foreach { ms =>
+            ah.m.get(ms).foreach { he => ah.m.put(ms, he.copy(history = he.history.map(e => e.copy(height = block.height)))) }
+          }
+          reorganizableTxes.addOne(reorgableTx)
+          Some(reorgableTx)
+        }
+      } else {
+        None
+      }
+    }).flatten
+
+    removedFromReorganizableTxes.foreach{ rtx =>
+      reorganizableTxes.remove(reorganizableTxes.indexOf(rtx))
+    }
+
+    updatedScripthashes.toSet
+  }
+
 }
