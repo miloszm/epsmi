@@ -311,7 +311,9 @@ class TransactionMonitor(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed: Bo
           logger.debug("Transaction was reorg'd but still confirmed to a new block and different height: $txid")
           //update history with the new height
           matchingShs.foreach { ms =>
-            ah.m.get(ms).foreach { he => ah.m.put(ms, he.copy(history = he.history.map(e => e.copy(height = block.height)))) }
+            ah.m.get(ms).foreach { he => ah.m.put(ms, he.copy(history = he.history.map(e =>
+              if (e.txHash == txid) e.copy(height = block.height) else e )
+            )) }
           }
           reorganizableTxes.addOne(reorgableTx)
           Some(reorgableTx)
