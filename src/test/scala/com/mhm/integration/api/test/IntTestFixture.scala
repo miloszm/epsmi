@@ -1,4 +1,4 @@
-package com.mhm.integration.epsmi.api
+package com.mhm.integration.api.test
 
 import com.googlecode.jsonrpc4j.StreamServer
 import com.mhm.api4electrum.Api4Electrum

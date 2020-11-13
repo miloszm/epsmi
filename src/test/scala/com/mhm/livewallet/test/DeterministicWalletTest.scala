@@ -1,4 +1,4 @@
-package com.mhm.epsmi.modules
+package com.mhm.livewallet.test
 
 import com.mhm.connectors.BitcoinSConnector.rpcCli
 import com.mhm.wallet.{DeterministicWallet, SingleSigWallet, XpubDescTempl}

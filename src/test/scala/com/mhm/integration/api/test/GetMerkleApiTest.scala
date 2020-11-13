@@ -1,24 +1,22 @@
-package com.mhm.integration.epsmi.api
+package com.mhm.integration.api.test
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.mhm.api4electrum.MerkleResult
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers.{contain, convertToAnyShouldWrapper}
 
-class TrIdFromPosMerkleTrueTest extends FlatSpec with IntTestFixture {
+class GetMerkleApiTest extends FlatSpec with IntTestFixture {
+  "get merkle api" should "return correct merkle" in {
 
-  "tr id from pos api with merkle param set to true" should "return correct merkle proof" in {
-    val merkleResult: MerkleResult =
-      if (port == EXTERNAL_EPS_PORT) {
-        fixture.client.blockchainTrIdFromPosMerkleTrue(652742, 5, true)
-      } else {
-        val s = fixture.client.blockchainTrIdFromPos(652742, 5, true)
-        val objectMapper = new ObjectMapper()
-        objectMapper.readValue[MerkleResult](s, classOf[MerkleResult])
-      }
+    /**
+     * we don't want to make test dependent on the wallet content,
+     * so we search transaction first for it to be found by get merkle
+     */
+    val txId4GetMerkle = fixture.client.blockchainTrIdFromPos(652742, 5, false)
+    val merkle = fixture.client.blockchainTransactionGetMerkle(txId4GetMerkle)
 
-    merkleResult.txHash shouldBe "5ce117fa1878fabc0d4c3153dad4e904593fc80c31aec6ebf4b3b5106f12c8d2"
-    merkleResult.merkle should contain theSameElementsAs List(
+    merkle.blockHeight shouldBe 652742
+    merkle.pos shouldBe 5
+
+    merkle.merkle should contain theSameElementsAs List(
       "151A1E0A44A7484387F9D8E4FAFC2175FF4C92EAB50B4D4D994F40EBFF4FF4A9",
       "7FEB3FF49BB97D219130086C79B2C01DEACC3A436DA00BC20229EBA899B1AC4B",
       "89660C6E8D1EB2CCF67FDA3AC2EF292CC489D6F41E5689CAF373728D5FCD7AC3",
@@ -33,9 +31,12 @@ class TrIdFromPosMerkleTrueTest extends FlatSpec with IntTestFixture {
       "126A3DC903183FD81CD3BFB80FD558A746B5442010C5E2CBE5DECFB92C589F10"
     )
 
-    println(s"txHash= ${merkleResult.txHash}")
-    println("merkle=")
-    merkleResult.merkle.foreach{println(_)}
+    println(s"get merkle result = ")
+    println(s"   blockHeight=${merkle.blockHeight}")
+    println(s"   pos=${merkle.pos}")
+    println(s"   merkle=")
+    merkle.merkle.foreach{println(_)}
+
   }
 
 }

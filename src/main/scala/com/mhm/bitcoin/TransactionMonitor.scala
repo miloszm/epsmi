@@ -14,9 +14,9 @@ case class Tx4HistoryGen(confirmations: Int, txid: String, blockhash: DoubleSha2
 
 /**
  * @param rpcCli bitcoin core client
- * @param rawMode if true allows extracting input transactions when they are not wallet transactions
+ * @param nonWalletAllowed if true allows extracting input transactions when they are not wallet transactions
  */
-class TransactionMonitor(rpcCli: BitcoindRpcExtendedClient, rawMode: Boolean) extends Logging {
+class TransactionMonitor(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed: Boolean) extends Logging {
 
   def isTxHistoryEligible(tx: ListTransactionsResult, obtainedTxids: Set[String]): Boolean = {
     tx.txid.isDefined && Set("receive", "send", "generate", "immature").contains(tx.category) &&
@@ -93,7 +93,7 @@ class TransactionMonitor(rpcCli: BitcoindRpcExtendedClient, rawMode: Boolean) ex
       val inputTransactionId = DoubleSha256DigestBE.fromHex(inn.previousOutput.txIdBE.hex)
       logger.debug(inputTransactionId.hex)
       logger.debug(inputTransactionId.flip.hex)
-      val resultTry = if (rawMode)
+      val resultTry = if (nonWalletAllowed)
         Try(wrap(rpcCli.getRawTransaction(inputTransactionId), "getRawTransaction")).map(_.hex)
       else
         Try(wrap(rpcCli.getTransaction(inputTransactionId), "getTransaction")).map(_.hex)

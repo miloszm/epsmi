@@ -1,13 +1,10 @@
-package com.mhm.epsmi.modules
+package com.mhm.epsmi.unit.test
 
 import com.mhm.bitcoin.{AddressHistory, TransactionMonitor}
-import com.mhm.connectors.BitcoinSConnector.rpcCli
-import com.mhm.epsmi.dummy.{DummyBtcRpc, DummyTxCreator}
+import com.mhm.epsmi.dummy.{DummyBtcRpc, DummyDeterministicWallet, DummyTxCreator}
 import com.mhm.util.HashOps
-import com.mhm.wallet.{SingleSigWallet, XpubDescTempl}
 import org.scalatest.FlatSpec
-import org.scalatest.Matchers.{be, convertToAnyShouldWrapper}
-import scodec.bits.HexStringSyntax
+import org.scalatest.Matchers.convertToAnyShouldWrapper
 
 class BuildAddressHistoryTest extends FlatSpec {
 
@@ -21,28 +18,20 @@ class BuildAddressHistoryTest extends FlatSpec {
   }
 
   "transaction monitor" should "build single entry address history" in {
-    val args = XpubDescTempl("xpub661MyMwAqRbcGr3NH9q81huWmqC31HMwJ5PqDzHqGnYghQy9QgvxS86qZcBjJVCXbe2uvbP3nG7P8qKkeFp86AwS8vWzdbsoRXTimc7aAZj", "pkh({xpub}/{change}/*)")
-    val singleSigWallet = new SingleSigWallet(rpcCli, hex"0488b21e", args, gapLimit = 25, "wallet-1")
-    val deterministicWallets = Seq(singleSigWallet)
-
     val (dummySpk, blockHeight, dummyTx) = DummyTxCreator.createDummyFundingTx()
     val rpc = new DummyBtcRpc(Seq(dummyTx), Nil, Map(dummyTx.blockhash -> blockHeight))
     val monitor = new TransactionMonitor(rpc, false)
-    val addressHistory = monitor.buildAddressHistory(Seq(dummySpk), deterministicWallets)
+    val addressHistory = monitor.buildAddressHistory(Seq(dummySpk), Seq(new DummyDeterministicWallet))
     addressHistory.m.size shouldBe 1
     assertAddressHistoryTx(addressHistory, dummySpk, blockHeight, dummyTx.txId, subscribed = false)
   }
 
   "transaction monitor" should " build address history with two entries" in {
-    val args = XpubDescTempl("xpub661MyMwAqRbcGr3NH9q81huWmqC31HMwJ5PqDzHqGnYghQy9QgvxS86qZcBjJVCXbe2uvbP3nG7P8qKkeFp86AwS8vWzdbsoRXTimc7aAZj", "pkh({xpub}/{change}/*)")
-    val singleSigWallet = new SingleSigWallet(rpcCli, hex"0488b21e", args, gapLimit = 25, "wallet-1")
-    val deterministicWallets = Seq(singleSigWallet)
-
     val(dummySpk1, containingBlockHeight1, dummyTx1) = DummyTxCreator.createDummyFundingTx()
     val(dummySpk2, containingBlockHeight2, dummyTx2) = DummyTxCreator.createDummyFundingTx()
     val rpc = new DummyBtcRpc(Seq(dummyTx1, dummyTx2), Nil, Map(dummyTx1.blockhash -> containingBlockHeight1, dummyTx2.blockhash -> containingBlockHeight2))
     val monitor = new TransactionMonitor(rpc, false)
-    val addressHistory = monitor.buildAddressHistory(Seq(dummySpk1, dummySpk2), deterministicWallets)
+    val addressHistory = monitor.buildAddressHistory(Seq(dummySpk1, dummySpk2), Seq(new DummyDeterministicWallet))
     addressHistory.m.size shouldBe 2
     assertAddressHistoryTx(addressHistory, dummySpk1, containingBlockHeight1, dummyTx1.txId, subscribed = false)
     assertAddressHistoryTx(addressHistory, dummySpk2, containingBlockHeight2, dummyTx2.txId, subscribed = false)

@@ -1,4 +1,4 @@
-package com.mhm.integration.epsmi.api
+package com.mhm.integration.api.test
 
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers.convertToAnyShouldWrapper

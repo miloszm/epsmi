@@ -1,4 +1,4 @@
-package com.mhm.epsmi.modules
+package com.mhm.epsmi.unit.test
 
 import com.mhm.connectors.BitcoinSConnector
 import com.mhm.setup.Setup
