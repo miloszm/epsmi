@@ -9,7 +9,7 @@ object RpcWrap extends Logging {
 
   def wrap[T](awaitable: Awaitable[T], callDescription: String = ""): T = {
     if (!callDescription.isEmpty)
-      logger.debug(s"btcrpc: $callDescription")
+      logger.trace(s"btcrpc: $callDescription")
     try {
       val r: Awaitable[T] = awaitable
       Await.result(awaitable, 20.seconds)

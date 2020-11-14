@@ -15,7 +15,7 @@ import org.bitcoins.crypto.DoubleSha256DigestBE
 import scala.Predef.Set
 import scala.annotation.tailrec
 import scala.collection.mutable.ListBuffer
-import scala.jdk.CollectionConverters.ConcurrentMapHasAsScala
+import scala.jdk.CollectionConverters.{ConcurrentMapHasAsScala, SetHasAsScala}
 import scala.util.{Failure, Success, Try}
 
 case class Tx4HistoryGen(confirmations: Int, txid: String, blockhash: DoubleSha256DigestBE)
@@ -48,11 +48,11 @@ class TransactionMonitor(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed: Bo
     monitoredScriptPubKeys: Seq[String],
     deterministicWallets: Seq[DeterministicWallet]
   ): AddressHistory = {
-    logger.info("started buildAddressHistory")
+    logger.trace("started buildAddressHistory")
     val ah = new AddressHistory(
       scala.collection.mutable.HashMap.from[String, HistoryEntry](monitoredScriptPubKeys.map(k => (script2ScriptHash(k), HistoryEntry(false, Nil))))
     )
-    logger.info(s"initialized address history keys with ${ah.m.keySet.size} keys, head entry is ${ah.m.head}")
+    logger.trace(s"initialized address history keys with ${ah.m.keySet.size} keys, head entry is ${ah.m.head}")
 
     val BATCH_SIZE = 1000
 
@@ -60,16 +60,16 @@ class TransactionMonitor(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed: Bo
 
     def go(skip: Int, obtainedTxids: Set[String]): Unit = {
       val transactions = wrap(rpcCli.listTransactions("*", BATCH_SIZE, skip, includeWatchOnly = true), "listTransactions")
-      logger.info(s"obtained ${transactions.size} transactions (skip=$skip)")
+      logger.trace(s"obtained ${transactions.size} transactions (skip=$skip)")
       val lastTx = if ((transactions.size < BATCH_SIZE) && skip == 0) Some(transactions.last) else None
       val newTxids = (transactions.flatMap{ tx: ListTransactionsResult =>
         if (isTxHistoryEligible(tx, obtainedTxids)){
-          logger.debug(s"tx ${tx.txid} checked for category: '${tx.category}', confirmations '${tx.confirmations}' and more")
+          logger.trace(s"tx ${tx.txid} checked for category: '${tx.category}', confirmations '${tx.confirmations}' and more")
           val(outputScriptpubkeys, inputScriptpubkeys, txd) = getInputAndOutputScriptpubkeys(tx.txid.get)
           val shToAddOut = walletAddrScripthashes.intersect(outputScriptpubkeys.map(script2ScriptHash).toSet)
           val shToAddIn = walletAddrScripthashes.intersect(inputScriptpubkeys.map(script2ScriptHash).toSet)
           val shToAdd = shToAddIn ++ shToAddOut
-          logger.debug(s"${shToAdd.size} scripthashes to add")
+          logger.trace(s"${shToAdd.size} scripthashes to add")
           if (shToAdd.isEmpty) None else {
             for(wal <- deterministicWallets){
               val overrunDepths = wal.haveScriptpubkeysOverrunGaplimit(outputScriptpubkeys)
@@ -78,7 +78,7 @@ class TransactionMonitor(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed: Bo
             val tx4HistoryGen = Tx4HistoryGen(tx.confirmations.get, tx.txid.map(_.hex).get, tx.blockhash.get)
             val newHistoryElement = generateNewHistoryElement(tx4HistoryGen, txd)
             shToAdd.foreach{ scriptHash =>
-              logger.debug(s"adding history element (${newHistoryElement.txHash}, ${newHistoryElement.height}) to $scriptHash")
+              logger.trace(s"adding history element (${newHistoryElement.txHash}, ${newHistoryElement.height}) to $scriptHash")
               ah.m.get(scriptHash) match {
                 case Some(he: HistoryEntry) => ah.m.put(scriptHash, he.copy(history = he.history :+ newHistoryElement))
                 case None => ah.m.put(scriptHash, HistoryEntry(false, Seq(newHistoryElement)))
@@ -98,21 +98,19 @@ class TransactionMonitor(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed: Bo
     }
     go(skip = 0, obtainedTxids = Set())
 
-    logger.debug(s"finished buildAddressHistory, history size = ${ah.m.size}")
+    logger.trace(s"finished buildAddressHistory, history size = ${ah.m.size}")
     ah
   }
 
   def getInputAndOutputScriptpubkeys(txid: DoubleSha256DigestBE): (Seq[String], Seq[String], RpcTransaction) = {
-    logger.debug("started getInputAndOutputScriptpubkeys")
+//    logger.debug("started getInputAndOutputScriptpubkeys")
     val getTx = wrap(rpcCli.getTransaction(txid), "getTransaction")
     val txd: RpcTransaction = wrap(rpcCli.decodeRawTransaction(getTx.hex), "decodeRawTransaction")
     val outputScriptpubkeys: Seq[String] = txd.vout.map(_.scriptPubKey.hex)
-    logger.debug(s"got ${outputScriptpubkeys.size} output scriptpubkeys: ${outputScriptpubkeys.mkString("|")}")
+//    logger.debug(s"got ${outputScriptpubkeys.size} output scriptpubkeys: ${outputScriptpubkeys.mkString("|")}")
     val inputScriptpubkeys = txd.vin.flatMap{ inn =>
       // TODO check for coinbase, don't know how at the moment
       val inputTransactionId = DoubleSha256DigestBE.fromHex(inn.previousOutput.txIdBE.hex)
-      logger.debug(inputTransactionId.hex)
-      logger.debug(inputTransactionId.flip.hex)
       val resultTry = if (nonWalletAllowed)
         Try(wrap(rpcCli.getRawTransaction(inputTransactionId), "getRawTransaction")).map(_.hex)
       else
@@ -120,15 +118,15 @@ class TransactionMonitor(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed: Bo
       resultTry match {
         case Failure(_) => None
         case Success(r) => Some {
-          logger.debug(s"decoding raw transaction ${r.hex}")
+//          logger.debug(s"decoding raw transaction ${r.hex}")
           val inputDecoded = wrap(rpcCli.decodeRawTransaction(r), "decodeRawTransaction")
           val script = inputDecoded.vout(inn.previousOutput.vout.toInt).scriptPubKey.hex
           script
         }
       }
     }
-    logger.debug(s"got ${inputScriptpubkeys.size} input scriptpubkeys: ${inputScriptpubkeys.mkString("|")}")
-    logger.debug(s"finished getInputAndOutputScriptpubkeys with ${inputScriptpubkeys.size} input(s) and ${outputScriptpubkeys.size} output(s)")
+//    logger.debug(s"got ${inputScriptpubkeys.size} input scriptpubkeys: ${inputScriptpubkeys.mkString("|")}")
+//    logger.debug(s"finished getInputAndOutputScriptpubkeys with ${inputScriptpubkeys.size} input(s) and ${outputScriptpubkeys.size} output(s)")
     (outputScriptpubkeys, inputScriptpubkeys, txd)
   }
 
@@ -191,7 +189,7 @@ class TransactionMonitor(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed: Bo
       Set()
     } else {
       val newTxs = ret.slice(0, recentTxIndex).reverse
-      logger.debug(s"new transactions=${newTxs.map(_.txid).mkString("|")}")
+      logger.trace(s"new transactions=${newTxs.map(_.txid).mkString("|")}")
       val relevantTxs = newTxs
         .filter(_.txid.isDefined)
         .filter(tx => Set("receive", "send", "generate", "immature").contains(tx.category))
@@ -330,4 +328,26 @@ class TransactionMonitor(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed: Bo
     updatedScripthashes.toSet
   }
 
+  /**
+   * @return set of updated scripthashes
+   */
+  def checkForUpdatedTxs(ah: AddressHistory): Set[String] = {
+    val updatedScripthashes = checkForNewTxs(ah) ++ checkForConfirmations(ah) ++ checkForReorganizations(ah)
+    updatedScripthashes.foreach{ ush =>
+      ah.m.updateWith(ush)(_.map(sortAddressHistoryList))
+    }
+    if (updatedScripthashes.nonEmpty) {
+      logger.debug(s"unconfirmed txes = ${unconfirmedTxes.keySet().asScala.mkString("|")}")
+      logger.debug(s"reorganizable_txes = ${reorganizableTxes.mkString("|")}")
+      logger.debug(s"updated_scripthashes = ${updatedScripthashes.mkString("|")}")
+    }
+    updatedScripthashes.filter(sh => ah.m.contains(sh) && ah.m(sh).subscribed)
+  }
+
+  def sortAddressHistoryList(historyEntry: HistoryEntry): HistoryEntry = {
+    val unconfirmedTxs = historyEntry.history.filter(_.height <= 0)
+    val confirmedTxs = historyEntry.history.filter(_.height > 0)
+    val sortedConfirmedTxs = confirmedTxs.sortWith((e1, e2) => e1.height < e2.height)
+    historyEntry.copy(history = sortedConfirmedTxs ++ unconfirmedTxs)
+  }
 }
