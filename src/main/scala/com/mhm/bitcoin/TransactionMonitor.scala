@@ -147,15 +147,10 @@ class TransactionMonitor(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed: Bo
   }
 
 
-  case class CheckForNewTxsResult(
-    newState: TransactionMonitorState,
-    newFound: Set[String]
-  )
-
   /**
    * @return set of updated scripthashes
    */
-  def checkForNewTxs(state: TransactionMonitorState): CheckForNewTxsResult = {
+  def checkForNewTxs(state: TransactionMonitorState): TransactionMonitorState = {
     logger.debug("started checkForNewTxs")
     val MaxTxRequestCount = 256
     val txRequestCount = 2
@@ -188,19 +183,20 @@ class TransactionMonitor(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed: Bo
         val (outputScriptpubkeys, inputScriptpubkeys, txd) = getInputAndOutputScriptpubkeys(tx.txid.get)
         val matchingScripthashes = (outputScriptpubkeys ++ inputScriptpubkeys)
           .map(HashOps.script2ScriptHash).filter(state.addressHistory.m.keySet.contains)
+        val state1 = state.addUpdatedScripthashes(matchingScripthashes)
         val newHistoryElement = generateNewHistoryElement(Tx4HistoryGen(optConfirmations2Int(tx.confirmations), txid, blockhash), txd)
-        val state1 = state.addHistoryItemForScripthashes(matchingScripthashes, newHistoryElement)
-        val state2 = if (newHistoryElement.height <= 0){
-          state1.addUnconfirmedScripthases(txid, matchingScripthashes)
-        } else state1
-        val state3 = if (tx.confirmations.getOrElse(-1) > 0) {
-          state2.addReorganizableTx(ReorganizableTxEntry(txid, blockhash.hex, newHistoryElement.height, matchingScripthashes))
+        val state2 = state1.addHistoryItemForScripthashes(matchingScripthashes, newHistoryElement)
+        val state3 = if (newHistoryElement.height <= 0){
+          state2.addUnconfirmedScripthases(txid, matchingScripthashes)
         } else state2
-        go2(state3, xs)
+        val state4 = if (tx.confirmations.getOrElse(-1) > 0) {
+          state3.addReorganizableTx(ReorganizableTxEntry(txid, blockhash.hex, newHistoryElement.height, matchingScripthashes))
+        } else state3
+        go2(state4, xs)
       }
     }
-    val result = if (recentTxIndex == 0){
-      CheckForNewTxsResult(state.setLastKnownTx(newLastKnownTx), Set())
+    val resultState = if (recentTxIndex == 0){
+      state.setLastKnownTx(newLastKnownTx)
     } else {
       val newTxs = ret.slice(0, recentTxIndex).reverse
       val relevantTxs = newTxs
@@ -209,10 +205,10 @@ class TransactionMonitor(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed: Bo
         .filter(_.confirmations.getOrElse(0) >= 0)
 
       val newState = go2(state.setLastKnownTx(newLastKnownTx), relevantTxs)
-      CheckForNewTxsResult(newState, Set())
+      newState
     }
-    logger.debug(s"finished checkForNewTxs, found ${result.newFound.size} new tx(s)")
-    result
+    logger.debug(s"finished checkForNewTxs, found ${resultState.updatedScripthashes.size} new tx(s)")
+    resultState
   }
 
   def checkForConfirmations(state: TransactionMonitorState): TransactionMonitorState = {
@@ -299,7 +295,7 @@ class TransactionMonitor(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed: Bo
    */
   def checkForUpdatedTxs(ah: AddressHistory): Set[String] = {
     logger.debug("started checkForUpdatedTxs")
-    val updatedScripthashes = /*checkForNewTxs(ah, None) ++ */ checkForConfirmations(ah) ++ checkForReorganizations(ah)
+    val updatedScripthashes = checkForNewTxs(ah, None) ++ */ checkForConfirmations(ah) ++ checkForReorganizations(ah)
     updatedScripthashes.foreach{ ush =>
       ah.m.updateWith(ush)(_.map(sortAddressHistoryList))
     }
