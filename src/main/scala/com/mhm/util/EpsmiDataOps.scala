@@ -60,5 +60,8 @@ object EpsmiDataOps {
     osha.getOrElse(throw new IllegalArgumentException("missing sha 256 BE"))
   }
 
+  def optConfirmations2Int(confirmationsOpt: Option[Int]): Int = {
+    confirmationsOpt.getOrElse(throw new IllegalArgumentException("missing confirmations"))
+  }
 
 }

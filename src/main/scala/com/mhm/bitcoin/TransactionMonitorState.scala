@@ -3,12 +3,15 @@ package com.mhm.bitcoin
 
 case class ReorganizableTxEntry(txid: String, blockhash: String, height: Int, matchingShs: Seq[String])
 case class UnconfirmedTxEntry(txid: String, matchingShs: Seq[String])
+case class TxidAddress(txid: String, address: String)
+
 
 case class TransactionMonitorState(
   addressHistory: AddressHistory,
   unconfirmedTxes: Map[String,Seq[String]] = Map(),
   reorganizableTxes: Seq[ReorganizableTxEntry] = Seq(),
-  updatedScripthashes: Seq[String] = Seq()
+  updatedScripthashes: Seq[String] = Seq(),
+  lastKnownTx: Option[TxidAddress] = None
 ){
   def removeUnconfirmed(removed: Seq[UnconfirmedTxEntry]): TransactionMonitorState = {
     val newUnconfirmedTxes = unconfirmedTxes.collect {case e@(txid, _) if !removed.map(_.txid).contains(txid) => e }
@@ -53,5 +56,25 @@ case class TransactionMonitorState(
     }
     this.copy(unconfirmedTxes = newUnconfirmedTxes)
   }
+  def setLastKnownTx(txidAddress: TxidAddress): TransactionMonitorState = {
+    this.copy(lastKnownTx = Some(txidAddress))
+  }
+  def setLastKnownTx(txidAddressOpt: Option[TxidAddress]): TransactionMonitorState = {
+    this.copy(lastKnownTx = txidAddressOpt)
+  }
+  def resetLastKnownTx(): TransactionMonitorState = {
+    this.copy(lastKnownTx = None)
+  }
+  def sortAddressHistory(): TransactionMonitorState = {
+    val newMap = addressHistory.m.collect {
+      case (k, v) => k -> sortAddressHistoryList(v)
+    }
+    this.copy(addressHistory = this.addressHistory.copy(m = newMap))
+  }
+  private def sortAddressHistoryList(historyEntry: HistoryEntry): HistoryEntry = {
+    val unconfirmedTxs = historyEntry.history.filter(_.height <= 0)
+    val confirmedTxs = historyEntry.history.filter(_.height > 0)
+    val sortedConfirmedTxs = confirmedTxs.sortWith((e1, e2) => e1.height < e2.height)
+    historyEntry.copy(history = sortedConfirmedTxs ++ unconfirmedTxs)
+  }
 }
-
