@@ -11,5 +11,4 @@ case class HistoryEntry(
   history: Seq[HistoryElement]
 )
 
-class AddressHistory(val m: scala.collection.mutable.Map[String, HistoryEntry]) {
-}
+case class AddressHistory(m: Map[String, HistoryEntry])
