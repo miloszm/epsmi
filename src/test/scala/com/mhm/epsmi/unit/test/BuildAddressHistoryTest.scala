@@ -92,17 +92,16 @@ class BuildAddressHistoryTest extends FlatSpec {
                           Map(dummyTx1.blockhash -> containingBlockHeight1, dummyTx2.blockhash -> containingBlockHeight2, dummyTx3.blockhash -> containingBlockHeight3))
 
     val monitor = new TransactionMonitor(rpc, nonWalletAllowed = false)
-    val buildResult = monitor.buildAddressHistory(Seq(dummySpk1, dummySpk2, dummySpk3), Seq(new DummyDeterministicWallet))
-    println(s"ah=${buildResult.addressHistory.m.toList.mkString("\n")}")
-    val lastKnown1 = buildResult.lastKnown
-    println(s"       lastKnown0=${buildResult.lastKnown}")
+    val state = monitor.buildAddressHistory(Seq(dummySpk1, dummySpk2, dummySpk3), Seq(new DummyDeterministicWallet))
+    println(s"ah=${state.addressHistory.m.toList.mkString("\n")}")
+    val lastKnown1 = state.lastKnownTx
+    println(s"       lastKnown0=${state.lastKnownTx}")
 
-    val result1 = monitor.checkForNewTxs(buildResult.addressHistory, buildResult.lastKnown)
-    println(s"       lastKnown1=${result1.lastKnown}")
-    println(s"       newFound1=${result1.newFound}")
-    println(s"       new ah=${result1.newHistoryElements}")
-    println(s"       new unconfirmed=${result1.newUnconfirmed}")
-    println(s"       new reorganizable=${result1.newReorganizable}")
+    val state1 = monitor.checkForNewTxs(state)
+    println(s"       lastKnownTx=${state1.lastKnownTx}")
+    println(s"       updated scripthashes=${state1.updatedScripthashes}")
+    println(s"       unconfirmed=${state1.unconfirmedTxes}")
+    println(s"       reorganizable=${state1.reorganizableTxes}")
 
 //    val result2 = monitor.checkForNewTxs(ah, result1.lastKnown)
 //    result2.lastKnown shouldBe result1.lastKnown
