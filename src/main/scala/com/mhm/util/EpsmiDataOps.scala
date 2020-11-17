@@ -3,6 +3,8 @@ package com.mhm.util
 import java.nio.ByteBuffer
 
 import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.protocol.BitcoinAddress
+import org.bitcoins.crypto.DoubleSha256DigestBE
 import scodec.bits.ByteVector
 
 object EpsmiDataOps {
@@ -44,6 +46,18 @@ object EpsmiDataOps {
   def intCeilLog2(x: Int): Int = {
     if (x <= 0) 0 else
     Math.ceil(Math.log(x) / Math.log(2)).toInt
+  }
+
+  def optSha2Str(osha: Option[DoubleSha256DigestBE]): String = {
+    osha.map(_.hex).getOrElse(throw new IllegalArgumentException("missing sha 256 BE"))
+  }
+
+  def optAddr2Str(osha: Option[BitcoinAddress]): String = {
+    osha.map(_.value).getOrElse(throw new IllegalArgumentException("missing bitcoin address"))
+  }
+
+  def optSha2Sha(osha: Option[DoubleSha256DigestBE]): DoubleSha256DigestBE = {
+    osha.getOrElse(throw new IllegalArgumentException("missing sha 256 BE"))
   }
 
 

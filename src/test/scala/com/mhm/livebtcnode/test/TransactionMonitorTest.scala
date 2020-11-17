@@ -24,14 +24,14 @@ class TransactionMonitorTest extends FlatSpec {
       "76a9143fe7f4ee744d330cbcc8ec5d68925e63ce03f77888ac",
       "76a914a2946db89edc09f56960cee76dab97604f7ffef088ac"
     )
-    val addressHistory = new TransactionMonitor(BitcoinSConnector.rpcCli, nonWalletAllowed = true).buildAddressHistory(monitoredScriptPubKeys, deterministicWallets)
+    val buildResult = new TransactionMonitor(BitcoinSConnector.rpcCli, nonWalletAllowed = true).buildAddressHistory(monitoredScriptPubKeys, deterministicWallets)
     monitoredScriptPubKeys.take(1).foreach { k =>
-      addressHistory.m(HashOps.script2ScriptHash(k)) shouldBe HistoryEntry(subscribed = false, List(HistoryElement("22667c482f0f69daefabdf0969be53b8d539e1d2abbfc1c7a193ae38ec0d3e31",654929,0)))
+      buildResult.addressHistory.m(HashOps.script2ScriptHash(k)) shouldBe HistoryEntry(subscribed = false, List(HistoryElement("22667c482f0f69daefabdf0969be53b8d539e1d2abbfc1c7a193ae38ec0d3e31",654929,0)))
     }
     monitoredScriptPubKeys.drop(1).foreach { k =>
-      addressHistory.m(HashOps.script2ScriptHash(k)) shouldBe HistoryEntry(subscribed = false, Nil)
+      buildResult.addressHistory.m(HashOps.script2ScriptHash(k)) shouldBe HistoryEntry(subscribed = false, Nil)
     }
-    print(addressHistory.m)
+    print(buildResult.addressHistory.m)
   }
 
   "transaction monitor" should "have functionality for getInputAndOutputScriptpubkeys" in {

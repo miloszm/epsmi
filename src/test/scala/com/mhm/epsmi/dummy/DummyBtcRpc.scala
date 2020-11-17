@@ -133,7 +133,7 @@ case class DummyBtcRpc(txList: Seq[DummyTx], utxoSet: Seq[DummyVin] = Nil, block
   }
 
   override def listTransactions(account: String, count: Int, skip: Int, includeWatchOnly: Boolean): Future[Vector[ListTransactionsResult]] = {
-    Future.successful(txList.slice(skip, skip + count).map(toListTransactionsResult).toVector)
+    Future.successful(txList.slice(skip, skip + count).map(toListTransactionsResult).toVector.reverse)
   }
 
   override def getTransaction(txid: DoubleSha256DigestBE, watchOnly: Boolean): Future[GetTransactionResult] = {
