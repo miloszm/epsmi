@@ -1,4 +1,4 @@
-package com.mhm.epsmi.unit.test
+package com.mhm.livebtcnode.test
 
 import com.mhm.connectors.BitcoinSConnector
 import com.mhm.setup.Setup
