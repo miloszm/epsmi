@@ -80,7 +80,7 @@ class TransactionMonitor(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed: Bo
     def processListTransactions(skip: Int, obtainedTxids: Set[String], state: TransactionMonitorState): TransactionMonitorState = {
       val transactions = wrap(rpcCli.listTransactions("*", BATCH_SIZE, skip, includeWatchOnly = true), "listTransactions")
       logger.debug(s"obtained ${transactions.size} transactions (skip=$skip) ${transactions.map(_.txid.map(_.hex.substring(0,4))).mkString("|")}")
-      val lastTx = if ((transactions.size < BATCH_SIZE) && skip == 0) Some(transactions.head) else None
+      val lastTx = if (transactions.nonEmpty) transactions.headOption else None
       val state2 = state.setLastKnownTx(lastTx.map(last =>TxidAddress(optSha2Str(last.txid), optAddr2Str(last.address))))
       val (state3,newTxids) = insertTxsInHistory(state2, transactions.toList, Set())
 
