@@ -29,7 +29,7 @@ case class TransactionMonitorState(
   }
   def addHistoryItemForScripthashes(shs: Seq[String], he: HistoryElement): TransactionMonitorState = {
     val newMap = addressHistory.m.collect {
-      case (k, v) if shs.contains(k) => k -> v.copy(history = v.history :+ he)
+      case (k, v) if shs.contains(k) => k -> v.copy(history = v.history.filterNot(a => a.txHash == he.txHash && a.height == he.height) :+ he)
       case (k, v) => k -> v
     }
     this.copy(addressHistory = this.addressHistory.copy(m = newMap))
@@ -57,9 +57,11 @@ case class TransactionMonitorState(
     this.copy(unconfirmedTxes = newUnconfirmedTxes)
   }
   def setLastKnownTx(txidAddress: TxidAddress): TransactionMonitorState = {
+    println(s"setLastKnownTx $txidAddress")
     this.copy(lastKnownTx = Some(txidAddress))
   }
   def setLastKnownTx(txidAddressOpt: Option[TxidAddress]): TransactionMonitorState = {
+    println(s"setLastKnownTx $txidAddressOpt")
     this.copy(lastKnownTx = txidAddressOpt)
   }
   def resetLastKnownTx(): TransactionMonitorState = {

@@ -59,28 +59,28 @@ class BuildAddressHistoryTest extends FlatSpec {
 //
 //    val rpc = DummyBtcRpc(txs, Seq(dummyTx.vin))
 //    val monitor = new TransactionMonitor(rpc, nonWalletAllowed = false)
-//    val addressHistory = monitor.buildAddressHistory(Seq(dummySpk), Seq(new DummyDeterministicWallet))
-//    monitor.lastKnown.get shouldBe LastKnown(Some(TxidAddress(txs(monitor.BATCH_SIZE).txId, txs.head.address)))
-//    addressHistory.m.size shouldBe 1
-//    monitor.checkForUpdatedTxs(addressHistory).size shouldBe 0
-//    monitor.lastKnown.get shouldBe LastKnown(Some(TxidAddress(txs(monitor.BATCH_SIZE).txId, txs.head.address)))
-//    addressHistory.m(sh).history.length shouldBe InitialTxCount
+//    val state = monitor.buildAddressHistory(Seq(dummySpk), Seq(new DummyDeterministicWallet))
+//    state.addressHistory.m.size shouldBe 1
+//    state.addressHistory.m(sh).history.length shouldBe InitialTxCount
+//    val (updatedScripthashes, state1) = monitor.checkForUpdatedTxs(state)
+//    updatedScripthashes.size shouldBe 0
+//    state1.addressHistory.m(sh).history.length shouldBe InitialTxCount
 //
 //    val AddedTxCount = 130
-//    val newTxs = for (i <- 0 until AddedTxCount) yield {
+//    val newTxs = for (_ <- 0 until AddedTxCount) yield {
 //      val (_, _, tx) = DummyTxCreator.createDummyFundingTx(
 //        outputSpkOpt = Some(dummySpk),
 //        inputTxid = inputTx.vin.txId,
 //        confirmations = 0
 //      )
-//      println(s"$i ${tx.txId}")
 //      tx
 //    }
 //
 //    val newRpc = rpc.copy(txList = rpc.txList ++ newTxs)
-//    val newMonitor = new TransactionMonitor(newRpc, nonWalletAllowed = false, initLastKnown = monitor.lastKnown.get)
-//    newMonitor.checkForUpdatedTxs(addressHistory).size shouldBe 0
-//    addressHistory.m(sh).history.length shouldBe InitialTxCount+AddedTxCount
+//    val newMonitor = new TransactionMonitor(newRpc, nonWalletAllowed = false)
+//    val (updatedScripthashes2, state2) = newMonitor.checkForUpdatedTxs(state1)
+//    updatedScripthashes2.size shouldBe 0
+//    state2.addressHistory.m(sh).history.length shouldBe InitialTxCount+AddedTxCount
 //  }
 
   "transaction monitor" should "have checking for new transactions functionality" in {
@@ -108,16 +108,17 @@ class BuildAddressHistoryTest extends FlatSpec {
         dummyTx2.blockhash -> containingBlockHeight2,
         dummyTx3.blockhash -> containingBlockHeight3,
         dummyTx4.blockhash -> containingBlockHeight4,
-        dummyTx4.blockhash -> containingBlockHeight5
+        dummyTx5.blockhash -> containingBlockHeight5
       )
     )
 
     val monitor2 = new TransactionMonitor(rpc2, nonWalletAllowed = false)
 
     val state2 = monitor2.checkForNewTxs(state)
-    state2.updatedScripthashes should contain theSameElementsAs Seq(script2ScriptHash(dummySpk4))
+    state2.updatedScripthashes should contain theSameElementsAs Seq(script2ScriptHash(dummySpk4), script2ScriptHash(dummySpk5))
 
     val state3 = monitor2.checkForNewTxs(state2)
+    println(state3.updatedScripthashes)
     state3.updatedScripthashes.isEmpty shouldBe true
   }
 
