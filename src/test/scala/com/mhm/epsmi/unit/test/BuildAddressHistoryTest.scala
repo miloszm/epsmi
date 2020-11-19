@@ -3,8 +3,9 @@ package com.mhm.epsmi.unit.test
 import com.mhm.bitcoin.{AddressHistory, LastKnown, TransactionMonitor, TxidAddress}
 import com.mhm.epsmi.dummy.{DummyBtcRpc, DummyDeterministicWallet, DummyTxCreator}
 import com.mhm.util.HashOps
-import org.scalatest.FlatSpec
-import org.scalatest.Matchers.{contain, convertToAnyShouldWrapper}
+import com.mhm.util.HashOps.script2ScriptHash
+import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.Matchers.{be, contain, convertToAnyShouldWrapper, empty}
 
 class BuildAddressHistoryTest extends FlatSpec {
 
@@ -85,20 +86,20 @@ class BuildAddressHistoryTest extends FlatSpec {
   "transaction monitor" should "have checking for new transactions functionality" in {
     val(dummySpk1, containingBlockHeight1, dummyTx1) = DummyTxCreator.createDummyFundingTx()
     val(dummySpk2, containingBlockHeight2, dummyTx2) = DummyTxCreator.createDummyFundingTx()
-    val(dummySpk3, containingBlockHeight3, dummyTx3) = DummyTxCreator.createDummyFundingTx()
+    val(dummySpk3, containingBlockHeight3, dummyTx3) = DummyTxCreator.createDummyFundingTx() // most recent initially
+    val(dummySpk4, containingBlockHeight4, dummyTx4) = DummyTxCreator.createDummyFundingTx()
+    val(dummySpk5, containingBlockHeight5, dummyTx5) = DummyTxCreator.createDummyFundingTx()
 
     val rpc = DummyBtcRpc(Seq(dummyTx1, dummyTx2, dummyTx3),
       Nil,
       Map(dummyTx1.blockhash -> containingBlockHeight1, dummyTx2.blockhash -> containingBlockHeight2, dummyTx3.blockhash -> containingBlockHeight3))
 
     val monitor = new TransactionMonitor(rpc, nonWalletAllowed = false)
-    val state = monitor.buildAddressHistory(Seq(dummySpk1, dummySpk2, dummySpk3), Seq(new DummyDeterministicWallet))
+    val state = monitor.buildAddressHistory(Seq(dummySpk1, dummySpk2, dummySpk3, dummySpk4, dummySpk5), Seq(new DummyDeterministicWallet))
+
     val stateAfterCheck = monitor.checkForNewTxs(state)
     assert(state.lastKnownTx == stateAfterCheck.lastKnownTx)
     assert(state.addressHistory == stateAfterCheck.addressHistory)
-
-    val(dummySpk4, containingBlockHeight4, dummyTx4) = DummyTxCreator.createDummyFundingTx()
-    val(dummySpk5, containingBlockHeight5, dummyTx5) = DummyTxCreator.createDummyFundingTx()
 
     val rpc2 = DummyBtcRpc(Seq(dummyTx1, dummyTx2, dummyTx3, dummyTx4, dummyTx5),
       Nil,
@@ -112,11 +113,12 @@ class BuildAddressHistoryTest extends FlatSpec {
     )
 
     val monitor2 = new TransactionMonitor(rpc2, nonWalletAllowed = false)
+
     val state2 = monitor2.checkForNewTxs(state)
+    state2.updatedScripthashes should contain theSameElementsAs Seq(script2ScriptHash(dummySpk4))
 
-    state2.updatedScripthashes should contain theSameElementsAs Seq(dummySpk4, dummySpk5)
-
-    println(s"updated scripthashes=${state2.updatedScripthashes}")
+    val state3 = monitor2.checkForNewTxs(state2)
+    state3.updatedScripthashes.isEmpty shouldBe true
   }
 
 }

@@ -83,4 +83,7 @@ case class TransactionMonitorState(
   def combineUpdatedScripthashes(other: TransactionMonitorState): TransactionMonitorState = {
     this.copy(updatedScripthashes = this.updatedScripthashes ++ other.updatedScripthashes)
   }
+  def resetUpdatedScripthashes(): TransactionMonitorState = {
+    this.copy(updatedScripthashes = Nil)
+  }
 }

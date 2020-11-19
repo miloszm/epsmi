@@ -13,7 +13,7 @@ import org.bitcoins.commons.jsonmodels.bitcoind.{GetBlockHeaderResult, ListTrans
 import org.bitcoins.crypto.DoubleSha256DigestBE
 
 import scala.annotation.tailrec
-import scala.collection.mutable.{ArrayBuffer, ListBuffer}
+import scala.collection.mutable.ListBuffer
 import scala.jdk.CollectionConverters.SetHasAsScala
 import scala.util.{Failure, Success, Try}
 
@@ -52,7 +52,7 @@ class TransactionMonitor(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed: Bo
     val walletAddrScripthashes = ah.m.keySet
 
     @tailrec
-    def go2(state: TransactionMonitorState, transactions: List[ListTransactionsResult], obtainedTxids: Set[String]): (TransactionMonitorState, Set[String]) = transactions match {
+    def insertTxsInHistory(state: TransactionMonitorState, transactions: List[ListTransactionsResult], obtainedTxids: Set[String]): (TransactionMonitorState, Set[String]) = transactions match {
       case Nil => (state, obtainedTxids)
       case tx::xs =>
         if (isTxHistoryEligible(tx, obtainedTxids)){
@@ -62,7 +62,7 @@ class TransactionMonitor(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed: Bo
           val shToAddIn = walletAddrScripthashes.intersect(inputScriptpubkeys.map(script2ScriptHash).toSet)
           val shToAdd = shToAddIn ++ shToAddOut
           logger.trace(s"${shToAdd.size} scripthashes to add")
-          if (shToAdd.isEmpty) go2(state, xs, obtainedTxids) else {
+          if (shToAdd.isEmpty) insertTxsInHistory(state, xs, obtainedTxids) else {
             for(wal <- deterministicWallets){
               val overrunDepths = wal.haveScriptpubkeysOverrunGaplimit(outputScriptpubkeys)
               if (overrunDepths.nonEmpty) throw new IllegalStateException("not enough addresses imported, see transactionmonitor.py line 155")
@@ -70,30 +70,30 @@ class TransactionMonitor(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed: Bo
             val tx4HistoryGen = Tx4HistoryGen(tx.confirmations.get, tx.txid.map(_.hex).get, tx.blockhash.get)
             val newHistoryElement = generateNewHistoryElement(tx4HistoryGen, txd)
             val state1 = state.addHistoryItemForScripthashes(shToAdd.toSeq, newHistoryElement)
-            go2(state1, xs, obtainedTxids + optSha2Str(tx.txid))
+            insertTxsInHistory(state1, xs, obtainedTxids + optSha2Str(tx.txid))
           }
         }
-        else go2(state, xs, obtainedTxids)
+        else insertTxsInHistory(state, xs, obtainedTxids)
     }
 
     @tailrec
-    def go(skip: Int, obtainedTxids: Set[String], state: TransactionMonitorState): TransactionMonitorState = {
+    def processListTransactions(skip: Int, obtainedTxids: Set[String], state: TransactionMonitorState): TransactionMonitorState = {
       val transactions = wrap(rpcCli.listTransactions("*", BATCH_SIZE, skip, includeWatchOnly = true), "listTransactions")
-      logger.trace(s"obtained ${transactions.size} transactions (skip=$skip)")
-      val lastTx = if ((transactions.size < BATCH_SIZE) && skip == 0) Some(transactions.last) else None
-      val state2 = state.setLastKnownTx(lastTx.map(last =>TxidAddress(optSha2Str(last.txid), EpsmiDataOps.optAddr2Str(last.address))))
-      val (state3,newTxids) = go2(state2, transactions.toList, Set())
+      logger.debug(s"obtained ${transactions.size} transactions (skip=$skip) ${transactions.map(_.txid.map(_.hex.substring(0,4))).mkString("|")}")
+      val lastTx = if ((transactions.size < BATCH_SIZE) && skip == 0) Some(transactions.head) else None
+      val state2 = state.setLastKnownTx(lastTx.map(last =>TxidAddress(optSha2Str(last.txid), optAddr2Str(last.address))))
+      val (state3,newTxids) = insertTxsInHistory(state2, transactions.toList, Set())
 
       //val overrunDepths = deterministicWallets.map(_.)
 
       if (transactions.size == BATCH_SIZE)
-        go(skip + BATCH_SIZE, obtainedTxids ++ newTxids, state3)
+        processListTransactions(skip + BATCH_SIZE, obtainedTxids ++ newTxids, state3)
       else
         state3
     }
 
-    val state2 = go(skip = 0, obtainedTxids = Set(), state).sortAddressHistory()
-    logger.debug(s"finished buildAddressHistory, history size = ${state2.addressHistory.m.size}")
+    val state2 = processListTransactions(skip = 0, obtainedTxids = Set(), state).sortAddressHistory()
+    logger.debug(s"finished buildAddressHistory, history size = ${state2.addressHistory.m.size}, last known = ${state2.lastKnownTx.map(_.txid.substring(0,4))}")
     state2
   }
 
@@ -151,41 +151,41 @@ class TransactionMonitor(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed: Bo
   /**
    * @return set of updated scripthashes
    */
-  def checkForNewTxs(state: TransactionMonitorState): TransactionMonitorState = {
+  def checkForNewTxs(stateArg: TransactionMonitorState): TransactionMonitorState = {
     logger.debug("started checkForNewTxs")
-    val MaxTxRequestCount = 256
-    val txRequestCount = 2
     val maxAttempts = 8 // log base 2 of 256
+    val state = stateArg.resetUpdatedScripthashes()
 
     @tailrec
-    def go(attempt: Int, maxAttempts: Int, count: Int, v: Vector[ListTransactionsResult], lastKnownTx: Option[TxidAddress]): (Int, Vector[ListTransactionsResult]) = {
+    def getTransactions(attempt: Int, maxAttempts: Int, count: Int, v: Vector[ListTransactionsResult], lastKnownTx: Option[TxidAddress]): (Int, Vector[ListTransactionsResult]) = {
       if (attempt == maxAttempts) (0, v)
       else {
         val transactions = wrap(rpcCli.listTransactions("*", count, 0, includeWatchOnly = true), "listTransactions")
+        logger.debug(s"obtained ${transactions.size} transactions (skip=0) ${transactions.map(_.txid.map(_.hex.substring(0,4))).mkString("|")}")
         lastKnownTx match {
           case None => (transactions.size, transactions)
           case Some(ln) =>
             val found = transactions.zipWithIndex.find{ case (t, _) => optSha2Str(t.txid) == ln.txid && optAddr2Str(t.address) == ln.address }
+            logger.debug(s"found last known at index: ${found.map(_._2)} from among: ${transactions.map(_.txid.map(_.hex.substring(0,4))).mkString("|")}")
             found match {
               case Some((_, recentTxIndex)) => (recentTxIndex, transactions)
-              case None => go(attempt+1, maxAttempts, count * 2, transactions, lastKnownTx)
+              case None => getTransactions(attempt+1, maxAttempts, count * 2, transactions, lastKnownTx)
             }
         }
       }
     }
-    val (recentTxIndex, ret) = go(0, maxAttempts, 2, Vector(), state.lastKnownTx)
-    val newLastKnownTx = ret.headOption.map { h => TxidAddress(optSha2Str(h.txid), optAddr2Str(h.address)) }
     @tailrec
-    def go2(state: TransactionMonitorState, txs: List[ListTransactionsResult]): TransactionMonitorState = { txs match {
+    def updateStateWithTransactions(state: TransactionMonitorState, txs: List[ListTransactionsResult]): TransactionMonitorState = { txs match {
       case Nil => state
       case tx :: xs =>
         val txid = optSha2Str(tx.txid)
         val blockhash = optSha2Sha(tx.blockhash)
         val (outputScriptpubkeys, inputScriptpubkeys, txd) = getInputAndOutputScriptpubkeys(tx.txid.get)
         val matchingScripthashes = (outputScriptpubkeys ++ inputScriptpubkeys)
-          .map(HashOps.script2ScriptHash).filter(state.addressHistory.m.keySet.contains)
+          .map(script2ScriptHash).filter(state.addressHistory.m.keySet.contains)
+        logger.debug(s"new tx: ${tx.txid.map(_.hex.substring(0,4))}")
         val newHistoryElement = generateNewHistoryElement(Tx4HistoryGen(optConfirmations2Int(tx.confirmations), txid, blockhash), txd)
-        val state1 = state
+        val newState = state
           .addUpdatedScripthashes(matchingScripthashes)
           .addHistoryItemForScripthashes(matchingScripthashes, newHistoryElement)
           .applyIf(newHistoryElement.height <= 0){
@@ -194,20 +194,22 @@ class TransactionMonitor(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed: Bo
           .applyIf(tx.confirmations.getOrElse(-1) > 0) {
             _.addReorganizableTx(ReorganizableTxEntry(txid, blockhash.hex, newHistoryElement.height, matchingScripthashes))
           }
-        go2(state1, xs)
+        updateStateWithTransactions(newState, xs)
       }
     }
+    val (recentTxIndex, transactions) = getTransactions(0, maxAttempts, 2, Vector(), state.lastKnownTx)
+    val newLastKnownTx = Some(transactions(recentTxIndex)).map { result => TxidAddress(optSha2Str(result.txid), optAddr2Str(result.address)) }
+    val state1 = state.applyIf(transactions.nonEmpty){_.setLastKnownTx(newLastKnownTx)}
     val resultState = if (recentTxIndex == 0){
-      state.setLastKnownTx(newLastKnownTx)
+      state1
     } else {
-      val newTxs = ret.slice(0, recentTxIndex).reverse
+      val newTxs = transactions.slice(0, recentTxIndex).reverse
+      logger.debug(s"new txs slice: ${newTxs.map(_.txid.map(_.hex.substring(0,4))).mkString("|")}")
       val relevantTxs = newTxs
         .filter(_.txid.isDefined)
         .filter(tx => Set("receive", "send", "generate", "immature").contains(tx.category))
         .filter(_.confirmations.getOrElse(0) >= 0)
-
-      val newState = go2(state.setLastKnownTx(newLastKnownTx), relevantTxs.toList)
-      newState
+      updateStateWithTransactions(state1.setLastKnownTx(newTxs.headOption.map { result => TxidAddress(optSha2Str(result.txid), optAddr2Str(result.address)) }), relevantTxs.toList)
     }
     logger.debug(s"finished checkForNewTxs, found ${resultState.updatedScripthashes.size} new tx(s)")
     resultState
