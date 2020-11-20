@@ -57,10 +57,8 @@ case class TransactionMonitorState(
     this.copy(updatedScripthashes = this.updatedScripthashes ++ shs)
   }
   def addUnconfirmedScripthases(txid: String, shs: Seq[String]): TransactionMonitorState = {
-    val newUnconfirmedTxes = unconfirmedTxes.collect {
-      case (k, v) if k == txid => k -> (v ++ shs)
-      case (k, v) => k -> v
-    }
+    val newValue = unconfirmedTxes.getOrElse(txid, Nil) ++ shs
+    val newUnconfirmedTxes = (unconfirmedTxes - txid) + (txid -> newValue)
     this.copy(unconfirmedTxes = newUnconfirmedTxes)
   }
   def setLastKnownTx(txidAddress: TxidAddress): TransactionMonitorState = {

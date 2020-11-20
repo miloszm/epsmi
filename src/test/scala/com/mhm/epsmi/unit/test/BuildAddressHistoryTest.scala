@@ -36,7 +36,7 @@ class BuildAddressHistoryTest extends FlatSpec with AddressHistoryAssertions {
 
     val InitialTxCount = 1100 // we want to exceed the batch size of 1000
     val txs1 = Seq(dummyTx)
-    val txs2 = for (i <- 0 until InitialTxCount-1) yield {
+    val txs2 = for (_ <- 0 until InitialTxCount-1) yield {
       val (_, _, tx) = DummyTxCreator.createDummyFundingTx(
         outputSpkOpt = Some(dummySpk),
         inputTxid = inputTx.vin.txId,
@@ -68,7 +68,7 @@ class BuildAddressHistoryTest extends FlatSpec with AddressHistoryAssertions {
       tx
     }
 
-    val newRpc = rpc.copy(txList = newTxs)
+    val newRpc = rpc.copy(txList = rpc.txList ++ newTxs)
     val newMonitor = new TransactionMonitor(newRpc, nonWalletAllowed = false)
     val (updatedScripthashes2, state2) = newMonitor.checkForUpdatedTxs(state1)
     updatedScripthashes2.size shouldBe 0

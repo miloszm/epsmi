@@ -39,8 +39,9 @@ object DummyTxCreator {
     outputSpkOpt: Option[String] = None,
     inputTxid: String = "e0"*32,
     coinbase: Boolean = false,
-    inputConfirmations: Int = 1): (String, Int, DummyTx) = {
-    val dummyId = masterDummyId.getAndIncrement()
+    inputConfirmations: Int = 1,
+    masterId: Int = -1): (String, Int, DummyTx) = {
+    val dummyId = if (masterId == -1) masterDummyId.getAndIncrement() else masterId
     val dummySpk = outputSpkOpt match {
       case Some(outputSpk) => outputSpk
       case None => f"$dummyId%04x"*16

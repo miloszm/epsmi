@@ -182,7 +182,7 @@ class TransactionMonitor(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed: Bo
           case None => GetTrRes(containsKnown = false, 0, transactions.size, transactions)
           case Some(ln) =>
             val found = transactions.zipWithIndex.find{ case (t, _) => optSha2Str(t.txid) == ln.txid && optAddr2Str(t.address) == ln.address }
-            logger.debug(s"found last known at index: ${found.map(_._2)} from among: ${transactions.map(_.txid.map(_.hex.substring(0,4))).mkString("|")}")
+            logger.trace(s"found last known at index: ${found.map(_._2)} from among: ${transactions.map(_.txid.map(_.hex.substring(0,4))).mkString("|")}")
             found match {
               case Some((_, recentTxIndex)) if count != transactions.size => GetTrRes(containsKnown = true, 0, recentTxIndex, transactions)
               case _ => getTransactions(attempt+1, maxAttempts, count * 2, transactions, lastKnownTx)
@@ -240,19 +240,27 @@ class TransactionMonitor(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed: Bo
         val unconfirmed = UnconfirmedTxEntry(txid, shs)
         val tx = wrap(rpcCli.getTransaction(DoubleSha256DigestBE.fromHex(txid)))
         logger.debug(s"uc_txid=$txid => $tx")
-        if (tx.confirmations < 0)
-          logger.warn(s"Transaction conflicted: $txid")
-        if (tx.confirmations > 0) {
+        if (tx.confirmations == 0){
+          go(state, xs) // still unconfirmed
+        }
+        else if (tx.confirmations > 0){
+          logger.info(s"Transaction confirmed: $txid")
           val block = wrap(rpcCli.getBlockHeader(EpsmiDataOps.optSha2Sha(tx.blockhash)))
           val blockHeight = block.height
           val newState = state
             .deleteHistoryItemForScripthashes(shs, txid)
+            .addHistoryItemForScripthashes(shs, HistoryElement(txid, blockHeight, 0))
             .addReorganizableTx(ReorganizableTxEntry(txid, optSha2Str(tx.blockhash), blockHeight, shs))
             .removeUnconfirmed(Seq(unconfirmed))
             .addUpdatedScripthashes(shs)
           go(newState, xs)
-        } else {
-          go(state.removeUnconfirmed(Seq(unconfirmed)), xs)
+        }
+        else {
+          logger.warn(s"Transaction conflicted: $txid")
+          val newState = state
+            .deleteHistoryItemForScripthashes(shs, txid)
+            .addUpdatedScripthashes(shs)
+          go(newState, xs)
         }
     }
     println(s">>>>>before checkConfirmations: ${state.reorganizableTxes}")

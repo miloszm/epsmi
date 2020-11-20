@@ -134,13 +134,12 @@ case class DummyBtcRpc(txList: Seq[DummyTx], utxoSet: Seq[DummyVin] = Nil, block
   }
 
   override def listTransactions(account: String, count: Int, skip: Int, includeWatchOnly: Boolean): Future[Vector[ListTransactionsResult]] = {
-    Future.successful(txList.slice(skip, skip + count).map(toListTransactionsResult).toVector.reverse)
+    Future.successful(txList.reverse.slice(skip, skip + count).map(toListTransactionsResult).toVector)
   }
 
   override def getTransaction(txid: DoubleSha256DigestBE, watchOnly: Boolean): Future[GetTransactionResult] = {
-    val converted = txList.map(toGetTransactionResult)
-    val tx = converted.filter(_.txid == txid)
-    Future.successful(tx.headOption.getOrElse(throw new IllegalArgumentException("tx not found")))
+    val tx = txList.filter(_.txId == txid.hex)
+    Future.successful(tx.headOption.map(toGetTransactionResult).getOrElse(throw new IllegalArgumentException(s"tx not found $txid")))
   }
 
   override def getRawTransaction(txid: DoubleSha256DigestBE, blockhash: Option[DoubleSha256DigestBE]): Future[GetRawTransactionResult] = {

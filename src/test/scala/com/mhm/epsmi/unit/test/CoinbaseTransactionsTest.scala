@@ -7,12 +7,12 @@ import com.mhm.util.HashOps.script2ScriptHash
 import org.scalatest.FlatSpec
 
 class CoinbaseTransactionsTest extends FlatSpec with AddressHistoryAssertions {
-  val(dummySpk1, containingBlockHeight1, dummyTx1) = createDummyFundingTx(coinbase = true, confirmations = 1)   // bb8
-  val(dummySpk2, containingBlockHeight2, dummyTx2) = createDummyFundingTx(coinbase = true, confirmations = 101) // bb9
-  val(dummySpk3, containingBlockHeight3, dummyTx3) = createDummyFundingTx(coinbase = true, confirmations = 0)   // bba
-  val(dummySpk4, containingBlockHeight4, dummyTx4) = createDummyFundingTx(coinbase = true, confirmations = 1)   // bbb
-  val(dummySpk5, containingBlockHeight5, dummyTx5) = createDummyFundingTx(coinbase = true, confirmations = 101) // bbc
-  val(dummySpk6, containingBlockHeight6, dummyTx6) = createDummyFundingTx(coinbase = true, confirmations = 0)   // bbd
+  val(dummySpk1, containingBlockHeight1, dummyTx1) = createDummyFundingTx(masterId = 1000, coinbase = true, confirmations = 1)   // bb8
+  val(dummySpk2, containingBlockHeight2, dummyTx2) = createDummyFundingTx(masterId = 1001, coinbase = true, confirmations = 101) // bb9
+  val(dummySpk3, containingBlockHeight3, dummyTx3) = createDummyFundingTx(masterId = 1002, coinbase = true, confirmations = 0)   // bba
+  val(dummySpk4, containingBlockHeight4, dummyTx4) = createDummyFundingTx(masterId = 1003, coinbase = true, confirmations = 1)   // bbb
+  val(dummySpk5, containingBlockHeight5, dummyTx5) = createDummyFundingTx(masterId = 1004, coinbase = true, confirmations = 101) // bbc
+  val(dummySpk6, containingBlockHeight6, dummyTx6) = createDummyFundingTx(masterId = 1005, coinbase = true, confirmations = 0)   // bbd
 
   val rpc = DummyBtcRpc(Seq(dummyTx1, dummyTx2, dummyTx3), Nil,
     Map(
