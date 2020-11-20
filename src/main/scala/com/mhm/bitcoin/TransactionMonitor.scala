@@ -197,7 +197,7 @@ class TransactionMonitor(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed: Bo
           .applyIf(newHistoryElement.height <= 0){
             _.addUnconfirmedScripthases(txid, matchingScripthashes)
           }
-          .applyIf(tx.confirmations.getOrElse(-1) > 0) {
+          .applyIf(tx.confirmations.isDefined && tx.confirmations.get > 0 && tx.confirmations.get < ConfirmationsSafeFromReorg) {
             logger.debug(s"adding reorganizable $txid")
             _.addReorganizableTx(ReorganizableTxEntry(txid, blockhash.hex, newHistoryElement.height, matchingScripthashes))
           }
@@ -312,8 +312,8 @@ class TransactionMonitor(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed: Bo
   def checkForUpdatedTxs(state: TransactionMonitorState): (Set[String], TransactionMonitorState) = {
     logger.debug("started checkForUpdatedTxs")
     val state1 = checkForNewTxs(state)
-    val state2 = state1.combineUpdatedScripthashes(checkConfirmations(state1))
-    val state3 = state2.combineUpdatedScripthashes(checkForReorganizations(state2))
+    val state2 = checkConfirmations(state1)
+    val state3 = checkForReorganizations(state2)
     val updatedScripthashes = state3.sortAddressHistory().updatedScripthashes
     if (updatedScripthashes.nonEmpty) {
       logger.debug(s"unconfirmed txes = ${unconfirmedTxes.keySet().asScala.mkString("|")}")
