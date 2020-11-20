@@ -95,4 +95,11 @@ case class TransactionMonitorState(
   def getElectrumHistory(sh: String): Option[Seq[HistoryElement]] = {
     this.addressHistory.m.get(sh).map(_.history)
   }
+  def subscribeAddress(sh: String): TransactionMonitorState = {
+    val newMap = addressHistory.m.get(sh) match {
+      case Some(he) => (addressHistory.m - sh) + (sh -> he.copy(subscribed = true))
+      case None => addressHistory.m
+    }
+    this.copy(addressHistory = this.addressHistory.copy(m = newMap))
+  }
 }

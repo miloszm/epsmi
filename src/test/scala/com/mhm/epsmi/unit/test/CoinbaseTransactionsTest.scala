@@ -4,6 +4,7 @@ import com.mhm.bitcoin.TransactionMonitor
 import com.mhm.epsmi.dummy.DummyTxCreator.createDummyFundingTx
 import com.mhm.epsmi.dummy.{DummyBtcRpc, DummyDeterministicWallet}
 import com.mhm.util.HashOps
+import com.mhm.util.HashOps.script2ScriptHash
 import org.scalatest.FlatSpec
 
 class CoinbaseTransactionsTest extends FlatSpec with AddressHistoryAssertions {
@@ -32,7 +33,7 @@ class CoinbaseTransactionsTest extends FlatSpec with AddressHistoryAssertions {
 
   assertAddressHistoryTx(monitorState.addressHistory, spk = dummySpk1, height = containingBlockHeight1, txId = dummyTx1.txId, subscribed = false)
   assertAddressHistoryTx(monitorState.addressHistory, spk = dummySpk2, height = containingBlockHeight2, txId = dummyTx2.txId, subscribed = false)
-  val sh3 = HashOps.script2ScriptHash(dummySpk3)
+  val sh3 = script2ScriptHash(dummySpk3)
   monitorState.getElectrumHistory(sh3).getOrElse(fail).size shouldBe 0
 
   val rpc2 = rpc.copy(txList = rpc.txList ++ Seq(dummyTx4, dummyTx5, dummyTx6))
@@ -44,7 +45,7 @@ class CoinbaseTransactionsTest extends FlatSpec with AddressHistoryAssertions {
   updatedTxs2.isEmpty shouldBe true
   assertAddressHistoryTx(monitorState2.addressHistory, spk = dummySpk4, height = containingBlockHeight4, txId = dummyTx4.txId, subscribed = false)
   assertAddressHistoryTx(monitorState2.addressHistory, spk = dummySpk5, height = containingBlockHeight5, txId = dummyTx5.txId, subscribed = false)
-  val sh6 = HashOps.script2ScriptHash(dummySpk6)
+  val sh6 = script2ScriptHash(dummySpk6)
   monitorState2.getElectrumHistory(sh6).getOrElse(fail).size shouldBe 0
 
   //  test orphan tx is removed from history
@@ -55,6 +56,6 @@ class CoinbaseTransactionsTest extends FlatSpec with AddressHistoryAssertions {
   val (updatedTxs3, monitorState3) = monitor3.checkForUpdatedTxs(monitorState2)
   monitorState3.reorganizableTxes.map(_.txid.substring(0,4)) should contain theSameElementsAs Seq("0bbb")
   updatedTxs3.isEmpty shouldBe true
-  val sh1 = HashOps.script2ScriptHash(dummySpk1)
+  val sh1 = script2ScriptHash(dummySpk1)
   monitorState3.getElectrumHistory(sh1).getOrElse(fail).size shouldBe 0
 }
