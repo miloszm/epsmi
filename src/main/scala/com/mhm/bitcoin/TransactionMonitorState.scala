@@ -100,4 +100,14 @@ case class TransactionMonitorState(
     }
     this.copy(addressHistory = this.addressHistory.copy(m = newMap))
   }
+  def initUnconfirmedTxes(): TransactionMonitorState = {
+    val mutableMap = scala.collection.mutable.HashMap[String, Seq[String]]()
+    addressHistory.m.foreach { case (sh, he) =>
+      val unconfirmedTxids = he.history.filter(_.height <= 0).map(_.txHash)
+      unconfirmedTxids.foreach { txid =>
+        mutableMap.put(txid, mutableMap.getOrElse(txid, Nil) :+ sh)
+      }
+    }
+    this.copy(unconfirmedTxes = mutableMap.toMap)
+  }
 }

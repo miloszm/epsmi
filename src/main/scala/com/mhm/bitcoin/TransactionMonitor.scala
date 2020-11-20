@@ -98,8 +98,9 @@ class TransactionMonitor(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed: Bo
     }
 
     val state2 = processListTransactions(skip = 0, obtainedTxids = Set(), state).sortAddressHistory()
+    val state3 = state2.initUnconfirmedTxes()
     logger.debug(s"finished buildAddressHistory, history size = ${state2.addressHistory.m.size}, last known = ${state2.lastKnownTx.map(_.txid.substring(0,4))}")
-    state2
+    state3
   }
 
   def getInputAndOutputScriptpubkeys(txid: DoubleSha256DigestBE): (Seq[String], Seq[String], RpcTransaction) = {
