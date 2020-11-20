@@ -161,19 +161,30 @@ class TransactionMonitor(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed: Bo
     val maxAttempts = 8 // log base 2 of 256
     val state = stateArg.resetUpdatedScripthashes()
 
+    case class GetTrRes(
+      containsKnown: Boolean,
+      newBegin: Int,
+      newEnd: Int, // after end
+      transactions: Vector[ListTransactionsResult]
+    ){
+      val knownBegin: Int = newEnd
+      val knownEnd: Int = transactions.size // after end
+      def isKnownOnly: Boolean = containsKnown && newEnd == 0
+    }
+
     @tailrec
-    def getTransactions(attempt: Int, maxAttempts: Int, count: Int, v: Vector[ListTransactionsResult], lastKnownTx: Option[TxidAddress]): (Int, Vector[ListTransactionsResult]) = {
-      if (attempt == maxAttempts) (-1, v)
+    def getTransactions(attempt: Int, maxAttempts: Int, count: Int, v: Vector[ListTransactionsResult], lastKnownTx: Option[TxidAddress]): GetTrRes = {
+      if (attempt == maxAttempts) GetTrRes(containsKnown = false, 0, v.size, v)
       else {
         val transactions = wrap(rpcCli.listTransactions("*", count, 0, includeWatchOnly = true), "listTransactions")
         logger.debug(s"obtained ${transactions.size} transactions (skip=0) ${transactions.map(_.txid.map(_.hex.substring(0,4))).mkString("|")}")
         lastKnownTx match {
-          case None => (transactions.size-1, transactions)
+          case None => GetTrRes(containsKnown = false, 0, transactions.size, transactions)
           case Some(ln) =>
             val found = transactions.zipWithIndex.find{ case (t, _) => optSha2Str(t.txid) == ln.txid && optAddr2Str(t.address) == ln.address }
             logger.debug(s"found last known at index: ${found.map(_._2)} from among: ${transactions.map(_.txid.map(_.hex.substring(0,4))).mkString("|")}")
             found match {
-              case Some((_, recentTxIndex)) if count != transactions.size => (recentTxIndex, transactions)
+              case Some((_, recentTxIndex)) if count != transactions.size => GetTrRes(containsKnown = true, 0, recentTxIndex, transactions)
               case _ => getTransactions(attempt+1, maxAttempts, count * 2, transactions, lastKnownTx)
             }
         }
@@ -189,7 +200,6 @@ class TransactionMonitor(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed: Bo
         val (outputScriptpubkeys, inputScriptpubkeys, txd) = getInputAndOutputScriptpubkeys(tx.txid.get)
         val matchingScripthashes = (outputScriptpubkeys ++ inputScriptpubkeys)
           .map(script2ScriptHash).filter(state.addressHistory.m.keySet.contains)
-        //logger.debug(s"new tx: ${tx.txid.map(_.hex.substring(0,4))}")
         val newHistoryElement = generateNewHistoryElement(Tx4HistoryGen(optConfirmations2Int(tx.confirmations), txid, blockhash), txd)
         val newState = state
           .addUpdatedScripthashes(matchingScripthashes)
@@ -204,14 +214,13 @@ class TransactionMonitor(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed: Bo
         updateStateWithTransactions(newState, xs)
       }
     }
-    val (recentTxIndex, transactions) = getTransactions(0, maxAttempts, 2, Vector(), state.lastKnownTx)
-    logger.debug(s"recent tx index = $recentTxIndex")
-    val resultState = if (recentTxIndex == 0){
-      val newLastKnownTx = Some(transactions(recentTxIndex)).map { result => TxidAddress(optSha2Str(result.txid), optAddr2Str(result.address)) }
-      val state1 = state.applyIf(transactions.nonEmpty){_.setLastKnownTx(newLastKnownTx)}
+    val getTrRes = getTransactions(0, maxAttempts, 2, Vector(), state.lastKnownTx)
+    val resultState = if (getTrRes.isKnownOnly){
+      val newLastKnownTx = Some(getTrRes.transactions(getTrRes.knownBegin)).map { result => TxidAddress(optSha2Str(result.txid), optAddr2Str(result.address)) }
+      val state1 = state.applyIf(getTrRes.transactions.nonEmpty){_.setLastKnownTx(newLastKnownTx)}
       state1
     } else {
-      val newTxs = if (recentTxIndex == -1) transactions else transactions.slice(0, recentTxIndex)
+      val newTxs = getTrRes.transactions.slice(getTrRes.newBegin, getTrRes.newEnd)
       logger.debug(s"new txs slice: ${newTxs.map(_.txid.map(_.hex.substring(0,4))).mkString("|")}")
       val relevantTxs = newTxs
         .filter(_.txid.isDefined)

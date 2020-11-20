@@ -1,11 +1,10 @@
 package com.mhm.epsmi.unit.test
 
-import com.mhm.bitcoin.{AddressHistory, LastKnown, TransactionMonitor, TxidAddress}
+import com.mhm.bitcoin.TransactionMonitor
 import com.mhm.epsmi.dummy.{DummyBtcRpc, DummyDeterministicWallet, DummyTxCreator}
 import com.mhm.util.HashOps
 import com.mhm.util.HashOps.script2ScriptHash
-import org.scalatest.{FlatSpec, Matchers}
-import org.scalatest.Matchers.{be, contain, convertToAnyShouldWrapper, empty}
+import org.scalatest.FlatSpec
 
 class BuildAddressHistoryTest extends FlatSpec with AddressHistoryAssertions {
 
