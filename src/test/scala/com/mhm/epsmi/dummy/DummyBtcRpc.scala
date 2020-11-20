@@ -58,7 +58,8 @@ case class DummyBtcRpc(txList: Seq[DummyTx], utxoSet: Seq[DummyVin] = Nil, block
       comment = None,
       to = None,
       bip125_replaceable = "",
-      details = Vector(),
+      // NOTE - make sure the below agrees with the real API behaviour
+      details = Vector(TransactionDetails(None, None, None, tx.category, Bitcoins(0), 0, None, None)),
       hex = tx.hex
     )
   }

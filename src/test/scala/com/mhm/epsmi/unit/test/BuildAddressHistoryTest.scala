@@ -7,16 +7,7 @@ import com.mhm.util.HashOps.script2ScriptHash
 import org.scalatest.{FlatSpec, Matchers}
 import org.scalatest.Matchers.{be, contain, convertToAnyShouldWrapper, empty}
 
-class BuildAddressHistoryTest extends FlatSpec {
-
-  def assertAddressHistoryTx(addressHistory: AddressHistory, spk: String, height: Int, txId: String, subscribed: Boolean): Unit = {
-    val historyElement = addressHistory.m.getOrElse(HashOps.script2ScriptHash(spk), fail)
-    historyElement.history.head.height shouldBe height
-    historyElement.history.head.txHash shouldBe txId
-    if (height == 0)
-      historyElement.history.head.fee shouldBe 0
-    historyElement.subscribed shouldBe subscribed
-  }
+class BuildAddressHistoryTest extends FlatSpec with AddressHistoryAssertions {
 
   "transaction monitor" should "build single entry address history" in {
     val (dummySpk, blockHeight, dummyTx) = DummyTxCreator.createDummyFundingTx()

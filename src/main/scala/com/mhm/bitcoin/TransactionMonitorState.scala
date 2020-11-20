@@ -22,7 +22,14 @@ case class TransactionMonitorState(
   }
   def deleteHistoryItemForScripthashes(shs: Seq[String], txid: String): TransactionMonitorState = {
     val newMap = addressHistory.m.collect {
-      case (k, v) if shs.contains(k) => k -> v.copy(history = v.history.filter(_.txHash == txid))
+      case (k, v) if shs.contains(k) => k -> v.copy(history = v.history.filterNot(_.txHash == txid))
+      case (k, v) => k -> v
+    }
+    this.copy(addressHistory = this.addressHistory.copy(m = newMap))
+  }
+  def deleteHistoryItems(shs: Seq[String], txid: String, height: Int): TransactionMonitorState = {
+    val newMap = addressHistory.m.collect {
+      case (k, v) if shs.contains(k) => k -> v.copy(history = v.history.filterNot(e => e.txHash == txid && e.height == height))
       case (k, v) => k -> v
     }
     this.copy(addressHistory = this.addressHistory.copy(m = newMap))
@@ -87,5 +94,8 @@ case class TransactionMonitorState(
   }
   def resetUpdatedScripthashes(): TransactionMonitorState = {
     this.copy(updatedScripthashes = Nil)
+  }
+  def getElectrumHistory(sh: String): Option[Seq[HistoryElement]] = {
+    this.addressHistory.m.get(sh).map(_.history)
   }
 }

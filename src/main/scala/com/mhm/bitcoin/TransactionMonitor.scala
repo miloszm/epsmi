@@ -10,6 +10,7 @@ import com.mhm.util.{EpsmiDataOps, HashOps}
 import com.mhm.wallet.DeterministicWallet
 import grizzled.slf4j.Logging
 import org.bitcoins.commons.jsonmodels.bitcoind.{GetBlockHeaderResult, ListTransactionsResult, RpcTransaction}
+import org.bitcoins.core.protocol.transaction.CoinbaseInput
 import org.bitcoins.crypto.DoubleSha256DigestBE
 
 import scala.annotation.tailrec
@@ -69,7 +70,11 @@ class TransactionMonitor(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed: Bo
             }
             val tx4HistoryGen = Tx4HistoryGen(tx.confirmations.get, tx.txid.map(_.hex).get, tx.blockhash.get)
             val newHistoryElement = generateNewHistoryElement(tx4HistoryGen, txd)
-            val state1 = state.addHistoryItemForScripthashes(shToAdd.toSeq, newHistoryElement)
+            val state1 = state
+              .addHistoryItemForScripthashes(shToAdd.toSeq, newHistoryElement)
+              .applyIf(tx.confirmations.isDefined && tx.confirmations.get > 0 && tx.confirmations.get < ConfirmationsSafeFromReorg){
+                _.addReorganizableTx(ReorganizableTxEntry(optSha2Str(tx.txid), optSha2Str(tx.blockhash), newHistoryElement.height, shToAdd.toSeq))
+              }
             insertTxsInHistory(state1, xs, obtainedTxids + optSha2Str(tx.txid))
           }
         }
@@ -98,12 +103,12 @@ class TransactionMonitor(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed: Bo
   }
 
   def getInputAndOutputScriptpubkeys(txid: DoubleSha256DigestBE): (Seq[String], Seq[String], RpcTransaction) = {
-//    logger.debug("started getInputAndOutputScriptpubkeys")
+    logger.trace("started getInputAndOutputScriptpubkeys")
     val getTx = wrap(rpcCli.getTransaction(txid), "getTransaction")
     val txd: RpcTransaction = wrap(rpcCli.decodeRawTransaction(getTx.hex), "decodeRawTransaction")
     val outputScriptpubkeys: Seq[String] = txd.vout.map(_.scriptPubKey.hex)
-//    logger.debug(s"got ${outputScriptpubkeys.size} output scriptpubkeys: ${outputScriptpubkeys.mkString("|")}")
-    val inputScriptpubkeys = txd.vin.flatMap{ inn =>
+    logger.trace(s"got ${outputScriptpubkeys.size} output scriptpubkeys: ${outputScriptpubkeys.mkString("|")}")
+    val inputScriptpubkeys = txd.vin.filterNot(_.isInstanceOf[CoinbaseInput]).flatMap{ inn =>
       // TODO check for coinbase, don't know how at the moment
       val inputTransactionId = DoubleSha256DigestBE.fromHex(inn.previousOutput.txIdBE.hex)
       val resultTry = if (nonWalletAllowed)
@@ -113,15 +118,15 @@ class TransactionMonitor(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed: Bo
       resultTry match {
         case Failure(_) => None
         case Success(r) => Some {
-//          logger.debug(s"decoding raw transaction ${r.hex}")
+          logger.trace(s"decoding raw transaction ${r.hex}")
           val inputDecoded = wrap(rpcCli.decodeRawTransaction(r), "decodeRawTransaction")
           val script = inputDecoded.vout(inn.previousOutput.vout.toInt).scriptPubKey.hex
           script
         }
       }
     }
-//    logger.debug(s"got ${inputScriptpubkeys.size} input scriptpubkeys: ${inputScriptpubkeys.mkString("|")}")
-//    logger.debug(s"finished getInputAndOutputScriptpubkeys with ${inputScriptpubkeys.size} input(s) and ${outputScriptpubkeys.size} output(s)")
+    logger.trace(s"got ${inputScriptpubkeys.size} input scriptpubkeys: ${inputScriptpubkeys.mkString("|")}")
+    logger.trace(s"finished getInputAndOutputScriptpubkeys with ${inputScriptpubkeys.size} input(s) and ${outputScriptpubkeys.size} output(s)")
     (outputScriptpubkeys, inputScriptpubkeys, txd)
   }
 
@@ -179,6 +184,7 @@ class TransactionMonitor(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed: Bo
       case Nil => state
       case tx :: xs =>
         val txid = optSha2Str(tx.txid)
+        logger.debug(s"updating state for $txid")
         val blockhash = optSha2Sha(tx.blockhash)
         val (outputScriptpubkeys, inputScriptpubkeys, txd) = getInputAndOutputScriptpubkeys(tx.txid.get)
         val matchingScripthashes = (outputScriptpubkeys ++ inputScriptpubkeys)
@@ -192,6 +198,7 @@ class TransactionMonitor(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed: Bo
             _.addUnconfirmedScripthases(txid, matchingScripthashes)
           }
           .applyIf(tx.confirmations.getOrElse(-1) > 0) {
+            logger.debug(s"adding reorganizable $txid")
             _.addReorganizableTx(ReorganizableTxEntry(txid, blockhash.hex, newHistoryElement.height, matchingScripthashes))
           }
         updateStateWithTransactions(newState, xs)
@@ -216,7 +223,7 @@ class TransactionMonitor(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed: Bo
     resultState
   }
 
-  def checkForConfirmations(state: TransactionMonitorState): TransactionMonitorState = {
+  def checkConfirmations(state: TransactionMonitorState): TransactionMonitorState = {
     @tailrec
     def go(state: TransactionMonitorState, unconfirmedTxs: List[UnconfirmedTxEntry]): TransactionMonitorState = unconfirmedTxs match {
       case Nil => state
@@ -239,7 +246,10 @@ class TransactionMonitor(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed: Bo
           go(state.removeUnconfirmed(Seq(unconfirmed)), xs)
         }
     }
-    go(state, state.unconfirmedTxes.map{case(k, v) => UnconfirmedTxEntry(k, v)}.toList)
+    println(s">>>>>before checkConfirmations: ${state.reorganizableTxes}")
+    val st = go(state, state.unconfirmedTxes.map{case(k, v) => UnconfirmedTxEntry(k, v)}.toList)
+    println(s">>>>>after checkConfirmations: ${state.reorganizableTxes}")
+    st
   }
 
   /**
@@ -259,19 +269,19 @@ class TransactionMonitor(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed: Bo
           val state2 = if (tx.confirmations == 0){
             // transaction became unconfirmed in reorg
             logger.info(s"Transaction was reorg'd out: $txid")
-            val state2 = state.addUnconfirmedScripthases(txid, matchingShs)
-            if (tx.details.head.category != "orphan") { // TODO not sure why details is a vector and if this category extraction is correct here
-              val txd = wrap(rpcCli.decodeRawTransaction(tx.hex))
-              val newHistoryElement = generateNewHistoryElement(Tx4HistoryGen(tx.confirmations, tx.txid.hex, EpsmiDataOps.optSha2Sha(tx.blockhash)), txd)
-              state2.addHistoryItemForScripthashes(matchingShs, newHistoryElement)
-            } else {
-              state2
-            }
+            val isOrphan = tx.details.head.category == "orphan"
+            val state1 = state.addUnconfirmedScripthases(txid, matchingShs)
+            val state2 = if (!isOrphan) { // TODO not sure why details is a vector and if this category extraction is correct here
+                val txd = wrap(rpcCli.decodeRawTransaction(tx.hex))
+                val newHistoryElement = generateNewHistoryElement(Tx4HistoryGen(tx.confirmations, tx.txid.hex, EpsmiDataOps.optSha2Sha(tx.blockhash)), txd)
+                state1.addHistoryItemForScripthashes(matchingShs, newHistoryElement)
+              } else state1
+            state2
           } else { // confirmations < 0
             logger.info(s"Transaction was double spent! $txid")
             state
           }
-          go(state2.addUpdatedScripthashes(matchingShs).removeReorganizable(reorganizable), xs)
+          go(state2.addUpdatedScripthashes(matchingShs).removeReorganizable(reorganizable).deleteHistoryItems(matchingShs, txid, height), xs)
         } else if (!tx.blockhash.map(_.hex).contains(blockhash)){
           val block = wrap(rpcCli.getBlockHeader(tx.blockhash.getOrElse(throw new IllegalArgumentException("missing blockhash"))))
           if (block.height == height) { //reorg but height is the same
@@ -292,6 +302,7 @@ class TransactionMonitor(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed: Bo
           go(state, xs)
         }
     }
+    println(s">>>>>>>>>>>> reorganizableTxes = ${state.reorganizableTxes.toList}")
     go(state, state.reorganizableTxes.toList)
   }
 
@@ -300,17 +311,18 @@ class TransactionMonitor(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed: Bo
    */
   def checkForUpdatedTxs(state: TransactionMonitorState): (Set[String], TransactionMonitorState) = {
     logger.debug("started checkForUpdatedTxs")
-    val state1 = checkForNewTxs(state).combineUpdatedScripthashes(checkForConfirmations(state))
-      .combineUpdatedScripthashes(checkForReorganizations(state))
-    val updatedScripthashes = state1.sortAddressHistory().updatedScripthashes
+    val state1 = checkForNewTxs(state)
+    val state2 = state1.combineUpdatedScripthashes(checkConfirmations(state1))
+    val state3 = state2.combineUpdatedScripthashes(checkForReorganizations(state2))
+    val updatedScripthashes = state3.sortAddressHistory().updatedScripthashes
     if (updatedScripthashes.nonEmpty) {
       logger.debug(s"unconfirmed txes = ${unconfirmedTxes.keySet().asScala.mkString("|")}")
       logger.debug(s"reorganizable_txes = ${reorganizableTxes.mkString("|")}")
       logger.debug(s"updated_scripthashes = ${updatedScripthashes.mkString("|")}")
     }
-    val updated = updatedScripthashes.filter(sh => state1.addressHistory.m.contains(sh) && state1.addressHistory.m(sh).subscribed)
+    val updated = updatedScripthashes.filter(sh => state3.addressHistory.m.contains(sh) && state3.addressHistory.m(sh).subscribed)
     logger.debug(s"finished checkForUpdatedTxs, updated size = ${updated.size}")
-    (updated.toSet, state1)
+    (updated.toSet, state3)
   }
 
 }
