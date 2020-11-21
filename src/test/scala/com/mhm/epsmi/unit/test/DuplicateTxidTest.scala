@@ -5,10 +5,11 @@ import com.mhm.epsmi.dummy.{DummyBtcRpc, DummyDeterministicWallet}
 import org.scalatest.FlatSpec
 import com.mhm.epsmi.dummy.DummyTxCreator.createDummyFundingTx
 import com.mhm.util.HashOps
+import org.scalatest.Matchers.convertToAnyShouldWrapper
 
 // ###two txes with the same txid, built history
 
-class DuplicateTxidTest extends FlatSpec with AddressHistoryAssertions {
+class DuplicateTxidTest extends FlatSpec {
 
   val(dummySpk, containingBlockHeight1, dummyTx1) = createDummyFundingTx()
   val(_, containingBlockHeight2, dummyTx2Temp) = createDummyFundingTx(outputSpkOpt=Some(dummySpk))
