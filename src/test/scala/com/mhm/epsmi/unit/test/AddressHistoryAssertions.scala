@@ -7,12 +7,12 @@ import org.scalatest.Matchers
 trait AddressHistoryAssertions extends Matchers {
 
   def assertAddressHistoryTx(addressHistory: AddressHistory, spk: String, height: Int, txId: String, subscribed: Boolean): Unit = {
-    val historyElement = addressHistory.m.getOrElse(HashOps.script2ScriptHash(spk), fail)
-    historyElement.history.head.height shouldBe height
-    historyElement.history.head.txHash shouldBe txId
+    val historyEntry = addressHistory.m.getOrElse(HashOps.script2ScriptHash(spk), fail)
+    historyEntry.history.head.height shouldBe height
+    historyEntry.history.head.txHash shouldBe txId
 //    if (height == 0)
-//      historyElement.history.head.fee shouldBe 0 // TODO
-    historyElement.subscribed shouldBe subscribed
+//      historyEntry.history.head.fee shouldBe 0 // TODO
+    historyEntry.subscribed shouldBe subscribed
   }
 
 }

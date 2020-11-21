@@ -208,6 +208,7 @@ class TransactionMonitor(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed: Bo
         val matchingScripthashes = (outputScriptpubkeys ++ inputScriptpubkeys)
           .map(script2ScriptHash).filter(state.addressHistory.m.keySet.contains)
         val newHistoryElement = generateNewHistoryElement(Tx4HistoryGen(optConfirmations2Int(tx.confirmations), txid, blockhash), txd)
+        logger.trace(s"adding new history element: ${newHistoryElement.txHash} height=${newHistoryElement.height}")
         val newState = state
           .addUpdatedScripthashes(matchingScripthashes)
           .addHistoryItemForScripthashes(matchingScripthashes, newHistoryElement)

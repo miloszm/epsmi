@@ -36,7 +36,7 @@ case class TransactionMonitorState(
   }
   def addHistoryItemForScripthashes(shs: Seq[String], he: HistoryElement): TransactionMonitorState = {
     val newMap = addressHistory.m.collect {
-      case (k, v) if shs.contains(k) => k -> v.copy(history = v.history.filterNot(a => a.txHash == he.txHash && a.height == he.height) :+ he)
+      case (k, v) if shs.contains(k) => k -> v.copy(history = he +: v.history.filterNot(a => a.txHash == he.txHash && a.height == he.height))
       case (k, v) => k -> v
     }
     this.copy(addressHistory = this.addressHistory.copy(m = newMap))
