@@ -4,6 +4,7 @@ import com.mhm.bitcoin.TransactionMonitor
 import com.mhm.epsmi.dummy.{DummyBtcRpc, DummyDeterministicWallet}
 import com.mhm.epsmi.dummy.DummyTxCreator.createDummyFundingTx
 import com.mhm.util.HashOps
+import com.mhm.util.HashOps.script2ScriptHash
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers.convertToAnyShouldWrapper
 
@@ -21,7 +22,7 @@ class AddressReuseTest extends FlatSpec {
   val monitor = new TransactionMonitor(rpc, nonWalletAllowed = false)
 
   val monitorState = monitor.buildAddressHistory(Seq(dummySpk1), Seq(new DummyDeterministicWallet))
-  val sh = HashOps.script2ScriptHash(dummySpk1)
+  val sh = script2ScriptHash(dummySpk1)
   monitorState.getElectrumHistory(sh).getOrElse(fail).size shouldBe 1
 
   val rpc2 = rpc.copy(txList = rpc.txList ++ Seq(dummyTx2))

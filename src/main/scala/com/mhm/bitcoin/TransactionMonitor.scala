@@ -48,7 +48,7 @@ class TransactionMonitor(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed: Bo
       monitoredScriptPubKeys.map(k => (script2ScriptHash(k), HistoryEntry(subscribed = false, Nil))).toMap
     )
     val state = TransactionMonitorState(ah)
-    logger.trace(s"initialized address history keys with ${ah.m.keySet.size} keys, head entry is ${ah.m.head}")
+    logger.trace(s"initialized address history keys with ${ah.m.keySet.size} key(s), head entry is ${ah.m.head}")
 
     val walletAddrScripthashes = ah.m.keySet
 
@@ -57,7 +57,7 @@ class TransactionMonitor(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed: Bo
       case Nil => (state, obtainedTxids)
       case tx::xs =>
         if (isTxHistoryEligible(tx, obtainedTxids)){
-          logger.trace(s"tx ${tx.txid} checked for category: '${tx.category}', confirmations '${tx.confirmations}' and more")
+          logger.trace(s"tx ${tx.txid} deemed eligible based on category '${tx.category}' and more criteria")
           val(outputScriptpubkeys, inputScriptpubkeys, txd) = getInputAndOutputScriptpubkeys(tx.txid.get)
           val shToAddOut = walletAddrScripthashes.intersect(outputScriptpubkeys.map(script2ScriptHash).toSet)
           val shToAddIn = walletAddrScripthashes.intersect(inputScriptpubkeys.map(script2ScriptHash).toSet)
@@ -105,25 +105,31 @@ class TransactionMonitor(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed: Bo
 
   def getInputAndOutputScriptpubkeys(txid: DoubleSha256DigestBE): (Seq[String], Seq[String], RpcTransaction) = {
     logger.trace("started getInputAndOutputScriptpubkeys")
-    val getTx = wrap(rpcCli.getTransaction(txid), "getTransaction")
-    val txd: RpcTransaction = wrap(rpcCli.decodeRawTransaction(getTx.hex), "decodeRawTransaction")
+    val getTx = wrap(rpcCli.getTransaction(txid))
+    val txd: RpcTransaction = wrap(rpcCli.decodeRawTransaction(getTx.hex))
     val outputScriptpubkeys: Seq[String] = txd.vout.map(_.scriptPubKey.hex)
     logger.trace(s"got ${outputScriptpubkeys.size} output scriptpubkeys: ${outputScriptpubkeys.mkString("|")}")
+    logger.trace(s"processing ${txd.vin.size} transaction inputs")
     val inputScriptpubkeys = txd.vin.filterNot(_.isInstanceOf[CoinbaseInput]).flatMap{ inn =>
-      // TODO check for coinbase, don't know how at the moment
       val inputTransactionId = DoubleSha256DigestBE.fromHex(inn.previousOutput.txIdBE.hex)
+      logger.trace(s"processing input with transaction id: ${inputTransactionId.hex}")
       val resultTry = if (nonWalletAllowed)
-        Try(wrap(rpcCli.getRawTransaction(inputTransactionId), "getRawTransaction")).map(_.hex)
+        Try(wrap(rpcCli.getRawTransaction(inputTransactionId))).map(_.hex)
       else
-        Try(wrap(rpcCli.getTransaction(inputTransactionId), "getTransaction")).map(_.hex)
+        Try(wrap(rpcCli.getTransaction(inputTransactionId))).map(_.hex)
       resultTry match {
-        case Failure(_) => None
-        case Success(r) => Some {
-          logger.trace(s"decoding raw transaction ${r.hex}")
-          val inputDecoded = wrap(rpcCli.decodeRawTransaction(r), "decodeRawTransaction")
-          val script = inputDecoded.vout(inn.previousOutput.vout.toInt).scriptPubKey.hex
-          script
-        }
+        case Failure(_) =>
+          logger.trace(s"could not obtain transaction for input ${inputTransactionId.hex}")
+          None
+        case Success(inputTransaction) =>
+          logger.trace(s"obtained transaction for input ${inputTransactionId.hex}")
+          Some {
+            logger.trace(s"decoding input transaction ${inputTransaction.hex}")
+            val inputDecoded = wrap(rpcCli.decodeRawTransaction(inputTransaction))
+            val script = inputDecoded.vout(inn.previousOutput.vout.toInt).scriptPubKey.hex
+            logger.trace(s"obtained output script for input ${inputTransactionId.hex} which is: $script")
+            script
+          }
       }
     }
     logger.trace(s"got ${inputScriptpubkeys.size} input scriptpubkeys: ${inputScriptpubkeys.mkString("|")}")

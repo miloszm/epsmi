@@ -62,11 +62,9 @@ case class TransactionMonitorState(
     this.copy(unconfirmedTxes = newUnconfirmedTxes)
   }
   def setLastKnownTx(txidAddress: TxidAddress): TransactionMonitorState = {
-    println(s"setLastKnownTx $txidAddress")
     this.copy(lastKnownTx = Some(txidAddress))
   }
   def setLastKnownTx(txidAddressOpt: Option[TxidAddress]): TransactionMonitorState = {
-    println(s"setLastKnownTx $txidAddressOpt")
     this.copy(lastKnownTx = txidAddressOpt)
   }
   def resetLastKnownTx(): TransactionMonitorState = {
