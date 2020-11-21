@@ -104,7 +104,7 @@ class TransactionMonitor(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed: Bo
   }
 
   def getInputAndOutputScriptpubkeys(txid: DoubleSha256DigestBE): (Seq[String], Seq[String], RpcTransaction) = {
-    logger.trace("started getInputAndOutputScriptpubkeys")
+    logger.trace(s"started getInputAndOutputScriptpubkeys for ${txid.hex}")
     val getTx = wrap(rpcCli.getTransaction(txid))
     val txd: RpcTransaction = wrap(rpcCli.decodeRawTransaction(getTx.hex))
     val outputScriptpubkeys: Seq[String] = txd.vout.map(_.scriptPubKey.hex)
@@ -133,7 +133,7 @@ class TransactionMonitor(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed: Bo
       }
     }
     logger.trace(s"got ${inputScriptpubkeys.size} input scriptpubkeys: ${inputScriptpubkeys.mkString("|")}")
-    logger.trace(s"finished getInputAndOutputScriptpubkeys with ${inputScriptpubkeys.size} input(s) and ${outputScriptpubkeys.size} output(s)")
+    logger.trace(s"finished getInputAndOutputScriptpubkeys with ${outputScriptpubkeys.size} output(s) and ${inputScriptpubkeys.size} input(s)")
     (outputScriptpubkeys, inputScriptpubkeys, txd)
   }
 

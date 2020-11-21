@@ -11,7 +11,7 @@ import org.scalatest.FlatSpec
 
 class ReorgFinneyAttackTest extends FlatSpec with AddressHistoryAssertions {
   val(dummySpk1, containingBlockHeight1, dummyTx1) = createDummyFundingTx(confirmations = 0)
-  val(dummySpk2, containingBlockHeight2, dummyTx2) = createDummyFundingTx(confirmations = 0, inputTxid = dummyTx1.txId)
+  val(dummySpk2, containingBlockHeight2, dummyTx2) = createDummyFundingTx(confirmations = 0, inputTxid = dummyTx1.vin.txId)
 
   val rpc = DummyBtcRpc(Seq(dummyTx1), Seq(dummyTx1.vin), Map(
     dummyTx1.blockhash -> containingBlockHeight1,
@@ -20,6 +20,7 @@ class ReorgFinneyAttackTest extends FlatSpec with AddressHistoryAssertions {
 
   val monitor = new TransactionMonitor(rpc, nonWalletAllowed = false)
   val monitorState = monitor.buildAddressHistory(Seq(dummySpk1, dummySpk2), Seq(new DummyDeterministicWallet))
+  monitorState.lastKnownTx.map(_.txid) shouldBe Some(dummyTx1.txId)
   monitorState.addressHistory.m.size shouldBe 2
 
   val sh1 = script2ScriptHash(dummySpk1)
