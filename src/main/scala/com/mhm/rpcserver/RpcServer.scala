@@ -8,17 +8,17 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.googlecode.jsonrpc4j.{JsonRpcBasicServer, JsonRpcInterceptor, RequestInterceptor, StreamServerWithHeartbeats}
 import com.mhm.api4electrum.{Api4Electrum, Api4ElectrumImpl}
+import com.mhm.bitcoin.{TransactionMonitor, TransactionMonitorState}
 import com.mhm.securesocket.SecureSocketMetaFactory
 import javax.net.ssl.SSLServerSocket
-import scodec.bits.HexStringSyntax
 
 import scala.jdk.CollectionConverters.SeqHasAsJava
 
-object RpcServer extends App {
+object RpcServer {
   val maxThreads = 1
   val port = 1420
 
-  def startServer(port: Int = port): StreamServerWithHeartbeats = {
+  def startServer(port: Int = port, transactionMonitor: TransactionMonitor, monitorState: TransactionMonitorState): StreamServerWithHeartbeats = {
 
     val service = new Api4ElectrumImpl
     val jsonRpcServer = new JsonRpcBasicServer(service, classOf[Api4Electrum])
@@ -49,6 +49,8 @@ object RpcServer extends App {
       override def postHandleJson(json: JsonNode): Unit = {}
 
       override def onHeartbeatConnected(outputStream: OutputStream): Unit = {
+        val (updatedTxs, monitorState2) = transactionMonitor.checkForUpdatedTxs(monitorState)
+        service.onUpdatedScripthashes(updatedTxs, outputStream, transactionMonitor, monitorState2)
         outputStream.write("hihi\n".getBytes)
         println("onHeartbeatConnected!!!!")
       }
@@ -82,13 +84,5 @@ object RpcServer extends App {
 
     streamServer
   }
-
-  val server = startServer()
-
-  println(s"server started on port $port")
-
-  Thread.sleep(36000000L)
-
-  server.stop()
 
 }

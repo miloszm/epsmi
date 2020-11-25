@@ -1,11 +1,13 @@
 package com.mhm.api4electrum
 
+import java.io.OutputStream
 import java.lang.reflect.Method
 import java.util
 
 import com.fasterxml.jackson.databind.{JsonNode, ObjectMapper}
 import com.googlecode.jsonrpc4j.JsonRpcInterceptor
 import com.mhm.api4electrum.Api4ElectrumCore.{estimateSmartFee, getBlockChunk, getBlockHeader, getBlockHeaderHash, getBlockHeaders, getTransaction, trIdFromPos, trIdFromPosMerkleTrue, transactionGetMerkle}
+import com.mhm.bitcoin.{TransactionMonitor, TransactionMonitorState}
 
 import scala.concurrent.Await
 import scala.concurrent.duration.{Duration, SECONDS}
@@ -103,5 +105,18 @@ class Api4ElectrumImpl extends Api4Electrum {
       },
       identity
     )
+  }
+
+  def onUpdatedScripthashes(
+    updatedScripthashes: Set[String],
+    outputStream: OutputStream,
+    transactionMonitor: TransactionMonitor,
+    monitorState: TransactionMonitorState): Unit = {
+    updatedScripthashes.foreach { sh =>
+      val historyHash = transactionMonitor.getElectrumHistoryHash(sh)
+//      update = {"method": "blockchain.scripthash.subscribe", "params": [scrhash, history_hash]}
+//      self._send_update(update)
+//      send the update to outputStream
+    }
   }
 }
