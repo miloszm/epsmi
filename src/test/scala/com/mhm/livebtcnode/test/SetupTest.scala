@@ -1,7 +1,7 @@
 package com.mhm.livebtcnode.test
 
 import com.mhm.connectors.BitcoinSConnector
-import com.mhm.setup.Setup
+import com.mhm.main.Setup
 import com.typesafe.config.ConfigFactory
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers.convertToAnyShouldWrapper

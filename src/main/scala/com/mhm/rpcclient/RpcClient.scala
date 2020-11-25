@@ -129,6 +129,18 @@ object RpcClient extends App {
     println(s"   merkle=")
     merkle.merkle.foreach{println(_)}
 
+    Thread.sleep(60000L)
+
+    println("2nd time")
+    val txId4GetMerkle2 = client.blockchainTrIdFromPos(652742, 5, false) // otherwise it won't be found
+    val merkle2 = client.blockchainTransactionGetMerkle(txId4GetMerkle2)
+    println(s"get merkle result = ")
+    println(s"   blockHeight=${merkle2.blockHeight}")
+    println(s"   pos=${merkle2.pos}")
+    println(s"   merkle=")
+    merkle2.merkle.foreach{println(_)}
+
+    Thread.sleep(3000000L)
     epsmiClient.close()
   }
 

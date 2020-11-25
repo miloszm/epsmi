@@ -16,7 +16,7 @@ lazy val root = (project in file(".")).
       "ch.qos.logback"    % "logback-classic"           % "1.2.3",
       "org.bitcoin-s"     %% "bitcoin-s-core"           % "0.4.0",
       "org.bitcoin-s"     %% "bitcoin-s-bitcoind-rpc"   % "0.4.0",
-      "com.github.briandilley.jsonrpc4j"  % "jsonrpc4j" % "1.5.3",
+      //"com.github.briandilley.jsonrpc4j"  % "jsonrpc4j" % "1.5.3",
       "org.scodec"        %% "scodec-bits"              % "1.1.12",
 
 

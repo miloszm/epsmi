@@ -1,4 +1,4 @@
-package com.mhm.setup
+package com.mhm.main
 
 import com.mhm.connectors.BitcoindRpcExtendedClient
 import com.mhm.connectors.RpcWrap.wrap

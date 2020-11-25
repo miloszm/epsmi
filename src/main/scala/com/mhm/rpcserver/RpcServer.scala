@@ -1,17 +1,23 @@
 package com.mhm.rpcserver
 
+import java.io.OutputStream
+import java.lang.reflect.Method
+import java.util
+
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.node.ObjectNode
-import com.googlecode.jsonrpc4j.{JsonRpcBasicServer, RequestInterceptor, StreamServer}
+import com.googlecode.jsonrpc4j.{JsonRpcBasicServer, JsonRpcInterceptor, RequestInterceptor, StreamServerWithHeartbeats}
 import com.mhm.api4electrum.{Api4Electrum, Api4ElectrumImpl}
 import com.mhm.securesocket.SecureSocketMetaFactory
 import javax.net.ssl.SSLServerSocket
 
+import scala.jdk.CollectionConverters.SeqHasAsJava
+
 object RpcServer extends App {
-  val maxThreads = 4
+  val maxThreads = 1
   val port = 1420
 
-  def startServer(port: Int = port): StreamServer = {
+  def startServer(port: Int = port): StreamServerWithHeartbeats = {
 
     val service = new Api4ElectrumImpl
     val jsonRpcServer = new JsonRpcBasicServer(service, classOf[Api4Electrum])
@@ -32,6 +38,24 @@ object RpcServer extends App {
       }
     }
 
+    val jsonRpcInterceptor = new JsonRpcInterceptor {
+      override def preHandleJson(json: JsonNode): Unit = {}
+
+      override def preHandle(target: Any, method: Method, params: util.List[JsonNode]): Unit = {}
+
+      override def postHandle(target: Any, method: Method, params: util.List[JsonNode], result: JsonNode): Unit = {}
+
+      override def postHandleJson(json: JsonNode): Unit = {}
+
+      override def onHeartbeatConnected(outputStream: OutputStream): Unit = {
+        println("onHeartbeatConnected!!!!")
+      }
+
+      override def onHeartbeatListening(): Unit = {
+        println("onHeartbeatListening!!!!")
+      }
+    }
+
     //  val invocationListener = new InvocationListener {
     //    override def willInvoke(method: Method, arguments: util.List[JsonNode]): Unit = {
     //      println(s"willInvoke: method=$method args=$arguments")
@@ -44,13 +68,13 @@ object RpcServer extends App {
     jsonRpcServer.setRequestInterceptor(requestInterceptor)
     //  jsonRpcServer.setInvocationListener(invocationListener)
 
+    jsonRpcServer.setInterceptorList(List(jsonRpcInterceptor).asJava)
 
-    import com.googlecode.jsonrpc4j.StreamServer
 
     val serverSocketFactory = SecureSocketMetaFactory.createServerSocketFactory()
     val serverSocket = serverSocketFactory.createServerSocket(port).asInstanceOf[SSLServerSocket]
     serverSocket.setNeedClientAuth(true)
-    val streamServer = new StreamServer(jsonRpcServer, maxThreads, serverSocket)
+    val streamServer = new StreamServerWithHeartbeats(jsonRpcServer, maxThreads, serverSocket)
 
     streamServer.start()
 
