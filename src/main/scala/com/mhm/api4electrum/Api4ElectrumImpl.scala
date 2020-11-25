@@ -113,7 +113,7 @@ class Api4ElectrumImpl extends Api4Electrum {
     transactionMonitor: TransactionMonitor,
     monitorState: TransactionMonitorState): Unit = {
     updatedScripthashes.foreach { sh =>
-      val historyHash = transactionMonitor.getElectrumHistoryHash(sh)
+      val historyHash = transactionMonitor.getElectrumHistoryHash(sh, monitorState)
 //      update = {"method": "blockchain.scripthash.subscribe", "params": [scrhash, history_hash]}
 //      self._send_update(update)
 //      send the update to outputStream
