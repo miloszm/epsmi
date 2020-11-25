@@ -10,6 +10,7 @@ import com.googlecode.jsonrpc4j.{JsonRpcBasicServer, JsonRpcInterceptor, Request
 import com.mhm.api4electrum.{Api4Electrum, Api4ElectrumImpl}
 import com.mhm.securesocket.SecureSocketMetaFactory
 import javax.net.ssl.SSLServerSocket
+import scodec.bits.HexStringSyntax
 
 import scala.jdk.CollectionConverters.SeqHasAsJava
 
@@ -48,6 +49,7 @@ object RpcServer extends App {
       override def postHandleJson(json: JsonNode): Unit = {}
 
       override def onHeartbeatConnected(outputStream: OutputStream): Unit = {
+        outputStream.write("hihi\n".getBytes)
         println("onHeartbeatConnected!!!!")
       }
 

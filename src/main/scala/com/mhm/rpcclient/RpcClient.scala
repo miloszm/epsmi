@@ -27,9 +27,10 @@ case class EpsmiClient(client: Api4Electrum, socket: Socket){
 object RpcClient extends App {
 //    val port = 50002
     val port = 1420
+  var socket: Socket = null //TODO
 
   def createClient(port: Int = port): EpsmiClient = {
-    val socket = createSocket(InetAddress.getByName("127.0.0.1"), port)
+    socket = createSocket(InetAddress.getByName("127.0.0.1"), port)
     val rpcClient = new JsonRpcClient(new LfObjectMapper())
     val listener = new JsonRpcClient.RequestListener(){
       override def onBeforeRequestSent(client: JsonRpcClient, request: ObjectNode): Unit = {
@@ -129,18 +130,23 @@ object RpcClient extends App {
     println(s"   merkle=")
     merkle.merkle.foreach{println(_)}
 
-    Thread.sleep(60000L)
+    val socketInputStream = socket.getInputStream
+    while (true) {
+      println(socketInputStream.read().toChar)
+    }
 
-    println("2nd time")
-    val txId4GetMerkle2 = client.blockchainTrIdFromPos(652742, 5, false) // otherwise it won't be found
-    val merkle2 = client.blockchainTransactionGetMerkle(txId4GetMerkle2)
-    println(s"get merkle result = ")
-    println(s"   blockHeight=${merkle2.blockHeight}")
-    println(s"   pos=${merkle2.pos}")
-    println(s"   merkle=")
-    merkle2.merkle.foreach{println(_)}
-
-    Thread.sleep(3000000L)
+//    Thread.sleep(60000L)
+//
+//    println("2nd time")
+//    val txId4GetMerkle2 = client.blockchainTrIdFromPos(652742, 5, false) // otherwise it won't be found
+//    val merkle2 = client.blockchainTransactionGetMerkle(txId4GetMerkle2)
+//    println(s"get merkle result = ")
+//    println(s"   blockHeight=${merkle2.blockHeight}")
+//    println(s"   pos=${merkle2.pos}")
+//    println(s"   merkle=")
+//    merkle2.merkle.foreach{println(_)}
+//
+//    Thread.sleep(3000000L)
     epsmiClient.close()
   }
 
