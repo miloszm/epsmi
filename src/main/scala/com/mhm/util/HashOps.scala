@@ -43,4 +43,10 @@ object HashOps {
     h.reverse.toHex
   }
 
+//  #the 'result' field in the blockchain.scripthash.subscribe method
+//  # reply uses this as a summary of the address
+//  def getStatusElectrum(h: String): String = {
+//  }
+
+
 }

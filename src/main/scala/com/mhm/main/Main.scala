@@ -19,7 +19,7 @@ object Main extends App {
       scriptPubKeysToMonitorResult.wallets
     )
 
-    val server = RpcServer.startServer(1420, transactionMonitor, monitorState)
+    val server = RpcServer.startServer(1420 /*, transactionMonitor, monitorState*/ )
 
     println(s"server started on port $port")
 

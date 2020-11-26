@@ -1,4 +1,4 @@
-package com.mhm.epsmi.dummy
+package com.mhm.epsmi.dummymonitor
 
 import com.mhm.wallet.DeterministicWallet
 import org.bitcoins.rpc.client.common.DescriptorRpc

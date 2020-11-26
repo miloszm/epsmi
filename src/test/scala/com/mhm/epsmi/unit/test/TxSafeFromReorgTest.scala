@@ -1,8 +1,8 @@
 package com.mhm.epsmi.unit.test
 
 import com.mhm.bitcoin.TransactionMonitor
-import com.mhm.epsmi.dummy.{DummyBtcRpc, DummyDeterministicWallet}
-import com.mhm.epsmi.dummy.DummyTxCreator.createDummyFundingTx
+import com.mhm.epsmi.dummymonitor.{DummyBtcRpc, DummyDeterministicWallet}
+import com.mhm.epsmi.dummymonitor.DummyTxCreator.createDummyFundingTx
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers.convertToAnyShouldWrapper
 

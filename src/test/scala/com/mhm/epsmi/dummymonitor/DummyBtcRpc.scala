@@ -1,7 +1,7 @@
-package com.mhm.epsmi.dummy
+package com.mhm.epsmi.dummymonitor
 
 import com.mhm.connectors.{BitcoinSConnector, BitcoindRpcExtendedClient}
-import com.mhm.epsmi.dummy.DummyTxCreator.{DummyTx, DummyVin, DummyVout}
+import com.mhm.epsmi.dummymonitor.DummyTxCreator.{DummyTx, DummyVin, DummyVout}
 import org.bitcoins.commons.jsonmodels.bitcoind._
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.number.UInt32

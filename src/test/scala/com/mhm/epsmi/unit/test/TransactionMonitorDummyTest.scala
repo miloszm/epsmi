@@ -1,7 +1,7 @@
 package com.mhm.epsmi.unit.test
 
 import com.mhm.bitcoin.{TransactionMonitor, Tx4HistoryGen}
-import com.mhm.epsmi.dummy.{DummyBtcRpc, DummyTxCreator}
+import com.mhm.epsmi.dummymonitor.{DummyBtcRpc, DummyTxCreator}
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers.{contain, convertToAnyShouldWrapper}

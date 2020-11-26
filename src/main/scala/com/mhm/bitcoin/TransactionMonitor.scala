@@ -350,4 +350,6 @@ class TransactionMonitor(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed: Bo
     (updated.toSet, state3)
   }
 
+//  def getElectrumHistoryHash
+
 }

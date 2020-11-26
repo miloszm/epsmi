@@ -1,4 +1,4 @@
-package com.mhm.epsmi.dummy
+package com.mhm.epsmi.dummymonitor
 
 import java.util.concurrent.atomic.AtomicInteger
 

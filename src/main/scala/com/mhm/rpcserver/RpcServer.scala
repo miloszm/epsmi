@@ -18,7 +18,7 @@ object RpcServer {
   val maxThreads = 1
   val port = 1420
 
-  def startServer(port: Int = port, transactionMonitor: TransactionMonitor, monitorState: TransactionMonitorState): StreamServerWithHeartbeats = {
+  def startServer(port: Int = port /*, transactionMonitor: TransactionMonitor, monitorState: TransactionMonitorState*/ ): StreamServerWithHeartbeats = {
 
     val service = new Api4ElectrumImpl
     val jsonRpcServer = new JsonRpcBasicServer(service, classOf[Api4Electrum])
@@ -49,8 +49,8 @@ object RpcServer {
       override def postHandleJson(json: JsonNode): Unit = {}
 
       override def onHeartbeatConnected(outputStream: OutputStream): Unit = {
-        val (updatedTxs, monitorState2) = transactionMonitor.checkForUpdatedTxs(monitorState)
-        service.onUpdatedScripthashes(updatedTxs, outputStream, transactionMonitor, monitorState2)
+//        val (updatedTxs, monitorState2) = transactionMonitor.checkForUpdatedTxs(monitorState)
+//        service.onUpdatedScripthashes(updatedTxs, outputStream, transactionMonitor, monitorState2)
         outputStream.write("hihi\n".getBytes)
         println("onHeartbeatConnected!!!!")
       }
