@@ -7,8 +7,9 @@ import java.util
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.googlecode.jsonrpc4j.{JsonRpcBasicServer, JsonRpcInterceptor, RequestInterceptor, StreamServerWithHeartbeats}
-import com.mhm.api4electrum.{Api4Electrum, Api4ElectrumImpl}
+import com.mhm.api4electrum.{Api4Electrum, Api4ElectrumCore, Api4ElectrumImpl}
 import com.mhm.bitcoin.{TransactionMonitor, TransactionMonitorState}
+import com.mhm.connectors.BitcoinSConnector
 import com.mhm.securesocket.SecureSocketMetaFactory
 import javax.net.ssl.SSLServerSocket
 
@@ -20,7 +21,7 @@ object RpcServer {
 
   def startServer(port: Int = port /*, transactionMonitor: TransactionMonitor, monitorState: TransactionMonitorState*/ ): StreamServerWithHeartbeats = {
 
-    val service = new Api4ElectrumImpl
+    val service = new Api4ElectrumImpl(Api4ElectrumCore(BitcoinSConnector.rpcCli))
     val jsonRpcServer = new JsonRpcBasicServer(service, classOf[Api4Electrum])
 
     val requestInterceptor = new RequestInterceptor {

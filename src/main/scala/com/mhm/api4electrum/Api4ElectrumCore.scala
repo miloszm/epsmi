@@ -5,6 +5,7 @@ import java.nio.ByteBuffer
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.mhm.connectors.BitcoinSConnector.{ec, rpcCli}
+import com.mhm.connectors.BitcoindRpcExtendedClient
 import com.mhm.util.EpsmiDataOps.{byteVectorOrZeroToArray, byteVectorToArray, intToArray, uint32ToArray}
 import com.mhm.util.{HashOps, MerkleProofOps}
 import javax.xml.bind.DatatypeConverter
@@ -18,12 +19,21 @@ import scala.concurrent.duration.{Duration, SECONDS}
 import scala.concurrent.{Await, Future}
 import scala.math.BigDecimal.RoundingMode
 
+
+case class ElectrumMerkleProof(
+  pos: Int,
+  merkle: Array[String],
+  txId: String,
+  merkleRoot: String
+)
+
+
 /**
  * This class is futurized and does not necessarily conform
  * to json rpc requirements.
  */
 
-object Api4ElectrumCore {
+case class Api4ElectrumCore(rpcCli: BitcoindRpcExtendedClient) {
   def getBlockHeaderHash(blockHeight: Int): Future[String] = {
     for {
       blockHash <- rpcCli.getBlockHash(blockHeight)
@@ -65,7 +75,7 @@ object Api4ElectrumCore {
     }
   }
 
-  def getBlockHeader(blockHeight: Int): Future[HeaderResult] = {
+  def getBlockHeader(blockHeight: Int, raw: Boolean = false): Future[HeaderResult] = {
     for {
       blockHash <- rpcCli.getBlockHash(blockHeight)
       blockHeader <- rpcCli.getBlockHeader(blockHash)
@@ -162,13 +172,6 @@ object Api4ElectrumCore {
         txId.hex
     }
   }
-
-  case class ElectrumMerkleProof(
-    pos: Int,
-    merkle: Array[String],
-    txId: String,
-    merkleRoot: String
-  )
 
   private def trIdFromPosMerkleTrue(height: Int, txPos: Int): Future[String] = {
     val merkleResutlFuture = for {

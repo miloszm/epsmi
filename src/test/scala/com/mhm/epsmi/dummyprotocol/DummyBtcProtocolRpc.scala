@@ -1,14 +1,14 @@
 package com.mhm.epsmi.dummyprotocol
 
 import com.mhm.connectors.{BitcoinSConnector, BitcoindRpcExtendedClient}
-import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockHeaderResult
+import org.bitcoins.commons.jsonmodels.bitcoind.{GetBlockHeaderResult, GetTransactionResult}
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.number.UInt32
 import scodec.bits.HexStringSyntax
 
 import scala.concurrent.Future
 
-class DummyBtcProtocolRpc extends BitcoindRpcExtendedClient(BitcoinSConnector.bitcoindInstance, BitcoinSConnector.system){
+case class DummyBtcProtocolRpc() extends BitcoindRpcExtendedClient(BitcoinSConnector.bitcoindInstance, BitcoinSConnector.system){
 
   val DummyJsonrpcBlockchainHeight = 100000
   val blockchainHeight = DummyJsonrpcBlockchainHeight
@@ -66,4 +66,6 @@ class DummyBtcProtocolRpc extends BitcoindRpcExtendedClient(BitcoinSConnector.bi
     val header2 = header1.copy(nextblockhash = nextBlockHash)
     Future.successful(header2)
   }
+
+  override def getTransaction(txid: DoubleSha256DigestBE, watchOnly: Boolean): Future[GetTransactionResult] = ???
 }

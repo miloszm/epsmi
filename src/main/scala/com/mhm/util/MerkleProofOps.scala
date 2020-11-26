@@ -3,7 +3,7 @@ package com.mhm.util
 import java.nio.ByteBuffer
 import java.security.MessageDigest
 
-import com.mhm.api4electrum.Api4ElectrumCore.ElectrumMerkleProof
+import com.mhm.api4electrum.ElectrumMerkleProof
 import com.mhm.util.EpsmiDataOps.intCeilLog2
 import com.mhm.util.HashOps.{doHash, sha256}
 import javax.xml.bind.DatatypeConverter
