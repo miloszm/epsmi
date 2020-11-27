@@ -29,7 +29,7 @@ class Api4ElectrumImpl(core: Api4ElectrumCore) extends Api4Electrum {
   }
 
   override def blockchainBlockGetHeader(height: Int): HeaderResult = {
-    Try(Await.result(core.getBlockHeader(height), Duration(20, SECONDS))).fold(
+    Try(Await.result(core.getBlockHeaderX(height), Duration(20, SECONDS))).fold(
       { t =>
         println(s"server caught: $t")
         throw new IllegalArgumentException(s"height $height out of range")

@@ -9,6 +9,7 @@ import com.mhm.connectors.BitcoindRpcExtendedClient
 import com.mhm.util.EpsmiDataOps.{byteVectorOrZeroToArray, byteVectorToArray, intToArray, uint32ToArray}
 import com.mhm.util.{HashOps, MerkleProofOps}
 import javax.xml.bind.DatatypeConverter
+import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockHeaderResult
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.FeeEstimationMode
 import org.bitcoins.core.protocol.blockchain.MerkleBlock
 import org.bitcoins.crypto.DoubleSha256DigestBE
@@ -60,22 +61,31 @@ case class Api4ElectrumCore(rpcCli: BitcoindRpcExtendedClient) {
       val merkleRootArray = Array.fill[Byte](32)(0)
       blockHeader.merkleroot.bytes.copyToArray(merkleRootArray, 0)
 
-      // <i32s32sIII
-      // little endian int | byte[32] | byte[32] | unsigned int | unsigned int | unsigned int
-      val head = ByteBuffer.allocate(80)
-      head.put(intToArray(blockHeader.version))
-      head.put(byteVectorOrZeroToArray(blockHeader.previousblockhash.map(_.bytes), 32))
-      head.put(byteVectorToArray(blockHeader.merkleroot.bytes))
-      head.put(uint32ToArray(blockHeader.time))
-      head.put(uint32ToArray(blockHeader.bits))
-      head.put(uint32ToArray(blockHeader.nonce))
-
-      val headHex = DatatypeConverter.printHexBinary(head.array())
-      (headHex.toLowerCase, blockHeader.nextblockhash)
+      val headHex: String = hashBlockHeaderRaw(blockHeader)
+      (headHex, blockHeader.nextblockhash)
     }
   }
 
-  def getBlockHeader(blockHeight: Int, raw: Boolean = false): Future[HeaderResult] = {
+
+  private def hashBlockHeaderRaw(blockHeader: GetBlockHeaderResult) = {
+    // <i32s32sIII
+    // little endian int | byte[32] | byte[32] | unsigned int | unsigned int | unsigned int
+    val head = ByteBuffer.allocate(80)
+    head.put(intToArray(blockHeader.version))
+    head.put(byteVectorOrZeroToArray(blockHeader.previousblockhash.map(_.bytes), 32))
+    head.put(byteVectorToArray(blockHeader.merkleroot.bytes))
+    head.put(uint32ToArray(blockHeader.time))
+    head.put(uint32ToArray(blockHeader.bits))
+    head.put(uint32ToArray(blockHeader.nonce))
+
+    val headHex = DatatypeConverter.printHexBinary(head.array())
+    headHex.toLowerCase
+  }
+
+  // TODO don't know which getBlockHeader is needed,
+  // based on height, blockhash, or both
+  // this one is only needed by Api4ElectrumImpl
+  def getBlockHeaderX(blockHeight: Int): Future[HeaderResult] = {
     for {
       blockHash <- rpcCli.getBlockHash(blockHeight)
       blockHeader <- rpcCli.getBlockHeader(blockHash)
@@ -89,6 +99,37 @@ case class Api4ElectrumCore(rpcCli: BitcoindRpcExtendedClient) {
         blockHeader.nonce.toLong,
         blockHeader.bits.toLong
       )
+    }
+  }
+
+  case class HashHeight(hash: String, height: Int)
+
+  /**
+   *
+   * @param blockhash hash of the block
+   * @param raw true if we want header hash and heigh, false if we want HeaderResult
+   * @return Left if raw is false, Right if raw is true
+   */
+  def getBlockHeader(blockhash: DoubleSha256DigestBE, raw: Boolean = false): Future[Either[HeaderResult, HashHeight]] = {
+      for {
+        blockHeader <- rpcCli.getBlockHeader(blockhash)
+      } yield {
+        if (raw) {
+          val headHex: String = hashBlockHeaderRaw(blockHeader)
+          Right(HashHeight(headHex, blockHeader.height))
+        }
+        else {
+          val headerResult = HeaderResult(
+            blockHeader.height,
+            blockHeader.previousblockhash.map(_.hex).getOrElse("00" * 32),
+            blockHeader.time.toLong,
+            blockHeader.merkleroot.hex,
+            blockHeader.version,
+            blockHeader.nonce.toLong,
+            blockHeader.bits.toLong
+          )
+          Left(headerResult)
+        }
     }
   }
 
