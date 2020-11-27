@@ -1,8 +1,10 @@
 package com.mhm.api4electrum
 
 import java.io.OutputStream
+import java.util.concurrent.atomic.AtomicReference
 
 import com.mhm.bitcoin.{TransactionMonitor, TransactionMonitorState}
+import grizzled.slf4j.Logging
 
 import scala.concurrent.Await
 import scala.concurrent.duration.{Duration, SECONDS}
@@ -14,7 +16,26 @@ import scala.util.Try
  * Uses Api4ElectrumCore for everything else.
  */
 
-class Api4ElectrumImpl(core: Api4ElectrumCore) extends Api4Electrum {
+class Api4ElectrumImpl(core: Api4ElectrumCore, transactionMonitor: TransactionMonitor, monitorState: TransactionMonitorState) extends Api4Electrum with Logging {
+
+  val currentMonitorState = new AtomicReference(monitorState)
+
+  def updateMonitorState(fun : TransactionMonitorState => TransactionMonitorState): Unit = {
+    def uniFun(s: TransactionMonitorState): TransactionMonitorState = fun(s)
+    currentMonitorState.updateAndGet(uniFun)
+  }
+
+  def updateMonitorStateWithExtraResult[T](fun : TransactionMonitorState => (T, TransactionMonitorState)) : T = {
+    var t : Option[T] = None
+    def uniFun(s: TransactionMonitorState): TransactionMonitorState = {
+      val (a, b) = fun(s)
+      t = Some(a)
+      b
+    }
+    currentMonitorState.updateAndGet(uniFun)
+    t.get
+  }
+
   override def serverVersion(v1: String, v2: String): Array[String] = {
     Array("epsmi 0.0.2")
   }
@@ -104,15 +125,26 @@ class Api4ElectrumImpl(core: Api4ElectrumCore) extends Api4Electrum {
 
   def onUpdatedScripthashes(
     updatedScripthashes: Set[String],
-    outputStream: OutputStream,
-    transactionMonitor: TransactionMonitor,
-    monitorState: TransactionMonitorState): Unit = {
+    outputStream: OutputStream): Unit = {
     updatedScripthashes.foreach { sh =>
-      val historyHash = monitorState.getElectrumHistoryHash(sh)
+      val historyHash = currentMonitorState.get.getElectrumHistoryHash(sh)
       val update = s"""{"method": "blockchain.scripthash.subscribe", "params": [$sh, $historyHash]}"""
       outputStream.write(update.getBytes())
-//      self._send_update(update)
-//      send the update to outputStream
     }
+  }
+
+  override def blockchainScripthashSubcribe(sh: String): String = {
+    val state = currentMonitorState.updateAndGet(_.subscribeAddress(sh))
+    if (!state.addressHistory.m.contains(sh)){
+      logger.warn("Address not known to server, hash(address)"
+        + " = " + sh + ".\nCheck that you've imported the "
+        + "master public key(s) correctly. The first three "
+        + "addresses of each key are printed out on startup,\nso "
+        + "check that they really are addresses you expect. In "
+        + "Electrum go to Wallet -> Information to get the right "
+        + "master public key.")
+    }
+    val historyHash = state.getElectrumHistoryHash(sh)
+    historyHash
   }
 }

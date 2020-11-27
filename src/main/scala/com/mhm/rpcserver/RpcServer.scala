@@ -21,7 +21,7 @@ object RpcServer {
 
   def startServer(port: Int = port, transactionMonitor: TransactionMonitor, monitorState: TransactionMonitorState): StreamServerWithHeartbeats = {
 
-    val service = new Api4ElectrumImpl(Api4ElectrumCore(BitcoinSConnector.rpcCli))
+    val service = new Api4ElectrumImpl(Api4ElectrumCore(BitcoinSConnector.rpcCli), transactionMonitor, monitorState)
     val jsonRpcServer = new JsonRpcBasicServer(service, classOf[Api4Electrum])
 
     val requestInterceptor = new RequestInterceptor {
@@ -50,8 +50,9 @@ object RpcServer {
       override def postHandleJson(json: JsonNode): Unit = {}
 
       override def onHeartbeatConnected(outputStream: OutputStream): Unit = {
-        val (updatedTxs, monitorState2) = transactionMonitor.checkForUpdatedTxs(monitorState)
-        service.onUpdatedScripthashes(updatedTxs, outputStream, transactionMonitor, monitorState2)
+        //val (updatedTxs, monitorState2) = transactionMonitor.checkForUpdatedTxs(monitorState)
+        val updatedTxs = service.updateMonitorStateWithExtraResult(transactionMonitor.checkForUpdatedTxs)
+        service.onUpdatedScripthashes(updatedTxs, outputStream)
         outputStream.write("hihi\n".getBytes)
         println("onHeartbeatConnected!!!!")
       }

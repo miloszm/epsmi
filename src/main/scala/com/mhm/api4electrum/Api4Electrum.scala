@@ -74,4 +74,7 @@ trait Api4Electrum {
   @JsonRpcMethod("blockchain.transaction.get_merkle")
   def blockchainTransactionGetMerkle(txid: String): GetMerkleResult
 
+  @JsonRpcMethod("blockchain.scripthash.subscribe")
+  def blockchainScripthashSubcribe(sh: String): String
+
 }

@@ -8,6 +8,13 @@ case class UnconfirmedTxEntry(txid: String, matchingShs: Seq[String])
 case class TxidAddress(txid: String, address: String)
 
 
+object TransactionMonitorState {
+  def createEmpty() : TransactionMonitorState = {
+    TransactionMonitorState(AddressHistory(Map()))
+  }
+}
+
+
 case class TransactionMonitorState(
   addressHistory: AddressHistory,
   unconfirmedTxes: Map[String,Seq[String]] = Map(),
