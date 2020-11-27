@@ -2,6 +2,7 @@ package com.mhm.util
 
 import java.security.MessageDigest
 
+import com.mhm.common.model.HashHeight
 import com.mhm.util.MerkleProofOps.hashDecodeRev
 import javax.xml.bind.DatatypeConverter
 import scodec.bits.ByteVector
@@ -45,8 +46,11 @@ object HashOps {
 
 //  #the 'result' field in the blockchain.scripthash.subscribe method
 //  # reply uses this as a summary of the address
-//  def getStatusElectrum(h: String): String = {
-//  }
-
+  def getStatusElectrum(h: List[HashHeight]): String = {
+    if (h.isEmpty) "" else {
+      val status = h.map(hh => s"${hh.hash}:${hh.height}:").mkString
+      DatatypeConverter.printHexBinary(sha256(status.getBytes)).toLowerCase
+    }
+  }
 
 }

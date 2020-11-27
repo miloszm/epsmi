@@ -4,6 +4,7 @@ import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.mhm.common.model.HashHeight
 import com.mhm.connectors.BitcoinSConnector.{ec, rpcCli}
 import com.mhm.connectors.BitcoindRpcExtendedClient
 import com.mhm.connectors.RpcWrap.wrap
@@ -104,7 +105,6 @@ case class Api4ElectrumCore(rpcCli: BitcoindRpcExtendedClient) {
     }
   }
 
-  case class HashHeight(hash: String, height: Int)
 
   /**
    *

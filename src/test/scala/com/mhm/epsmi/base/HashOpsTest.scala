@@ -1,5 +1,6 @@
 package com.mhm.epsmi.base
 
+import com.mhm.common.model.HashHeight
 import com.mhm.util.HashOps
 import javax.xml.bind.DatatypeConverter
 import org.scalatest.FlatSpec
@@ -49,6 +50,13 @@ class HashOpsTest extends FlatSpec {
   "script2ScriptHash" should "hash given script" in {
     val hashed = HashOps.script2ScriptHash("76a91414c45115d49cf4568d0d7229a9a0c58b64041c5388ac")
     hashed shouldBe "5be022609383d23e2d545b3b359446466c269686c1e697b60355424ed30490d2"
+  }
+
+  "getStatusElectrum" should "return correct hash" in {
+    val hashHeight1 = HashHeight("0ttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt", 500)
+    val hashHeight2 = HashHeight("1ttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt", 500)
+    val status = HashOps.getStatusElectrum(List(hashHeight1, hashHeight2))
+    status shouldBe "801fe9bd87c8f1c5282d6eaf7bc2c7f474eb78fa8ea3fd4c916bdafdae64954d"
   }
 
 }

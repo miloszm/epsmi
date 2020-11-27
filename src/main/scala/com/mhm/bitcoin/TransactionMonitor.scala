@@ -5,7 +5,7 @@ import java.util.concurrent.ConcurrentHashMap
 import com.mhm.connectors.BitcoindRpcExtendedClient
 import com.mhm.connectors.RpcWrap.wrap
 import com.mhm.util.EpsmiDataOps.{optAddr2Str, optConfirmations2Int, optSha2Sha, optSha2Str}
-import com.mhm.util.HashOps.script2ScriptHash
+import com.mhm.util.HashOps.{getStatusElectrum, script2ScriptHash}
 import com.mhm.util.{EpsmiDataOps, HashOps}
 import com.mhm.wallet.DeterministicWallet
 import grizzled.slf4j.Logging
@@ -362,7 +362,5 @@ class TransactionMonitorImpl(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed
     logger.debug(s"finished checkForUpdatedTxs, updated size = ${updated.size}")
     (updated.toSet, state3)
   }
-
-//  def getElectrumHistoryHash
 
 }

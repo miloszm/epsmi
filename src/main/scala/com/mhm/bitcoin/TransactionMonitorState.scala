@@ -1,5 +1,7 @@
 package com.mhm.bitcoin
 
+import com.mhm.util.HashOps.getStatusElectrum
+
 
 case class ReorganizableTxEntry(txid: String, blockhash: String, height: Int, matchingShs: Seq[String])
 case class UnconfirmedTxEntry(txid: String, matchingShs: Seq[String])
@@ -108,4 +110,11 @@ case class TransactionMonitorState(
     }
     this.copy(unconfirmedTxes = mutableMap.toMap)
   }
+  def getElectrumHistoryHash(sh: String): String = {
+    val hashHeights = this.addressHistory.m.get(sh).map {
+      _.history.map(_.asHashHeight)
+    }.getOrElse(Nil)
+    getStatusElectrum(hashHeights.toList)
+  }
+
 }
