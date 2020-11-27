@@ -123,16 +123,6 @@ class Api4ElectrumImpl(core: Api4ElectrumCore, transactionMonitor: TransactionMo
     )
   }
 
-  def onUpdatedScripthashes(
-    updatedScripthashes: Set[String],
-    outputStream: OutputStream): Unit = {
-    updatedScripthashes.foreach { sh =>
-      val historyHash = currentMonitorState.get.getElectrumHistoryHash(sh)
-      val update = s"""{"method": "blockchain.scripthash.subscribe", "params": [$sh, $historyHash]}"""
-      outputStream.write(update.getBytes())
-    }
-  }
-
   override def blockchainScripthashSubcribe(sh: String): String = {
     val state = currentMonitorState.updateAndGet(_.subscribeAddress(sh))
     if (!state.addressHistory.m.contains(sh)){
@@ -146,5 +136,20 @@ class Api4ElectrumImpl(core: Api4ElectrumCore, transactionMonitor: TransactionMo
     }
     val historyHash = state.getElectrumHistoryHash(sh)
     historyHash
+  }
+
+  def onUpdatedScripthashes(
+    updatedScripthashes: Set[String],
+    outputStream: OutputStream): Unit = {
+    updatedScripthashes.foreach { sh =>
+      val historyHash = currentMonitorState.get.getElectrumHistoryHash(sh)
+      val update = s"""{"method": "blockchain.scripthash.subscribe", "params": [$sh, $historyHash]}"""
+      outputStream.write(update.getBytes())
+    }
+  }
+
+  def triggerHeartbeatConnected(outputStream: OutputStream): Unit = {
+    val updatedTxs = updateMonitorStateWithExtraResult(transactionMonitor.checkForUpdatedTxs)
+    onUpdatedScripthashes(updatedTxs, outputStream)
   }
 }

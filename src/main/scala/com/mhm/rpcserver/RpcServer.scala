@@ -50,9 +50,7 @@ object RpcServer {
       override def postHandleJson(json: JsonNode): Unit = {}
 
       override def onHeartbeatConnected(outputStream: OutputStream): Unit = {
-        //val (updatedTxs, monitorState2) = transactionMonitor.checkForUpdatedTxs(monitorState)
-        val updatedTxs = service.updateMonitorStateWithExtraResult(transactionMonitor.checkForUpdatedTxs)
-        service.onUpdatedScripthashes(updatedTxs, outputStream)
+        service.triggerHeartbeatConnected(outputStream)
         outputStream.write("hihi\n".getBytes)
         println("onHeartbeatConnected!!!!")
       }
