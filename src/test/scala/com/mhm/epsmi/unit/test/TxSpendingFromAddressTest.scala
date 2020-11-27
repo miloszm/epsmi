@@ -1,6 +1,6 @@
 package com.mhm.epsmi.unit.test
 
-import com.mhm.bitcoin.TransactionMonitor
+import com.mhm.bitcoin.{TransactionMonitor, TransactionMonitorFactory}
 import com.mhm.epsmi.dummymonitor.{DummyBtcRpc, DummyDeterministicWallet}
 import com.mhm.epsmi.dummymonitor.DummyTxCreator.createDummyFundingTx
 import com.mhm.util.HashOps.script2ScriptHash
@@ -18,7 +18,7 @@ class TxSpendingFromAddressTest extends FlatSpec {
     spendingTx.blockhash -> containingBlockHeight2
   ))
 
-  val monitor = new TransactionMonitor(rpc, nonWalletAllowed = false)
+  val monitor = TransactionMonitorFactory.create(rpc)
   val monitorState = monitor.buildAddressHistory(Seq(dummySpk1), Seq(new DummyDeterministicWallet))
   val sh = script2ScriptHash(dummySpk1)
   monitorState.getElectrumHistory(sh).getOrElse(fail).size shouldBe 2

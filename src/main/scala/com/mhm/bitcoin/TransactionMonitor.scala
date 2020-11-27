@@ -21,11 +21,24 @@ import scala.util.{Failure, Success, Try}
 case class Tx4HistoryGen(confirmations: Int, txid: String, blockhash: DoubleSha256DigestBE)
 case class LastKnown(lastKnownTx: Option[TxidAddress])
 
+
+trait TransactionMonitor {
+  def buildAddressHistory(
+    monitoredScriptPubKeys: Seq[String],
+    deterministicWallets: Seq[DeterministicWallet]
+  ): TransactionMonitorState
+  def checkForUpdatedTxs(state: TransactionMonitorState): (Set[String], TransactionMonitorState)
+  def checkForNewTxs(stateArg: TransactionMonitorState): TransactionMonitorState
+  def generateNewHistoryElement(tx: Tx4HistoryGen, txd: RpcTransaction): HistoryElement
+  def getInputAndOutputScriptpubkeys(txid: DoubleSha256DigestBE): (Seq[String], Seq[String], RpcTransaction)
+}
+
+
 /**
  * @param rpcCli bitcoin core client
  * @param nonWalletAllowed if true allows extracting input transactions when they are not wallet transactions
  */
-class TransactionMonitor(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed: Boolean, initLastKnown: LastKnown = LastKnown(None)) extends Logging {
+class TransactionMonitorImpl(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed: Boolean, initLastKnown: LastKnown = LastKnown(None)) extends TransactionMonitor with Logging {
   val ConfirmationsSafeFromReorg = 100
   val BATCH_SIZE = 1000
 

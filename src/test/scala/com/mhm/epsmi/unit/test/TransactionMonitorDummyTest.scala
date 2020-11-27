@@ -1,6 +1,6 @@
 package com.mhm.epsmi.unit.test
 
-import com.mhm.bitcoin.{TransactionMonitor, Tx4HistoryGen}
+import com.mhm.bitcoin.{TransactionMonitor, TransactionMonitorFactory, Tx4HistoryGen}
 import com.mhm.epsmi.dummymonitor.{DummyBtcRpc, DummyTxCreator}
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.scalatest.FlatSpec
@@ -14,7 +14,7 @@ class TransactionMonitorDummyTest extends FlatSpec {
 
     val dummyBtcRpc = new DummyBtcRpc(Seq(dummyTx), Nil, Map(dummyTx.blockhash -> BlockHeight))
 
-    val transactionMonitor = new TransactionMonitor(dummyBtcRpc, nonWalletAllowed = false)
+    val transactionMonitor = TransactionMonitorFactory.create(dummyBtcRpc)
 
     val tx = Tx4HistoryGen(
       dummyTx.confirmations,
@@ -34,7 +34,7 @@ class TransactionMonitorDummyTest extends FlatSpec {
     val utxoSet = Seq(dummyTx.vin)
     val dummyBtcRpc = new DummyBtcRpc(Seq(dummyTx), utxoSet, Map(dummyTx.blockhash -> 133))
 
-    val transactionMonitor = new TransactionMonitor(dummyBtcRpc, nonWalletAllowed = false)
+    val transactionMonitor = TransactionMonitorFactory.create(dummyBtcRpc)
 
     val tx = Tx4HistoryGen(
       dummyTx.confirmations,
@@ -62,7 +62,7 @@ class TransactionMonitorDummyTest extends FlatSpec {
 
     val dummyBtcRpc = new DummyBtcRpc(Seq(tx, inputTx))
 
-    val(outputScriptpubkeys, inputScriptpubkeys, tr) = new TransactionMonitor(dummyBtcRpc, nonWalletAllowed = false).getInputAndOutputScriptpubkeys(
+    val(outputScriptpubkeys, inputScriptpubkeys, tr) = TransactionMonitorFactory.create(dummyBtcRpc).getInputAndOutputScriptpubkeys(
       DoubleSha256DigestBE.fromHex(tx.txId)
     )
     outputScriptpubkeys should contain theSameElementsAs Seq(ThisOutSpk)

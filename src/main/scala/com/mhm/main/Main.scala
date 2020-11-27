@@ -1,6 +1,6 @@
 package com.mhm.main
 
-import com.mhm.bitcoin.TransactionMonitor
+import com.mhm.bitcoin.{TransactionMonitor, TransactionMonitorFactory, TransactionMonitorImpl}
 import com.mhm.connectors.BitcoinSConnector
 import com.mhm.rpcserver.RpcServer
 import com.mhm.rpcserver.RpcServer.port
@@ -12,7 +12,7 @@ object Main extends App {
     val config = ConfigFactory.load()
     val scriptPubKeysToMonitorResult = new Setup(BitcoinSConnector.rpcCli, config).getScriptPubKeysToMonitor()
 
-    val transactionMonitor = new TransactionMonitor(BitcoinSConnector.rpcCli, false)
+    val transactionMonitor = TransactionMonitorFactory.create(BitcoinSConnector.rpcCli)
 
     val monitorState = transactionMonitor.buildAddressHistory(
       scriptPubKeysToMonitorResult.spksToMonitor,

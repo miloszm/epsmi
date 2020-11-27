@@ -1,6 +1,6 @@
 package com.mhm.epsmi.unit.test
 
-import com.mhm.bitcoin.TransactionMonitor
+import com.mhm.bitcoin.{TransactionMonitor, TransactionMonitorFactory}
 import com.mhm.epsmi.dummymonitor.{DummyBtcRpc, DummyDeterministicWallet}
 import org.scalatest.FlatSpec
 import com.mhm.epsmi.dummymonitor.DummyTxCreator.createDummyFundingTx
@@ -26,7 +26,7 @@ class DuplicateTxidTest extends FlatSpec {
     dummyTx3.blockhash -> containingBlockHeight3
   ))
 
-  val monitor = new TransactionMonitor(rpc, nonWalletAllowed = false)
+  val monitor = TransactionMonitorFactory.create(rpc)
 
   val monitorState = monitor.buildAddressHistory(Seq(dummySpk), Seq(new DummyDeterministicWallet))
   monitorState.getElectrumHistory(sh).getOrElse(fail).size shouldBe 1
@@ -34,7 +34,7 @@ class DuplicateTxidTest extends FlatSpec {
   val monitorState2 = monitorState.subscribeAddress(sh)
   monitorState2.getElectrumHistory(sh).getOrElse(fail).map(_.txHash).head shouldBe dummyTx1.txId
   val rpc2 = rpc.copy(txList = rpc.txList ++ Seq(dummyTx3))
-  val monitor2 = new TransactionMonitor(rpc2, nonWalletAllowed = false)
+  val monitor2 = TransactionMonitorFactory.create(rpc2)
   val (updatedTxs, monitorState3) = monitor2.checkForUpdatedTxs(monitorState2)
   updatedTxs.size shouldBe 1
   monitorState.getElectrumHistory(sh).getOrElse(fail).size shouldBe 1

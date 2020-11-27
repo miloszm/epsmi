@@ -1,6 +1,6 @@
 package com.mhm.epsmi.unit.test
 
-import com.mhm.bitcoin.TransactionMonitor
+import com.mhm.bitcoin.{TransactionMonitor, TransactionMonitorFactory}
 import com.mhm.epsmi.dummymonitor.{DummyBtcRpc, DummyDeterministicWallet}
 import com.mhm.epsmi.dummymonitor.DummyTxCreator.createDummyFundingTx
 import com.mhm.util.HashOps.script2ScriptHash
@@ -17,7 +17,7 @@ class TxWithUnconfirmedInputTest extends FlatSpec with AddressHistoryAssertions 
     dummyTx2.blockhash -> containingBlockHeight2
   ))
 
-  val monitor = new TransactionMonitor(rpc, nonWalletAllowed = false)
+  val monitor = TransactionMonitorFactory.create(rpc)
 
   val monitorState = monitor.buildAddressHistory(Seq(dummySpk1, dummySpk2), Seq(new DummyDeterministicWallet))
   monitorState.addressHistory.m.size shouldBe 2
@@ -32,7 +32,7 @@ class TxWithUnconfirmedInputTest extends FlatSpec with AddressHistoryAssertions 
   val (updatedTxs, monitorState3) = monitor.checkForUpdatedTxs(monitorState2)
   updatedTxs.size shouldBe 0
   val rpc2 = rpc.copy(txList = Seq(dummyTx1, dummyTx2))
-  val monitor2 = new TransactionMonitor(rpc2, nonWalletAllowed = false)
+  val monitor2 = TransactionMonitorFactory.create(rpc2)
   val (updatedTxs2, monitorState4) = monitor2.checkForUpdatedTxs(monitorState3)
   updatedTxs2.size shouldBe 2
   assertAddressHistoryTx(monitorState4.addressHistory, spk=dummySpk1, height = 0, txId = dummyTx1.txId, subscribed = true)
@@ -43,7 +43,7 @@ class TxWithUnconfirmedInputTest extends FlatSpec with AddressHistoryAssertions 
   val dummyTx1Confirmed = dummyTx1.copy(confirmations = 1)
   val dummyTx2Confirmed = dummyTx2.copy(confirmations = 1)
   val rpc3 = rpc.copy(txList = Seq(dummyTx1Confirmed, dummyTx2Confirmed))
-  val monitor3 = new TransactionMonitor(rpc3, nonWalletAllowed = false)
+  val monitor3 = TransactionMonitorFactory.create(rpc3)
   val (updatedTxs3, monitorState5) = monitor3.checkForUpdatedTxs(monitorState4)
   updatedTxs3.size shouldBe 2
   assertAddressHistoryTx(monitorState5.addressHistory, spk=dummySpk1, height = containingBlockHeight1, txId = dummyTx1.txId, subscribed = true)

@@ -1,6 +1,6 @@
 package com.mhm.epsmi.unit.test
 
-import com.mhm.bitcoin.TransactionMonitor
+import com.mhm.bitcoin.{TransactionMonitor, TransactionMonitorFactory}
 import com.mhm.epsmi.dummymonitor.DummyTxCreator.createDummyFundingTx
 import com.mhm.epsmi.dummymonitor.{DummyBtcRpc, DummyDeterministicWallet}
 import com.mhm.util.HashOps.script2ScriptHash
@@ -25,7 +25,7 @@ class CoinbaseTransactionsTest extends FlatSpec with AddressHistoryAssertions {
     )
   )
 
-  val monitor = new TransactionMonitor(rpc, nonWalletAllowed = false)
+  val monitor = TransactionMonitorFactory.create(rpc)
 
   val monitorState = monitor.buildAddressHistory(Seq(dummySpk1, dummySpk2, dummySpk3, dummySpk4, dummySpk5, dummySpk6), Seq(new DummyDeterministicWallet))
   monitorState.addressHistory.m.size shouldBe 6
@@ -36,7 +36,7 @@ class CoinbaseTransactionsTest extends FlatSpec with AddressHistoryAssertions {
   monitorState.getElectrumHistory(sh3).getOrElse(fail).size shouldBe 0
 
   val rpc2 = rpc.copy(txList = rpc.txList ++ Seq(dummyTx4, dummyTx5, dummyTx6))
-  val monitor2 = new TransactionMonitor(rpc2, nonWalletAllowed = false)
+  val monitor2 = TransactionMonitorFactory.create(rpc2)
 
   monitorState.reorganizableTxes.map(_.txid.substring(0,4)) should contain theSameElementsAs Seq("0bb8")
   val (updatedTxs2, monitorState2) = monitor2.checkForUpdatedTxs(monitorState)
@@ -50,7 +50,7 @@ class CoinbaseTransactionsTest extends FlatSpec with AddressHistoryAssertions {
   //  test orphan tx is removed from history
   val orphanTx = dummyTx1.copy(confirmations = 0, category = "orphan")
   val rpc3 = rpc2.copy(txList = Seq(orphanTx) ++ rpc2.txList.drop(1))
-  val monitor3 = new TransactionMonitor(rpc3, nonWalletAllowed = false)
+  val monitor3 = TransactionMonitorFactory.create(rpc3)
   monitorState2.reorganizableTxes.map(_.txid.substring(0,4)) should contain theSameElementsAs Seq("0bb8", "0bbb")
   val (updatedTxs3, monitorState3) = monitor3.checkForUpdatedTxs(monitorState2)
   monitorState3.reorganizableTxes.map(_.txid.substring(0,4)) should contain theSameElementsAs Seq("0bbb")

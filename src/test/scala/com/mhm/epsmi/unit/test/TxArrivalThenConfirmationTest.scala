@@ -1,6 +1,6 @@
 package com.mhm.epsmi.unit.test
 
-import com.mhm.bitcoin.TransactionMonitor
+import com.mhm.bitcoin.{TransactionMonitor, TransactionMonitorFactory}
 import com.mhm.epsmi.dummymonitor.{DummyBtcRpc, DummyDeterministicWallet}
 import com.mhm.epsmi.dummymonitor.DummyTxCreator.createDummyFundingTx
 import com.mhm.util.HashOps
@@ -14,7 +14,7 @@ class TxArrivalThenConfirmationTest extends FlatSpec with AddressHistoryAssertio
   val(dummySpk, containingBlockHeight, dummyTx) = createDummyFundingTx(confirmations = 0)
 
   val rpc = DummyBtcRpc(Nil, Seq(dummyTx.vin), Map(dummyTx.blockhash -> containingBlockHeight))
-  val monitor = new TransactionMonitor(rpc, nonWalletAllowed = false)
+  val monitor = TransactionMonitorFactory.create(rpc)
   val monitorState = monitor.buildAddressHistory(Seq(dummySpk), Seq(new DummyDeterministicWallet))
   monitorState.addressHistory.m.size shouldBe 1
 
@@ -28,7 +28,7 @@ class TxArrivalThenConfirmationTest extends FlatSpec with AddressHistoryAssertio
 
   // unconfirmed transaction appears
   val rpc2 = rpc.copy(txList = Seq(dummyTx))
-  val monitor2 = new TransactionMonitor(rpc2, nonWalletAllowed = false)
+  val monitor2 = TransactionMonitorFactory.create(rpc2)
   val (updatedTxs2, monitorState4) = monitor2.checkForUpdatedTxs(monitorState3)
   updatedTxs2.size shouldBe 1
   monitorState4.unconfirmedTxes.size shouldBe 1
@@ -38,7 +38,7 @@ class TxArrivalThenConfirmationTest extends FlatSpec with AddressHistoryAssertio
   // transaction confirms
   val dummyTxConfirmed = dummyTx.copy(confirmations = 1)
   val rpc3 = rpc2.copy(txList = Seq(dummyTxConfirmed))
-  val monitor3 = new TransactionMonitor(rpc3, nonWalletAllowed = false)
+  val monitor3 = TransactionMonitorFactory.create(rpc3)
   val (updatedTxs3, monitorState5) = monitor3.checkForUpdatedTxs(monitorState4)
   assertAddressHistoryTx(monitorState5.addressHistory, spk = dummySpk, height = containingBlockHeight, txId = dummyTx.txId, subscribed = true)
 

@@ -1,6 +1,6 @@
 package com.mhm.epsmi.unit.test
 
-import com.mhm.bitcoin.TransactionMonitor
+import com.mhm.bitcoin.{TransactionMonitor, TransactionMonitorFactory}
 import com.mhm.epsmi.dummymonitor.{DummyBtcRpc, DummyDeterministicWallet, DummyTxCreator}
 import com.mhm.util.HashOps
 import com.mhm.util.HashOps.script2ScriptHash
@@ -11,7 +11,7 @@ class BuildAddressHistoryTest extends FlatSpec with AddressHistoryAssertions {
   "transaction monitor" should "build single entry address history" in {
     val (dummySpk, blockHeight, dummyTx) = DummyTxCreator.createDummyFundingTx()
     val rpc = new DummyBtcRpc(Seq(dummyTx), Nil, Map(dummyTx.blockhash -> blockHeight))
-    val monitor = new TransactionMonitor(rpc, false)
+    val monitor = TransactionMonitorFactory.create(rpc)
     val state = monitor.buildAddressHistory(Seq(dummySpk), Seq(new DummyDeterministicWallet))
     state.addressHistory.m.size shouldBe 1
     assertAddressHistoryTx(state.addressHistory, dummySpk, blockHeight, dummyTx.txId, subscribed = false)
@@ -21,7 +21,7 @@ class BuildAddressHistoryTest extends FlatSpec with AddressHistoryAssertions {
     val(dummySpk1, containingBlockHeight1, dummyTx1) = DummyTxCreator.createDummyFundingTx()
     val(dummySpk2, containingBlockHeight2, dummyTx2) = DummyTxCreator.createDummyFundingTx()
     val rpc = new DummyBtcRpc(Seq(dummyTx1, dummyTx2), Nil, Map(dummyTx1.blockhash -> containingBlockHeight1, dummyTx2.blockhash -> containingBlockHeight2))
-    val monitor = new TransactionMonitor(rpc, false)
+    val monitor = TransactionMonitorFactory.create(rpc)
     val state = monitor.buildAddressHistory(Seq(dummySpk1, dummySpk2), Seq(new DummyDeterministicWallet))
     state.addressHistory.m.size shouldBe 2
     assertAddressHistoryTx(state.addressHistory, dummySpk1, containingBlockHeight1, dummyTx1.txId, subscribed = false)
@@ -48,7 +48,7 @@ class BuildAddressHistoryTest extends FlatSpec with AddressHistoryAssertions {
     txs.length shouldBe InitialTxCount
 
     val rpc = DummyBtcRpc(txs, Seq(dummyTx.vin))
-    val monitor = new TransactionMonitor(rpc, nonWalletAllowed = false)
+    val monitor = TransactionMonitorFactory.create(rpc)
     val state = monitor.buildAddressHistory(Seq(dummySpk), Seq(new DummyDeterministicWallet))
     assert(state.lastKnownTx.isDefined)
     state.addressHistory.m.size shouldBe 1
@@ -69,7 +69,7 @@ class BuildAddressHistoryTest extends FlatSpec with AddressHistoryAssertions {
     }
 
     val newRpc = rpc.copy(txList = rpc.txList ++ newTxs)
-    val newMonitor = new TransactionMonitor(newRpc, nonWalletAllowed = false)
+    val newMonitor = TransactionMonitorFactory.create(newRpc)
     val (updatedScripthashes2, state2) = newMonitor.checkForUpdatedTxs(state1)
     updatedScripthashes2.size shouldBe 0
     state2.addressHistory.m(sh).history.length shouldBe InitialTxCount+AddedTxCount
@@ -86,7 +86,7 @@ class BuildAddressHistoryTest extends FlatSpec with AddressHistoryAssertions {
       Nil,
       Map(dummyTx1.blockhash -> containingBlockHeight1, dummyTx2.blockhash -> containingBlockHeight2, dummyTx3.blockhash -> containingBlockHeight3))
 
-    val monitor = new TransactionMonitor(rpc, nonWalletAllowed = false)
+    val monitor = TransactionMonitorFactory.create(rpc)
     val state = monitor.buildAddressHistory(Seq(dummySpk1, dummySpk2, dummySpk3, dummySpk4, dummySpk5), Seq(new DummyDeterministicWallet))
 
     val stateAfterCheck = monitor.checkForNewTxs(state)
@@ -104,7 +104,7 @@ class BuildAddressHistoryTest extends FlatSpec with AddressHistoryAssertions {
       )
     )
 
-    val monitor2 = new TransactionMonitor(rpc2, nonWalletAllowed = false)
+    val monitor2 = TransactionMonitorFactory.create(rpc2)
 
     val state2 = monitor2.checkForNewTxs(state)
     state2.updatedScripthashes should contain theSameElementsAs Seq(script2ScriptHash(dummySpk4), script2ScriptHash(dummySpk5))

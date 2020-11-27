@@ -1,6 +1,6 @@
 package com.mhm.epsmi.unit.test
 
-import com.mhm.bitcoin.TransactionMonitor
+import com.mhm.bitcoin.{TransactionMonitor, TransactionMonitorFactory}
 import com.mhm.epsmi.dummymonitor.{DummyBtcRpc, DummyDeterministicWallet}
 import com.mhm.epsmi.dummymonitor.DummyTxCreator.createDummyFundingTx
 import com.mhm.util.HashOps.script2ScriptHash
@@ -17,7 +17,7 @@ class ReorgDifferentBlockTest extends FlatSpec with AddressHistoryAssertions {
     dummyTx2.blockhash -> containingBlockHeight2
   ))
 
-  val monitor = new TransactionMonitor(rpc, nonWalletAllowed = false)
+  val monitor = TransactionMonitorFactory.create(rpc)
   val monitorState = monitor.buildAddressHistory(Seq(dummySpk1), Seq(new DummyDeterministicWallet))
   monitorState.addressHistory.m.size shouldBe 1
 
@@ -29,7 +29,7 @@ class ReorgDifferentBlockTest extends FlatSpec with AddressHistoryAssertions {
 
   val dummyTx1ChangedBlockhash = dummyTx1.copy(blockhash = dummyTx2.blockhash)
   val rpc2 = rpc.copy(txList = Seq(dummyTx1ChangedBlockhash))
-  val monitor2 = new TransactionMonitor(rpc2, nonWalletAllowed = false)
+  val monitor2 = TransactionMonitorFactory.create(rpc2)
   val (updatedTxs, monitorState2) = monitor2.checkForUpdatedTxs(monitorState)
   updatedTxs.size shouldBe 0
   monitorState2.getElectrumHistory(sh).getOrElse(fail).size shouldBe 1

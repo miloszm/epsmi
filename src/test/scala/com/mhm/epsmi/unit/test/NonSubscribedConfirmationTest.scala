@@ -1,6 +1,6 @@
 package com.mhm.epsmi.unit.test
 
-import com.mhm.bitcoin.TransactionMonitor
+import com.mhm.bitcoin.{TransactionMonitor, TransactionMonitorFactory}
 import com.mhm.epsmi.dummymonitor.{DummyBtcRpc, DummyDeterministicWallet}
 import com.mhm.epsmi.dummymonitor.DummyTxCreator.createDummyFundingTx
 import org.scalatest.FlatSpec
@@ -13,7 +13,7 @@ class NonSubscribedConfirmationTest extends FlatSpec with AddressHistoryAssertio
   val(dummySpk, containingBlockHeight, dummyTx) = createDummyFundingTx(confirmations = 0)
 
   val rpc = DummyBtcRpc(Seq(dummyTx), Seq(dummyTx.vin), Map(dummyTx.blockhash -> containingBlockHeight))
-  val monitor = new TransactionMonitor(rpc, nonWalletAllowed = false)
+  val monitor = TransactionMonitorFactory.create(rpc)
 
   val monitorState = monitor.buildAddressHistory(Seq(dummySpk), Seq(new DummyDeterministicWallet))
   monitorState.addressHistory.m.size shouldBe 1
@@ -26,7 +26,7 @@ class NonSubscribedConfirmationTest extends FlatSpec with AddressHistoryAssertio
 
   val dummyTxConfirmed = dummyTx.copy(confirmations = 1) // tx confirms
   val rpc2 = rpc.copy(txList = Seq(dummyTxConfirmed))
-  val monitor2 = new TransactionMonitor(rpc2, nonWalletAllowed = false)
+  val monitor2 = TransactionMonitorFactory.create(rpc2)
   val (updatedTxs2, monitorState3) = monitor2.checkForUpdatedTxs(monitorState2)
   // #not subscribed so still only returns an empty list
   updatedTxs2.size shouldBe 0

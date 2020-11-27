@@ -1,6 +1,6 @@
 package com.mhm.livebtcnode.test
 
-import com.mhm.bitcoin.{HistoryElement, HistoryEntry, TransactionMonitor, Tx4HistoryGen}
+import com.mhm.bitcoin.{HistoryElement, HistoryEntry, TransactionMonitor, TransactionMonitorFactory, TransactionMonitorImpl, Tx4HistoryGen}
 import com.mhm.connectors.BitcoinSConnector
 import com.mhm.connectors.BitcoinSConnector.rpcCli
 import com.mhm.connectors.RpcWrap.wrap
@@ -24,7 +24,7 @@ class TransactionMonitorTest extends FlatSpec {
       "76a9143fe7f4ee744d330cbcc8ec5d68925e63ce03f77888ac",
       "76a914a2946db89edc09f56960cee76dab97604f7ffef088ac"
     )
-    val buildResult = new TransactionMonitor(BitcoinSConnector.rpcCli, nonWalletAllowed = true).buildAddressHistory(monitoredScriptPubKeys, deterministicWallets)
+    val buildResult = TransactionMonitorFactory.create(BitcoinSConnector.rpcCli).buildAddressHistory(monitoredScriptPubKeys, deterministicWallets)
     monitoredScriptPubKeys.take(1).foreach { k =>
       buildResult.addressHistory.m(HashOps.script2ScriptHash(k)) shouldBe HistoryEntry(subscribed = false, List(HistoryElement("22667c482f0f69daefabdf0969be53b8d539e1d2abbfc1c7a193ae38ec0d3e31",654929,0)))
     }
@@ -35,7 +35,7 @@ class TransactionMonitorTest extends FlatSpec {
   }
 
   "transaction monitor" should "have functionality for getInputAndOutputScriptpubkeys" in {
-    val(outputScriptpubkeys, inputScriptpubkeys, tr) = new TransactionMonitor(BitcoinSConnector.rpcCli, nonWalletAllowed = true).getInputAndOutputScriptpubkeys(
+    val(outputScriptpubkeys, inputScriptpubkeys, tr) = new TransactionMonitorImpl(BitcoinSConnector.rpcCli, nonWalletAllowed = true).getInputAndOutputScriptpubkeys(
       DoubleSha256DigestBE.fromHex("22667c482f0f69daefabdf0969be53b8d539e1d2abbfc1c7a193ae38ec0d3e31")
     )
     outputScriptpubkeys should contain theSameElementsAs Seq(
@@ -49,7 +49,7 @@ class TransactionMonitorTest extends FlatSpec {
   }
 
   "transaction monitor" should "have functionality for generating new history element" in {
-    val transactionMonitor = new TransactionMonitor(BitcoinSConnector.rpcCli, nonWalletAllowed = true)
+    val transactionMonitor = new TransactionMonitorImpl(BitcoinSConnector.rpcCli, nonWalletAllowed = true)
 
     val txid = "22667c482f0f69daefabdf0969be53b8d539e1d2abbfc1c7a193ae38ec0d3e31"
     val rawTx: GetRawTransactionResult = wrap(rpcCli.getRawTransaction(DoubleSha256DigestBE.fromHex(txid)))
