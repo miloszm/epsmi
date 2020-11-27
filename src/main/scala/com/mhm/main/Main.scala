@@ -1,6 +1,6 @@
 package com.mhm.main
 
-import com.mhm.bitcoin.{TransactionMonitor, TransactionMonitorFactory, TransactionMonitorImpl}
+import com.mhm.bitcoin.TransactionMonitorFactory
 import com.mhm.connectors.BitcoinSConnector
 import com.mhm.rpcserver.RpcServer
 import com.mhm.rpcserver.RpcServer.port
@@ -19,7 +19,7 @@ object Main extends App {
       scriptPubKeysToMonitorResult.wallets
     )
 
-    val server = RpcServer.startServer(1420 /*, transactionMonitor, monitorState*/ )
+    val server = RpcServer.startServer(1420, transactionMonitor, monitorState)
 
     println(s"server started on port $port")
 
@@ -27,5 +27,7 @@ object Main extends App {
 
     server.stop()
   }
+
+  doMain
 
 }
