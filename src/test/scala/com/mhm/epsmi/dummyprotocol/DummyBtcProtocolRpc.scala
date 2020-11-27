@@ -1,6 +1,7 @@
 package com.mhm.epsmi.dummyprotocol
 
 import com.mhm.connectors.{BitcoinSConnector, BitcoindRpcExtendedClient}
+import com.mhm.epsmi.dummyprotocol.DummyBtcProtocolRpc.DummyJsonrpcBlockchainHeight
 import org.bitcoins.commons.jsonmodels.bitcoind.{GetBlockHeaderResult, GetTransactionResult}
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.number.UInt32
@@ -8,9 +9,12 @@ import scodec.bits.HexStringSyntax
 
 import scala.concurrent.Future
 
+object DummyBtcProtocolRpc {
+  val DummyJsonrpcBlockchainHeight = 100000
+}
+
 case class DummyBtcProtocolRpc() extends BitcoindRpcExtendedClient(BitcoinSConnector.bitcoindInstance, BitcoinSConnector.system){
 
-  val DummyJsonrpcBlockchainHeight = 100000
   val blockchainHeight = DummyJsonrpcBlockchainHeight
 
   private def getDummyHashFromHeight(height: Int): DoubleSha256DigestBE = {
@@ -32,10 +36,9 @@ case class DummyBtcProtocolRpc() extends BitcoindRpcExtendedClient(BitcoinSConne
   }
 
   override def getBlockHash(height: Int): Future[DoubleSha256DigestBE] = {
-    if (height > blockchainHeight)
-      throw new IllegalArgumentException(s"block height exceeds $blockchainHeight")
-    else
-      Future.successful(getDummyHashFromHeight(blockchainHeight))
+    if (height > DummyJsonrpcBlockchainHeight)
+      throw new IllegalArgumentException(s"height > $DummyJsonrpcBlockchainHeight")
+    Future.successful(getDummyHashFromHeight(height))
   }
 
   override def getBlockHeader(headerHash: DoubleSha256DigestBE): Future[GetBlockHeaderResult] = {
@@ -57,10 +60,12 @@ case class DummyBtcProtocolRpc() extends BitcoindRpcExtendedClient(BitcoinSConne
       previousblockhash = None,
       nextblockhash = None
     )
-    val previousBlockHash = if (height > 1) Some(getDummyHashFromHeight(height - 1))
-      else if (height == 1) Some(getDummyHashFromHeight(0)) // #genesis block
-      else if (height == 0) None
-      else throw new IllegalArgumentException("height < 0")
+    val previousBlockHash = height match {
+      case h if h > 1 => Some(getDummyHashFromHeight(height - 1))
+      case h if h == 1 => Some(getDummyHashFromHeight(0)) // #genesis block
+      case h if h == 0 => None
+      case _ => throw new IllegalArgumentException("height < 0")
+    }
     val header1 = header.copy(previousblockhash = previousBlockHash)
     val nextBlockHash = if (height < blockchainHeight) Some(getDummyHashFromHeight(height + 1)) else None
     val header2 = header1.copy(nextblockhash = nextBlockHash)

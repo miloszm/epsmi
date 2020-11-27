@@ -6,6 +6,7 @@ import java.nio.ByteBuffer
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.mhm.connectors.BitcoinSConnector.{ec, rpcCli}
 import com.mhm.connectors.BitcoindRpcExtendedClient
+import com.mhm.connectors.RpcWrap.wrap
 import com.mhm.util.EpsmiDataOps.{byteVectorOrZeroToArray, byteVectorToArray, intToArray, uint32ToArray}
 import com.mhm.util.{HashOps, MerkleProofOps}
 import javax.xml.bind.DatatypeConverter
@@ -19,6 +20,7 @@ import scala.annotation.tailrec
 import scala.concurrent.duration.{Duration, SECONDS}
 import scala.concurrent.{Await, Future}
 import scala.math.BigDecimal.RoundingMode
+import scala.util.{Failure, Success, Try}
 
 
 case class ElectrumMerkleProof(
@@ -149,7 +151,7 @@ case class Api4ElectrumCore(rpcCli: BitcoindRpcExtendedClient) {
     @tailrec
     def go(blockHashOpt: Option[DoubleSha256DigestBE], headerHashes: List[String], count: Int): (List[String], Int) = {
       if (count > 0 && blockHashOpt.isDefined) {
-        val (headerHash, nextBlockHashOpt) = Await.result(getBlockHeaderHashFromBlockHash(blockHashOpt.get), Duration(20, SECONDS))
+        val (headerHash, nextBlockHashOpt) = wrap(getBlockHeaderHashFromBlockHash(blockHashOpt.get))
         go(nextBlockHashOpt, headerHash +: headerHashes, count - 1)
       } else {
         (headerHashes, count)
@@ -158,9 +160,13 @@ case class Api4ElectrumCore(rpcCli: BitcoindRpcExtendedClient) {
     if (count <= 0){
       Future.successful(("", 0))
     } else {
-      val firstBlockHash = Await.result(rpcCli.getBlockHash(startHeight), Duration(20, SECONDS))
-      val (headerHashes, restCount) = go(Some(firstBlockHash), Nil, count)
-      Future.successful((headerHashes.reverse.mkString, count-restCount))
+      Try(wrap(rpcCli.getBlockHash(startHeight))) match {
+        case Success(firstBlockHash) =>
+          val (headerHashes, restCount) = go(Some(firstBlockHash), Nil, count)
+          Future.successful((headerHashes.reverse.mkString, count-restCount))
+        case Failure(_) =>
+          Future.successful(("", 0))
+      }
     }
   }
 
