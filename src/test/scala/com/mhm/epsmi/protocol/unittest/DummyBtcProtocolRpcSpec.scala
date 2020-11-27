@@ -24,4 +24,21 @@ class DummyBtcProtocolRpcSpec extends FlatSpec {
       }
   }
 
+  "DummyBtcProtocolRpc" should "support GetCurrentHeader" in {
+    val rpc = DummyBtcProtocolRpc()
+    for (raw <- Seq(true, false)){
+      val r = wrap(Api4ElectrumCore(rpc).getCurrentHeader(raw))
+      val (bestBlockHash, hashHeightOrHeader) = r
+      if (raw){
+        hashHeightOrHeader.isRight shouldBe true
+        hashHeightOrHeader.map(_.hash.length).getOrElse(fail) shouldBe 160
+      }
+      else {
+        hashHeightOrHeader.isLeft shouldBe true
+        hashHeightOrHeader.swap.map(_.version).getOrElse(fail) shouldBe 536870912
+      }
+      bestBlockHash.nonEmpty shouldBe true
+    }
+  }
+
 }

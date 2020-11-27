@@ -246,4 +246,13 @@ case class Api4ElectrumCore(rpcCli: BitcoindRpcExtendedClient) {
       GetMerkleResult(blockHeader.height, electrumProof.pos, electrumProof.merkle)
     }
   }
+
+  def getCurrentHeader(raw: Boolean): Future[(String, Either[HeaderResult, HashHeight])] = {
+    for {
+      bestBlockHash <- rpcCli.getBestBlockHash
+      headerOrHashHeight <- getBlockHeader(bestBlockHash, raw)
+    } yield {
+      (bestBlockHash.hex, headerOrHashHeight)
+    }
+  }
 }
