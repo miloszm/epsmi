@@ -3,9 +3,9 @@ package com.mhm.epsmi.roundtrip.test
 import java.io.ByteArrayOutputStream
 
 import com.mhm.api4electrum.{Api4ElectrumCore, Api4ElectrumImpl}
-import com.mhm.bitcoin.{TransactionMonitorFactory, TransactionMonitorState}
+import com.mhm.bitcoin.TransactionMonitorFactory
 import com.mhm.epsmi.dummymonitor.DummyTxCreator.createDummyFundingTx
-import com.mhm.epsmi.dummymonitor.{DummyBtcRpc, DummyDeterministicWallet, DummyTxCreator}
+import com.mhm.epsmi.dummymonitor.{DummyBtcRpc, DummyDeterministicWallet}
 import com.mhm.util.HashOps
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers.convertToAnyShouldWrapper
@@ -22,12 +22,13 @@ class HeartbeatRoundtripSpec extends FlatSpec {
   val sh = HashOps.script2ScriptHash(dummySpk)
   monitorState.getElectrumHistory(sh).getOrElse(fail).size shouldBe 0
 
+  println(s"subscribing address: $sh")
   val monitorState2 = monitorState.subscribeAddress(sh)
 
   val (updatedTxs, monitorState3) = monitor.checkForUpdatedTxs(monitorState2)
   updatedTxs.isEmpty shouldBe true
 
-  // unconfirmed transaction appears
+  println(s"unconfirmed transaction appears: ${dummyTx.txId}")
   val rpc2 = rpc.copy(txList = Seq(dummyTx))
   val monitor2 = TransactionMonitorFactory.create(rpc2)
 
@@ -41,5 +42,7 @@ class HeartbeatRoundtripSpec extends FlatSpec {
 
   val output = streamOutput.toString
   output.contains(""""method": "blockchain.scripthash.subscribe"""") shouldBe true
+  output.contains(protocol.currentMonitorState.get.getElectrumHistoryHash(sh)) shouldBe true
+  output.contains(sh) shouldBe true
   println(output)
 }

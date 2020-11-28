@@ -51,8 +51,6 @@ object RpcServer {
 
       override def onHeartbeatConnected(outputStream: OutputStream): Unit = {
         service.triggerHeartbeatConnected(outputStream)
-        outputStream.write("hihi\n".getBytes)
-        println("onHeartbeatConnected!!!!")
       }
 
       override def onHeartbeatListening(): Unit = {
