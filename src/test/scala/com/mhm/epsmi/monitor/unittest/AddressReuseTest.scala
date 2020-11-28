@@ -1,4 +1,4 @@
-package com.mhm.epsmi.unit.test
+package com.mhm.epsmi.monitor.unittest
 
 import com.mhm.bitcoin.{TransactionMonitor, TransactionMonitorFactory, TransactionMonitorImpl}
 import com.mhm.epsmi.dummymonitor.{DummyBtcRpc, DummyDeterministicWallet}
