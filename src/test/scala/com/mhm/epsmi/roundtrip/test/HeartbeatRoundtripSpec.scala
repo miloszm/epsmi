@@ -37,6 +37,8 @@ class HeartbeatRoundtripSpec extends FlatSpec {
 
   protocol.triggerHeartbeatConnected(streamOutput)
 
+  protocol.currentMonitorState.get().getElectrumHistory(sh).getOrElse(fail).size shouldBe 1
+
   val output = streamOutput.toString
   output.contains(""""method": "blockchain.scripthash.subscribe"""") shouldBe true
   println(output)
