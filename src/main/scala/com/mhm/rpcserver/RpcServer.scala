@@ -51,10 +51,11 @@ object RpcServer {
 
       override def onHeartbeatConnected(outputStream: OutputStream): Unit = {
         service.triggerHeartbeatConnected(outputStream)
+        println("onHeartbeatConnected!!")
       }
 
       override def onHeartbeatListening(): Unit = {
-        println("onHeartbeatListening!!!!")
+        println("onHeartbeatListening!!")
       }
     }
 

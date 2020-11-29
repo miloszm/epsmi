@@ -130,10 +130,18 @@ object RpcClient extends App {
     println(s"   merkle=")
     merkle.merkle.foreach{println(_)}
 
-    val socketInputStream = socket.getInputStream
-    while (true) {
-      println(socketInputStream.read().toChar)
-    }
+//    val socketInputStream = socket.getInputStream
+//    while (true) {
+//      println(socketInputStream.read().toChar)
+//    }
+
+    println
+    // using the first address from the list of addresses shown by the original eps
+    // you need to have actual wallet for that created, so this is really an
+    // integration test
+    val subscriptionResponse = client.blockchainScripthashSubcribe("12tohASdGUCDFvqaygaGbL7Jub7CiHdwa4")
+    println(s"blockchainScripthashSubcribe result = ")
+    println(s"   $subscriptionResponse")
 
 //    Thread.sleep(60000L)
 //

@@ -135,6 +135,7 @@ class Api4ElectrumImpl(core: Api4ElectrumCore, transactionMonitor: TransactionMo
         + "master public key.")
     }
     val historyHash = state.getElectrumHistoryHash(sh)
+    logger.trace(s"historyHash for script hash $sh is${if (historyHash.isEmpty) " empty" else ": " + historyHash}")
     historyHash
   }
 
