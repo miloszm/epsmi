@@ -159,9 +159,16 @@ case class DummyBtcRpc(txList: Seq[DummyTx], utxoSet: Seq[DummyVin] = Nil, block
   }
 
   override def getBlockHeader(headerHash: DoubleSha256DigestBE): Future[GetBlockHeaderResult] = {
+    if (blockHeights.get(headerHash.hex).isEmpty){
+      println("empty")
+    }
     val height = blockHeights.getOrElse(headerHash.hex, throw new IllegalArgumentException("block header not found"))
     Future.successful(
       GetBlockHeaderResult(null, 0, height, 0, org.bitcoins.core.number.Int32(0), null, UInt32(0), UInt32(0), UInt32(0), UInt32(0), 0, "", None, None)
     )
+  }
+
+  override def getBestBlockHash: Future[DoubleSha256DigestBE] = {
+    super.getBestBlockHash
   }
 }

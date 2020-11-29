@@ -33,7 +33,7 @@ class HeartbeatRoundtripSpec extends FlatSpec {
   val rpc2 = rpc.copy(txList = Seq(dummyTx))
   val monitor2 = TransactionMonitorFactory.create(rpc2)
 
-  val protocol = new Api4ElectrumImpl(Api4ElectrumCore(DummyBtcRpc(Nil, Nil, Map())), monitor2, monitorState3)
+  val protocol = new Api4ElectrumImpl(Api4ElectrumCore(rpc2), monitor2, monitorState3)
 
   val streamOutput = new ByteArrayOutputStream()
 

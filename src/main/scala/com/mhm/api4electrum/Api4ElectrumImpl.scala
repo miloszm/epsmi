@@ -4,6 +4,7 @@ import java.io.OutputStream
 import java.util.concurrent.atomic.AtomicReference
 
 import com.mhm.bitcoin.{TransactionMonitor, TransactionMonitorState}
+import com.mhm.common.model.HashHeight
 import com.mhm.connectors.RpcWrap.wrap
 import grizzled.slf4j.Logging
 
@@ -20,6 +21,8 @@ import scala.util.Try
 class Api4ElectrumImpl(core: Api4ElectrumCore, transactionMonitor: TransactionMonitor, monitorState: TransactionMonitorState) extends Api4Electrum with Logging {
 
   val currentMonitorState = new AtomicReference(monitorState)
+
+  val areHeadersRaw = true // TODO must be true for now, consider removing, for the time being some parts of code do not support it being false
 
   def updateMonitorState(fun : TransactionMonitorState => TransactionMonitorState): Unit = {
     def uniFun(s: TransactionMonitorState): TransactionMonitorState = fun(s)
@@ -152,12 +155,25 @@ class Api4ElectrumImpl(core: Api4ElectrumCore, transactionMonitor: TransactionMo
     outputStream: OutputStream): Unit = {
     updatedScripthashes.foreach { sh =>
       val historyHash = currentMonitorState.get.getElectrumHistoryHash(sh)
-      val update = s"""{"method": "blockchain.scripthash.subscribe", "params": [$sh, $historyHash]}"""
+      val update = s"""{"method": "blockchain.scripthash.subscribe", "params": [$sh, $historyHash]}""" + "\n"
+      outputStream.write(update.getBytes())
+    }
+  }
+
+  def onBlockchainTipUpdated(hashHeight: HashHeight, outputStream: OutputStream): Unit = {
+    if (currentMonitorState.get.subscribedToHeaders){
+      val update = s"""{"method": "blockchain.headers.subscribe", "params": ${hashHeight.hash}""" + "\n"
       outputStream.write(update.getBytes())
     }
   }
 
   def triggerHeartbeatConnected(outputStream: OutputStream): Unit = {
+    val (isTipUpdated, headerOrHashHeight) = wrap(core.checkForNewBlockchainTip(areHeadersRaw))
+    val tipHashHeight = headerOrHashHeight.getOrElse(throw new IllegalArgumentException("headers should be raw")) // TODO simplify this - it will not work for raw == false
+    if (isTipUpdated){
+      logger.debug(s"Blockchain tip updated ${tipHashHeight.height}")
+      onBlockchainTipUpdated(tipHashHeight, outputStream)
+    }
     val updatedTxs = updateMonitorStateWithExtraResult(transactionMonitor.checkForUpdatedTxs)
     onUpdatedScripthashes(updatedTxs, outputStream)
   }

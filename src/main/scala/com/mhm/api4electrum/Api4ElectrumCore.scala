@@ -2,6 +2,7 @@ package com.mhm.api4electrum
 
 import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
+import java.util.concurrent.atomic.AtomicReference
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.mhm.common.model.HashHeight
@@ -38,6 +39,8 @@ case class ElectrumMerkleProof(
  */
 
 case class Api4ElectrumCore(rpcCli: BitcoindRpcExtendedClient) {
+  val bestBlockHash = new AtomicReference[Option[String]](None)
+
   def getBlockHeaderHash(blockHeight: Int): Future[String] = {
     for {
       blockHash <- rpcCli.getBlockHash(blockHeight)
@@ -259,6 +262,15 @@ case class Api4ElectrumCore(rpcCli: BitcoindRpcExtendedClient) {
       headerOrHashHeight <- getBlockHeader(bestBlockHash, raw)
     } yield {
       (bestBlockHash.hex, headerOrHashHeight)
+    }
+  }
+
+  def checkForNewBlockchainTip(raw: Boolean): Future[(Boolean, Either[HeaderResult, HashHeight])] = {
+    for {
+      (newBestBlockhash, headerOrHashHeight) <- getCurrentHeader(raw)
+    } yield {
+      val isTipNew = !bestBlockHash.getAndUpdate(_ => Some(newBestBlockhash)).contains(newBestBlockhash)
+      (isTipNew, headerOrHashHeight)
     }
   }
 }
