@@ -4,6 +4,7 @@ import java.io.OutputStream
 import java.util.concurrent.atomic.AtomicReference
 
 import com.mhm.bitcoin.{TransactionMonitor, TransactionMonitorState}
+import com.mhm.connectors.RpcWrap.wrap
 import grizzled.slf4j.Logging
 
 import scala.concurrent.Await
@@ -114,7 +115,7 @@ class Api4ElectrumImpl(core: Api4ElectrumCore, transactionMonitor: TransactionMo
   override def blockchainTrIdFromPosMerkleTrue(height: Int, txPos: Int, merkle: Boolean): MerkleResult = ???
 
   override def blockchainTransactionGetMerkle(txId: String): GetMerkleResult = {
-    Try(Await.result(core.transactionGetMerkle(txId: String), Duration(20, SECONDS))).fold(
+    Try(wrap(core.transactionGetMerkle(txId: String))).fold(
       { t =>
         println(s"server caught: $t")
         throw new IllegalStateException(s"transaction get merkle for $txId failed")
@@ -139,6 +140,13 @@ class Api4ElectrumImpl(core: Api4ElectrumCore, transactionMonitor: TransactionMo
     historyHash
   }
 
+  override def blockchainHeadersSubcribe(sh: String): HeadersSubscribeResult = {
+    updateMonitorState(_.copy(subscribedToHeaders = true))
+    val (_, headerEither) = wrap(core.getCurrentHeader(true))
+    val hashHeight = headerEither.getOrElse(throw new IllegalArgumentException("non raw header returned from get current header"))
+    HeadersSubscribeResult(hex = hashHeight.hash, height = hashHeight.height)
+  }
+
   def onUpdatedScripthashes(
     updatedScripthashes: Set[String],
     outputStream: OutputStream): Unit = {
@@ -153,4 +161,5 @@ class Api4ElectrumImpl(core: Api4ElectrumCore, transactionMonitor: TransactionMo
     val updatedTxs = updateMonitorStateWithExtraResult(transactionMonitor.checkForUpdatedTxs)
     onUpdatedScripthashes(updatedTxs, outputStream)
   }
+
 }

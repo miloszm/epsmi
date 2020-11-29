@@ -143,6 +143,12 @@ object RpcClient extends App {
     println(s"blockchainScripthashSubcribe result = ")
     println(s"   $subscriptionResponse")
 
+    println
+    val headersSubscribeResult = client.blockchainHeadersSubcribe("12tohASdGUCDFvqaygaGbL7Jub7CiHdwa4")
+    println(s"blockchainHeadersSubcribe result = ")
+    println(s"   hash=${headersSubscribeResult.hex}")
+    println(s"   height=${headersSubscribeResult.height}")
+
 //    Thread.sleep(60000L)
 //
 //    println("2nd time")

@@ -20,7 +20,8 @@ case class TransactionMonitorState(
   unconfirmedTxes: Map[String,Seq[String]] = Map(),
   reorganizableTxes: Seq[ReorganizableTxEntry] = Seq(),
   updatedScripthashes: Seq[String] = Seq(),
-  lastKnownTx: Option[TxidAddress] = None
+  lastKnownTx: Option[TxidAddress] = None,
+  subscribedToHeaders: Boolean = false
 ){
   def removeUnconfirmed(removed: Seq[UnconfirmedTxEntry]): TransactionMonitorState = {
     val newUnconfirmedTxes = unconfirmedTxes.collect {case e@(txid, _) if !removed.map(_.txid).contains(txid) => e }

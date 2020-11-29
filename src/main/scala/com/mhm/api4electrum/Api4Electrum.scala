@@ -37,6 +37,12 @@ case class GetMerkleResult (
   @BeanProperty @JsonProperty("merkle") merkle: Array[String]
 )
 
+@JsonSerialize
+case class HeadersSubscribeResult (
+  @BeanProperty @JsonProperty("height") height: Int,
+  @BeanProperty @JsonProperty("hex") hex: String
+)
+
 trait Api4Electrum {
   @JsonRpcMethod("server.version")
   def serverVersion(v1: String, v2: String): Array[String]
@@ -76,5 +82,8 @@ trait Api4Electrum {
 
   @JsonRpcMethod("blockchain.scripthash.subscribe")
   def blockchainScripthashSubcribe(sh: String): String
+
+  @JsonRpcMethod("blockchain.headers.subscribe")
+  def blockchainHeadersSubcribe(sh: String): HeadersSubscribeResult
 
 }
