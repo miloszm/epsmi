@@ -10,7 +10,7 @@ import com.mhm.epsmi.dummymonitor.{DummyBtcRpc, DummyDeterministicWallet}
 import com.mhm.epsmi.dummyprotocol.DummyBtcProtocolRpc
 import com.mhm.util.HashOps
 import org.scalatest.FlatSpec
-import org.scalatest.Matchers.convertToAnyShouldWrapper
+import org.scalatest.Matchers.{contain, convertToAnyShouldWrapper}
 
 class HeartbeatRoundtripSpec extends FlatSpec {
 
@@ -57,4 +57,7 @@ class HeartbeatRoundtripSpec extends FlatSpec {
   val expectedBestBlockHeader = wrap(Api4ElectrumCore(rpc2).getBlockHeader(wrap(rpc2.getBestBlockHash), raw = true)).map(_.hash).getOrElse(fail)
   output2 shouldBe s"""{"method": "blockchain.headers.subscribe", "params": $expectedBestBlockHeader""" + "\n" +
     s"""{"method": "blockchain.scripthash.subscribe", "params": [$sh, $expectedHistoryHash]}""" + "\n"
+
+  // check history
+  protocol2.blockchainScripthashGetHistory(sh).map(_.txHash) should contain theSameElementsAs Seq(dummyTx.txId)
 }

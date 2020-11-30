@@ -3,6 +3,7 @@ package com.mhm.api4electrum
 import com.fasterxml.jackson.annotation.{JsonCreator, JsonProperty}
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import com.googlecode.jsonrpc4j.{JsonRpcError, JsonRpcErrors, JsonRpcMethod}
+import com.mhm.bitcoin.HistoryElement
 
 import scala.beans.BeanProperty
 
@@ -41,6 +42,13 @@ case class GetMerkleResult (
 case class HeadersSubscribeResult (
   @BeanProperty @JsonProperty("height") height: Int,
   @BeanProperty @JsonProperty("hex") hex: String
+)
+
+@JsonSerialize
+case class HistoryItem (
+  @BeanProperty @JsonProperty("height") height: Int,
+  @BeanProperty @JsonProperty("tx_hash") txHash: String,
+  @BeanProperty @JsonProperty("fee") fee: Long
 )
 
 trait Api4Electrum {
@@ -86,4 +94,6 @@ trait Api4Electrum {
   @JsonRpcMethod("blockchain.headers.subscribe")
   def blockchainHeadersSubcribe(sh: String): HeadersSubscribeResult
 
+  @JsonRpcMethod("blockchain.scripthash.get_history")
+  def blockchainScripthashGetHistory(sh: String): Seq[HistoryItem]
 }
