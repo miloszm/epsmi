@@ -25,8 +25,8 @@ case class EpsmiClient(client: Api4Electrum, socket: Socket){
 }
 
 object RpcClient extends App {
-//    val port = 50002
-    val port = 1420
+    val port = 50002
+//    val port = 1420
   var socket: Socket = null //TODO
 
   def createClient(port: Int = port): EpsmiClient = {
@@ -121,14 +121,14 @@ object RpcClient extends App {
 //    println("merkle=")
 //    merkleResult.merkle.foreach{println(_)}
 
-    println
-    val txId4GetMerkle = client.blockchainTrIdFromPos(652742, 5, false) // otherwise it won't be found
-    val merkle = client.blockchainTransactionGetMerkle(txId4GetMerkle)
-    println(s"get merkle result = ")
-    println(s"   blockHeight=${merkle.blockHeight}")
-    println(s"   pos=${merkle.pos}")
-    println(s"   merkle=")
-    merkle.merkle.foreach{println(_)}
+//    println
+//    val txId4GetMerkle = client.blockchainTrIdFromPos(652742, 5, false) // otherwise it won't be found
+//    val merkle = client.blockchainTransactionGetMerkle(txId4GetMerkle)
+//    println(s"get merkle result = ")
+//    println(s"   blockHeight=${merkle.blockHeight}")
+//    println(s"   pos=${merkle.pos}")
+//    println(s"   merkle=")
+//    merkle.merkle.foreach{println(_)}
 
 //    val socketInputStream = socket.getInputStream
 //    while (true) {
@@ -139,15 +139,19 @@ object RpcClient extends App {
     // using the first address from the list of addresses shown by the original eps
     // you need to have actual wallet for that created, so this is really an
     // integration test
-    val subscriptionResponse = client.blockchainScripthashSubcribe("12tohASdGUCDFvqaygaGbL7Jub7CiHdwa4")
-    println(s"blockchainScripthashSubcribe result = ")
-    println(s"   $subscriptionResponse")
+//    val subscriptionResponse = client.blockchainScripthashSubcribe("12tohASdGUCDFvqaygaGbL7Jub7CiHdwa4")
+//    println(s"blockchainScripthashSubcribe result = ")
+//    println(s"   $subscriptionResponse")
+
+//    println
+//    val headersSubscribeResult = client.blockchainHeadersSubcribe("12tohASdGUCDFvqaygaGbL7Jub7CiHdwa4")
+//    println(s"blockchainHeadersSubcribe result = ")
+//    println(s"   hash=${headersSubscribeResult.hex}")
+//    println(s"   height=${headersSubscribeResult.height}")
 
     println
-    val headersSubscribeResult = client.blockchainHeadersSubcribe("12tohASdGUCDFvqaygaGbL7Jub7CiHdwa4")
-    println(s"blockchainHeadersSubcribe result = ")
-    println(s"   hash=${headersSubscribeResult.hex}")
-    println(s"   height=${headersSubscribeResult.height}")
+    val pingResponse = client.serverPing()
+    println(s"ping response = $pingResponse")
 
 //    Thread.sleep(60000L)
 //

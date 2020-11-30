@@ -161,6 +161,8 @@ class Api4ElectrumImpl(core: Api4ElectrumCore, transactionMonitor: TransactionMo
     history
   }
 
+  override def serverPing(): Unit = {}
+
   def onUpdatedScripthashes(
     updatedScripthashes: Set[String],
     outputStream: OutputStream): Unit = {
