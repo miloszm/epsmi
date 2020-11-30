@@ -44,4 +44,15 @@ class HeartbeatRoundtripSpec extends FlatSpec {
   val output = streamOutput.toString
   val expectedHistoryHash = protocol.currentMonitorState.get.getElectrumHistoryHash(sh)
   output shouldBe s"""{"method": "blockchain.scripthash.subscribe", "params": [$sh, $expectedHistoryHash]}""" + "\n"
+
+  // subscribing to headers
+  val monitorState4 = monitorState3.subscribeToHeaders(true)
+  val protocol2 = new Api4ElectrumImpl(Api4ElectrumCore(rpc2), monitor2, monitorState4)
+  val streamOutput2 = new ByteArrayOutputStream()
+  protocol2.triggerHeartbeatConnected(streamOutput2)
+  val output2 = streamOutput2.toString
+  println(output2)
+  output2 shouldBe """{"method": "blockchain.headers.subscribe", "params": 00000020aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa9a9999aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa80969800ffff7f2001000000""" + "\n" +
+    s"""{"method": "blockchain.scripthash.subscribe", "params": [$sh, $expectedHistoryHash]}""" + "\n"
+
 }

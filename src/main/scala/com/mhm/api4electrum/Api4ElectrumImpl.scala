@@ -161,6 +161,7 @@ class Api4ElectrumImpl(core: Api4ElectrumCore, transactionMonitor: TransactionMo
   }
 
   def onBlockchainTipUpdated(hashHeight: HashHeight, outputStream: OutputStream): Unit = {
+    logger.trace(s"onBlockchainTipUpdated, subscribed to headers=${currentMonitorState.get.subscribedToHeaders}")
     if (currentMonitorState.get.subscribedToHeaders){
       val update = s"""{"method": "blockchain.headers.subscribe", "params": ${hashHeight.hash}""" + "\n"
       outputStream.write(update.getBytes())
@@ -168,6 +169,7 @@ class Api4ElectrumImpl(core: Api4ElectrumCore, transactionMonitor: TransactionMo
   }
 
   def triggerHeartbeatConnected(outputStream: OutputStream): Unit = {
+    logger.trace("triggerHeartbeatConnected")
     val (isTipUpdated, headerOrHashHeight) = wrap(core.checkForNewBlockchainTip(areHeadersRaw))
     val tipHashHeight = headerOrHashHeight.getOrElse(throw new IllegalArgumentException("headers should be raw")) // TODO simplify this - it will not work for raw == false
     if (isTipUpdated){

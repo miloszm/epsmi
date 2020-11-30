@@ -284,10 +284,7 @@ class TransactionMonitorImpl(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed
           go(newState, xs)
         }
     }
-    println(s">>>>>before checkConfirmations: ${state.reorganizableTxes}")
-    val st = go(state, state.unconfirmedTxes.map{case(k, v) => UnconfirmedTxEntry(k, v)}.toList)
-    println(s">>>>>after checkConfirmations: ${state.reorganizableTxes}")
-    st
+    go(state, state.unconfirmedTxes.map{case(k, v) => UnconfirmedTxEntry(k, v)}.toList)
   }
 
   /**
@@ -340,7 +337,6 @@ class TransactionMonitorImpl(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed
           go(state, xs)
         }
     }
-    println(s">>>>>>>>>>>> reorganizableTxes = ${state.reorganizableTxes.toList}")
     go(state, state.reorganizableTxes.toList)
   }
 

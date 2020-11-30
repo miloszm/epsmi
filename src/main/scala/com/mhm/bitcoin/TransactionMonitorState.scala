@@ -124,5 +124,8 @@ case class TransactionMonitorState(
     }.getOrElse(Nil)
     getStatusElectrum(hashHeights.toList)
   }
+  def subscribeToHeaders(subscribe: Boolean): TransactionMonitorState = {
+    this.copy(subscribedToHeaders = subscribe)
+  }
 
 }
