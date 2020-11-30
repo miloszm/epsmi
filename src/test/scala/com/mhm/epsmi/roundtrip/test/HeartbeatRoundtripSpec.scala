@@ -43,5 +43,5 @@ class HeartbeatRoundtripSpec extends FlatSpec {
   protocol.currentMonitorState.get().addressHistory.m shouldBe Map(sh -> HistoryEntry(subscribed = true,List(HistoryElement(dummyTx.txId,0,2))))
   val output = streamOutput.toString
   val expectedHistoryHash = protocol.currentMonitorState.get.getElectrumHistoryHash(sh)
-  output shouldBe s"""{"method": "blockchain.scripthash.subscribe", "params": [$sh, $expectedHistoryHash]}"""
+  output shouldBe s"""{"method": "blockchain.scripthash.subscribe", "params": [$sh, $expectedHistoryHash]}""" + "\n"
 }

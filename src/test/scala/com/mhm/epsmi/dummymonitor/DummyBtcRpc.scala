@@ -2,6 +2,7 @@ package com.mhm.epsmi.dummymonitor
 
 import com.mhm.connectors.{BitcoinSConnector, BitcoindRpcExtendedClient}
 import com.mhm.epsmi.dummymonitor.DummyTxCreator.{DummyTx, DummyVin, DummyVout}
+import com.mhm.epsmi.dummyprotocol.DummyBtcProtocolRpc
 import org.bitcoins.commons.jsonmodels.bitcoind._
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.number.UInt32
@@ -14,6 +15,8 @@ import scala.concurrent.Future
 
 case class DummyBtcRpc(txList: Seq[DummyTx], utxoSet: Seq[DummyVin] = Nil, blockHeights: Map[String, Int] = Map())
   extends BitcoindRpcExtendedClient(BitcoinSConnector.bitcoindInstance, BitcoinSConnector.system){
+
+  val protocolRpc = DummyBtcProtocolRpc()
 
   def toListTransactionsResult(tx: DummyTx): ListTransactionsResult = {
     ListTransactionsResult(
@@ -159,16 +162,23 @@ case class DummyBtcRpc(txList: Seq[DummyTx], utxoSet: Seq[DummyVin] = Nil, block
   }
 
   override def getBlockHeader(headerHash: DoubleSha256DigestBE): Future[GetBlockHeaderResult] = {
-    if (blockHeights.get(headerHash.hex).isEmpty){
-      println("empty")
+    if (!blockHeights.contains(headerHash.hex)){
+      protocolRpc.getBlockHeader(headerHash) // TODO we marry 2 dummies here, to make big roundtrip test possible, clean this up
     }
-    val height = blockHeights.getOrElse(headerHash.hex, throw new IllegalArgumentException("block header not found"))
-    Future.successful(
-      GetBlockHeaderResult(null, 0, height, 0, org.bitcoins.core.number.Int32(0), null, UInt32(0), UInt32(0), UInt32(0), UInt32(0), 0, "", None, None)
-    )
+    else {
+      val height = blockHeights.getOrElse(headerHash.hex, throw new IllegalArgumentException("block header not found"))
+      Future.successful(
+        GetBlockHeaderResult(null, 0, height, 0, org.bitcoins.core.number.Int32(0), null, UInt32(0), UInt32(0), UInt32(0), UInt32(0), 0, "", None, None)
+      )
+    }
   }
 
   override def getBestBlockHash: Future[DoubleSha256DigestBE] = {
-    super.getBestBlockHash
+    protocolRpc.getBestBlockHash
   }
+
+  override def getBlockHash(height: Int): Future[DoubleSha256DigestBE] = {
+    protocolRpc.getBlockHash(height)
+  }
+
 }
