@@ -4,8 +4,10 @@ import java.io.ByteArrayOutputStream
 
 import com.mhm.api4electrum.{Api4ElectrumCore, Api4ElectrumImpl}
 import com.mhm.bitcoin.{HistoryElement, HistoryEntry, TransactionMonitorFactory}
+import com.mhm.connectors.RpcWrap.wrap
 import com.mhm.epsmi.dummymonitor.DummyTxCreator.createDummyFundingTx
 import com.mhm.epsmi.dummymonitor.{DummyBtcRpc, DummyDeterministicWallet}
+import com.mhm.epsmi.dummyprotocol.DummyBtcProtocolRpc
 import com.mhm.util.HashOps
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers.convertToAnyShouldWrapper
@@ -52,7 +54,7 @@ class HeartbeatRoundtripSpec extends FlatSpec {
   protocol2.triggerHeartbeatConnected(streamOutput2)
   val output2 = streamOutput2.toString
   println(output2)
-  output2 shouldBe """{"method": "blockchain.headers.subscribe", "params": 00000020aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa9a9999aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa80969800ffff7f2001000000""" + "\n" +
+  val expectedBestBlockHeader = wrap(Api4ElectrumCore(rpc2).getBlockHeader(wrap(rpc2.getBestBlockHash), raw = true)).map(_.hash).getOrElse(fail)
+  output2 shouldBe s"""{"method": "blockchain.headers.subscribe", "params": $expectedBestBlockHeader""" + "\n" +
     s"""{"method": "blockchain.scripthash.subscribe", "params": [$sh, $expectedHistoryHash]}""" + "\n"
-
 }
