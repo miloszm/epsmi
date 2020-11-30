@@ -95,7 +95,7 @@ trait Api4Electrum {
   def blockchainHeadersSubcribe(sh: String): HeadersSubscribeResult
 
   @JsonRpcMethod("blockchain.scripthash.get_history")
-  def blockchainScripthashGetHistory(sh: String): Seq[HistoryItem]
+  def blockchainScripthashGetHistory(sh: String): Array[HistoryItem]
 
   @JsonRpcMethod("server.ping")
   def serverPing(): Unit

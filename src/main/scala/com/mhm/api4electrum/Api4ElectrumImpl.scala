@@ -150,7 +150,7 @@ class Api4ElectrumImpl(core: Api4ElectrumCore, transactionMonitor: TransactionMo
     HeadersSubscribeResult(hex = hashHeight.hash, height = hashHeight.height)
   }
 
-  override def blockchainScripthashGetHistory(sh: String): Seq[HistoryItem] = {
+  override def blockchainScripthashGetHistory(sh: String): Array[HistoryItem] = {
     val history = currentMonitorState.get.getElectrumHistory(sh).getOrElse(Nil).map{ e =>
       HistoryItem(height = e.height, txHash = e.txHash, fee = e.fee.toInt)
     }
@@ -158,7 +158,7 @@ class Api4ElectrumImpl(core: Api4ElectrumCore, transactionMonitor: TransactionMo
       logger.warn(s"Address history not known to server, hash(address) = $sh")
       // TODO original eps throws error here, not sure this is necessary
     }
-    history
+    history.toArray
   }
 
   override def serverPing(): Unit = {}

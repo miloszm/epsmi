@@ -150,6 +150,10 @@ object RpcClient extends App {
 //    println(s"   height=${headersSubscribeResult.height}")
 
     println
+    val history = client.blockchainScripthashGetHistory("12tohASdGUCDFvqaygaGbL7Jub7CiHdwa4")
+    println(s"blockchainScripthashGetHistory result = ${history.map(_.toString).mkString("|")}")
+
+    println
     val pingResponse = client.serverPing()
     println(s"ping response = $pingResponse")
 
