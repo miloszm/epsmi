@@ -372,15 +372,15 @@ class TransactionMonitorImpl(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed
         val tx = wrap(rpcCli.getTransaction(DoubleSha256DigestBE.fromHex(h.txHash)))
         val txd = wrap(rpcCli.decodeRawTransaction(tx.hex))
         val utxosToAdd = txd.vout.zipWithIndex.collect {
-          case (output, index) if output.scriptPubKey.hex == sh =>
+          case (output, index) if script2ScriptHash(output.scriptPubKey.hex) == sh =>
             s"${txd.txid}:$index" -> AmountConfirmations(output.value.toBigDecimal, tx.confirmations)
         }.toMap
         val utxosToDel = txd.vin.map{ input => s"${input.previousOutput.txId}:${input.previousOutput.vout}" }
         go(xs, (utxos ++ utxosToAdd) -- utxosToDel)
     }
     val utxos = go(history.toList, Map())
-    val confirmedBalance = utxos.values.filter(_.confirmations > 0).map(_.amount).sum
-    val unconfirmedBalance = utxos.values.filter(_.confirmations == 0).map(_.amount).sum
+    val confirmedBalance = utxos.values.filter(_.confirmations > 0).map(_.amount * BigDecimal(100000000)).sum
+    val unconfirmedBalance = utxos.values.filter(_.confirmations == 0).map(_.amount * BigDecimal(100000000)).sum
     Some(AddressBalance(confirmedBalance, unconfirmedBalance))
   }
 
