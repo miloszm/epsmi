@@ -197,7 +197,7 @@ class Api4ElectrumImpl(core: Api4ElectrumCore, transactionMonitor: TransactionMo
   def onBlockchainTipUpdated(hashHeight: HashHeight, outputStream: OutputStream): Unit = {
     logger.debug(s"onBlockchainTipUpdated, subscribed to headers=${currentMonitorState.get.subscribedToHeaders}")
     if (currentMonitorState.get.subscribedToHeaders){
-      val update = s"""{"method": "blockchain.headers.subscribe", "params": ${hashHeight.hash}""" + "\n"
+      val update = s"""{"method": "blockchain.headers.subscribe", "params": [${hashHeight.hash}]""" + "\n"
       outputStream.write(update.getBytes())
     }
   }
