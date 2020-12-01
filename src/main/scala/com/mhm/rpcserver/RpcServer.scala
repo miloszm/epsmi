@@ -11,11 +11,12 @@ import com.mhm.api4electrum.{Api4Electrum, Api4ElectrumCore, Api4ElectrumImpl}
 import com.mhm.bitcoin.{TransactionMonitor, TransactionMonitorState}
 import com.mhm.connectors.BitcoinSConnector
 import com.mhm.securesocket.SecureSocketMetaFactory
+import grizzled.slf4j.Logging
 import javax.net.ssl.SSLServerSocket
 
 import scala.jdk.CollectionConverters.SeqHasAsJava
 
-object RpcServer {
+object RpcServer extends Logging{
   val maxThreads = 1
 
   def startServer(port: Int, transactionMonitor: TransactionMonitor, monitorState: TransactionMonitorState): StreamServerWithHeartbeats = {
@@ -25,7 +26,7 @@ object RpcServer {
 
     val requestInterceptor = new RequestInterceptor {
       override def interceptRequest(request: JsonNode): Unit = {
-        println(s"request intercepted:$request")
+        logger.trace(s"request intercepted:$request")
         // example: {"id":"1049080132","jsonrpc":"2.0","method":"blockchain.transaction.id_from_pos","params":[652742,5,false]}
         // when method is 'blockchain.transaction.id_from_pos' and third parameter is true
         //    change the method to 'blockchain.transaction.id_from_pos_merkle_true'
