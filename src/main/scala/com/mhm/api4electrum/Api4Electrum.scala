@@ -116,7 +116,7 @@ trait Api4Electrum {
   def serverDonationAddress(): String
 
   @JsonRpcMethod("mempool.get_fee_histogram")
-  def mempoolGetFeeHistogram(): Array[(Int, Int)]
+  def mempoolGetFeeHistogram(): Array[Array[Int]]
 
   @JsonRpcMethod("blockchain.relayfee")
   def blockchainRelayFee(): BigDecimal

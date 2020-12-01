@@ -174,8 +174,8 @@ class Api4ElectrumImpl(core: Api4ElectrumCore, transactionMonitor: TransactionMo
 
   override def serverDonationAddress(): String = "12tohASdGUCDFvqaygaGbL7Jub7CiHdwa4"
 
-  override def mempoolGetFeeHistogram(): Array[(Int, Int)] = {
-    Array((0,0))
+  override def mempoolGetFeeHistogram(): Array[Array[Int]] = {
+    Array(Array(0,0))
   }
 
   override def blockchainRelayFee(): BigDecimal = {
@@ -195,7 +195,7 @@ class Api4ElectrumImpl(core: Api4ElectrumCore, transactionMonitor: TransactionMo
   }
 
   def onBlockchainTipUpdated(hashHeight: HashHeight, outputStream: OutputStream): Unit = {
-    logger.trace(s"onBlockchainTipUpdated, subscribed to headers=${currentMonitorState.get.subscribedToHeaders}")
+    logger.debug(s"onBlockchainTipUpdated, subscribed to headers=${currentMonitorState.get.subscribedToHeaders}")
     if (currentMonitorState.get.subscribedToHeaders){
       val update = s"""{"method": "blockchain.headers.subscribe", "params": ${hashHeight.hash}""" + "\n"
       outputStream.write(update.getBytes())
