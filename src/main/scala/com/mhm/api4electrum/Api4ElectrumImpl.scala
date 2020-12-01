@@ -182,6 +182,8 @@ class Api4ElectrumImpl(core: Api4ElectrumCore, transactionMonitor: TransactionMo
     core.relayFee()
   }
 
+  override def serverBanner(): String = "Welcome to EPSMI"
+
   def onUpdatedScripthashes(
     updatedScripthashes: Set[String],
     outputStream: OutputStream): Unit = {

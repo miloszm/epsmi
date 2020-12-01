@@ -121,4 +121,7 @@ trait Api4Electrum {
   @JsonRpcMethod("blockchain.relayfee")
   def blockchainRelayFee(): BigDecimal
 
+  @JsonRpcMethod("server.banner")
+  def serverBanner(): String
+
 }
