@@ -51,7 +51,6 @@ object RpcServer extends Logging{
 
       override def onHeartbeatConnected(outputStream: OutputStream): Unit = {
         service.triggerHeartbeatConnected(outputStream)
-        println("onHeartbeatConnected!!")
       }
 
       override def onHeartbeatListening(): Unit = {
