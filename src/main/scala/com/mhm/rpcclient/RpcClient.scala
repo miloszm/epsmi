@@ -25,8 +25,8 @@ case class EpsmiClient(client: Api4Electrum, socket: Socket){
 }
 
 object RpcClient extends App {
-    val port = 50002
-//    val port = 1420
+//    val port = 50002
+    val port = 1420
   var socket: Socket = null //TODO
 
   def createClient(port: Int = port): EpsmiClient = {
@@ -135,14 +135,12 @@ object RpcClient extends App {
 //      println(socketInputStream.read().toChar)
 //    }
 
-    println
-    // using the first address from the list of addresses shown by the original eps
+//    println
     // you need to have actual wallet for that created, so this is really an
     // integration test
-    val subscriptionResponse = client.blockchainScripthashSubcribe("5be022609383d23e2d545b3b359446466c269686c1e697b60355424ed30490d2")
-//    val subscriptionResponse = client.blockchainScripthashSubcribe("12tohASdGUCDFvqaygaGbL7Jub7CiHdwa4") // this does not work on 50002
-    println(s"blockchainScripthashSubcribe result = ")
-    println(s"   $subscriptionResponse")
+//    val subscriptionResponse = client.blockchainScripthashSubcribe("5be022609383d23e2d545b3b359446466c269686c1e697b60355424ed30490d2")
+//    println(s"blockchainScripthashSubcribe result = ")
+//    println(s"   $subscriptionResponse")
 
 //    println
 //    val headersSubscribeResult = client.blockchainHeadersSubcribe()
@@ -158,9 +156,9 @@ object RpcClient extends App {
 //    val pingResponse = client.serverPing()
 //    println(s"ping response = $pingResponse")
 
-//    println
-//    val balanceResponse = client.blockchainScripthashGetBalance("5be022609383d23e2d545b3b359446466c269686c1e697b60355424ed30490d2")
-//    println(s"balanceResponse = $balanceResponse")
+    println
+    val balanceResponse = client.blockchainScripthashGetBalance("5be022609383d23e2d545b3b359446466c269686c1e697b60355424ed30490d2")
+    println(s"balanceResponse = $balanceResponse")
 
 //    Thread.sleep(60000L)
 //

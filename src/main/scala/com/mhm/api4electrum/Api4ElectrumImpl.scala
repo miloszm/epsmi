@@ -163,7 +163,12 @@ class Api4ElectrumImpl(core: Api4ElectrumCore, transactionMonitor: TransactionMo
 
   override def serverPing(): Unit = {}
 
-  override def blockchainScripthashGetBalance(sh: String): GetBalanceResult = ???
+  override def blockchainScripthashGetBalance(sh: String): GetBalanceResult = {
+    transactionMonitor.getAddressBalance(currentMonitorState.get, sh) match {
+      case None => throw new IllegalArgumentException(s"script hash not known") // TODO implement UnknownScriphashError(scrhash)
+      case Some(balance) => GetBalanceResult(balance.confirmed, balance.unconfirmed)
+    }
+  }
 
   def onUpdatedScripthashes(
     updatedScripthashes: Set[String],

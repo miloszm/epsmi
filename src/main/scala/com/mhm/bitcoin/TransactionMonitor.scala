@@ -10,6 +10,7 @@ import com.mhm.util.{EpsmiDataOps, HashOps}
 import com.mhm.wallet.DeterministicWallet
 import grizzled.slf4j.Logging
 import org.bitcoins.commons.jsonmodels.bitcoind.{GetBlockHeaderResult, ListTransactionsResult, RpcTransaction}
+import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.protocol.transaction.CoinbaseInput
 import org.bitcoins.crypto.DoubleSha256DigestBE
 
@@ -20,6 +21,7 @@ import scala.util.{Failure, Success, Try}
 
 case class Tx4HistoryGen(confirmations: Int, txid: String, blockhash: DoubleSha256DigestBE)
 case class LastKnown(lastKnownTx: Option[TxidAddress])
+case class AddressBalance(confirmed: BigDecimal, unconfirmed: BigDecimal)
 
 
 trait TransactionMonitor {
@@ -31,6 +33,7 @@ trait TransactionMonitor {
   def checkForNewTxs(stateArg: TransactionMonitorState): TransactionMonitorState
   def generateNewHistoryElement(tx: Tx4HistoryGen, txd: RpcTransaction): HistoryElement
   def getInputAndOutputScriptpubkeys(txid: DoubleSha256DigestBE): (Seq[String], Seq[String], RpcTransaction)
+  def getAddressBalance(state: TransactionMonitorState, sh: String): Option[AddressBalance]
 }
 
 
@@ -359,4 +362,34 @@ class TransactionMonitorImpl(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed
     (updated.toSet, state3)
   }
 
+
+  private def doGetAddressBalance(sh: String, history: Seq[HistoryElement]): Option[AddressBalance] = {
+    case class AmountConfirmations(amount: BigDecimal, confirmations: Int)
+    @tailrec
+    def go(hes: List[HistoryElement], utxos: Map[String,AmountConfirmations]): Map[String,AmountConfirmations] = hes match {
+      case Nil => utxos
+      case h::xs =>
+        val tx = wrap(rpcCli.getTransaction(DoubleSha256DigestBE.fromHex(h.txHash)))
+        val txd = wrap(rpcCli.decodeRawTransaction(tx.hex))
+        val utxosToAdd = txd.vout.zipWithIndex.collect {
+          case (output, index) if output.scriptPubKey.hex == sh =>
+            s"${txd.txid}:$index" -> AmountConfirmations(output.value.toBigDecimal, tx.confirmations)
+        }.toMap
+        val utxosToDel = txd.vin.map{ input => s"${input.previousOutput.txId}:${input.previousOutput.vout}" }
+        go(xs, (utxos ++ utxosToAdd) -- utxosToDel)
+    }
+    val utxos = go(history.toList, Map())
+    val confirmedBalance = utxos.values.filter(_.confirmations > 0).map(_.amount).sum
+    val unconfirmedBalance = utxos.values.filter(_.confirmations == 0).map(_.amount).sum
+    Some(AddressBalance(confirmedBalance, unconfirmedBalance))
+  }
+
+  def getAddressBalance(state: TransactionMonitorState, sh: String): Option[AddressBalance] = {
+    val history = state.getElectrumHistory(sh)
+    history match {
+      case None => None
+      case Some(Nil) => None
+      case Some(history) => doGetAddressBalance(sh, history)
+    }
+  }
 }

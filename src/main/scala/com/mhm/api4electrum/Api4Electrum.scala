@@ -53,8 +53,8 @@ case class HistoryItem (
 
 @JsonSerialize
 case class GetBalanceResult (
-  @BeanProperty @JsonProperty("confirmed") confirmed: Int,
-  @BeanProperty @JsonProperty("unconfirmed") unconfirmed: Int
+  @BeanProperty @JsonProperty("confirmed") confirmed: BigDecimal,
+  @BeanProperty @JsonProperty("unconfirmed") unconfirmed: BigDecimal
 )
 
 trait Api4Electrum {
