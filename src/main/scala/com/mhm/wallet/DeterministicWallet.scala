@@ -23,7 +23,11 @@ abstract class DeterministicWallet(gapLimit: Int, val walletName: String) extend
     val spks = addrs.map{ addr =>
       val valAddr: ValidateAddressResult = wrap(rpcCli.validateAddress(BitcoinAddress(addr)))
       val spk = valAddr.scriptPubKey.getOrElse(throw new IllegalArgumentException("missing script pub key"))
-      spk.hex
+      /**
+       * TODO NOTE for some reason spk hex has "19" prefix which we need to remove
+       * I am not sure why eps does not have this problem, as it uses validate address as well
+       */
+      spk.hex.drop(2)
     }
     logger.info(s"converted ${addrs.size} addresses into ${spks.size} scriptpubkeys, head is ${spks.headOption}")
     spks.indices.foreach{ index =>
@@ -75,7 +79,7 @@ abstract class DescriptorDeterministicWallet(xpubVbytes: ByteVector, args: XpubD
   var descriptors: List[String] = Nil
   def deriveAddresses(rpcCli: DescriptorRpc, change: Int, fromIndex: Int, count: Int): Seq[String] = {
     val range: Vector[Double] = Vector(fromIndex, fromIndex + count - 1)
-    val result: DeriveAddressesResult = wrap(rpcCli.deriveAddresses(descriptors(change), Some(range)), "deriveAddresses") // TODO await is ugly, to be removed!!!
+    val result: DeriveAddressesResult = wrap(rpcCli.deriveAddresses(descriptors(change), Some(range)), "deriveAddresses")
     logger.info(s"derived ${result.addresses.size} addresses from descriptors, head is ${result.addresses.headOption}")
     result.addresses.map(_.value)
   }

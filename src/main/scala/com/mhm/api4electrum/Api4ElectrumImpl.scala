@@ -143,7 +143,7 @@ class Api4ElectrumImpl(core: Api4ElectrumCore, transactionMonitor: TransactionMo
     historyHash
   }
 
-  override def blockchainHeadersSubcribe(sh: String): HeadersSubscribeResult = {
+  override def blockchainHeadersSubcribe(): HeadersSubscribeResult = {
     updateMonitorState(_.copy(subscribedToHeaders = true))
     val (_, headerEither) = wrap(core.getCurrentHeader(true))
     val hashHeight = headerEither.getOrElse(throw new IllegalArgumentException("non raw header returned from get current header"))
@@ -162,6 +162,8 @@ class Api4ElectrumImpl(core: Api4ElectrumCore, transactionMonitor: TransactionMo
   }
 
   override def serverPing(): Unit = {}
+
+  override def blockchainScripthashGetBalance(sh: String): GetBalanceResult = ???
 
   def onUpdatedScripthashes(
     updatedScripthashes: Set[String],

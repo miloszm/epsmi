@@ -61,11 +61,11 @@ object RpcClient extends App {
     val epsmiClient = createClient()
     val client = epsmiClient.client
 
-//    println
-//    val result = client.serverVersion("1.9.5", "1.1")
-//    println(s"result of server.version:")
-//    println(s"size = ${result.length}")
-//    result.zipWithIndex.foreach{ case (e, i) => println(s"$i = $e")}
+    println
+    val result = client.serverVersion("1.4", "1.4")
+    println(s"result of server.version:")
+    println(s"size = ${result.length}")
+    result.zipWithIndex.foreach{ case (e, i) => println(s"$i = $e")}
 
 //    println
 //    val hexTry = Try(client.blockchainBlockHeader(652221))
@@ -139,23 +139,28 @@ object RpcClient extends App {
     // using the first address from the list of addresses shown by the original eps
     // you need to have actual wallet for that created, so this is really an
     // integration test
-//    val subscriptionResponse = client.blockchainScripthashSubcribe("12tohASdGUCDFvqaygaGbL7Jub7CiHdwa4")
-//    println(s"blockchainScripthashSubcribe result = ")
-//    println(s"   $subscriptionResponse")
+    val subscriptionResponse = client.blockchainScripthashSubcribe("5be022609383d23e2d545b3b359446466c269686c1e697b60355424ed30490d2")
+//    val subscriptionResponse = client.blockchainScripthashSubcribe("12tohASdGUCDFvqaygaGbL7Jub7CiHdwa4") // this does not work on 50002
+    println(s"blockchainScripthashSubcribe result = ")
+    println(s"   $subscriptionResponse")
 
 //    println
-//    val headersSubscribeResult = client.blockchainHeadersSubcribe("12tohASdGUCDFvqaygaGbL7Jub7CiHdwa4")
+//    val headersSubscribeResult = client.blockchainHeadersSubcribe()
 //    println(s"blockchainHeadersSubcribe result = ")
 //    println(s"   hash=${headersSubscribeResult.hex}")
 //    println(s"   height=${headersSubscribeResult.height}")
 
-    println
-    val history = client.blockchainScripthashGetHistory("12tohASdGUCDFvqaygaGbL7Jub7CiHdwa4")
-    println(s"blockchainScripthashGetHistory result = ${history.map(_.toString).mkString("|")}")
+//    println
+//    val history = client.blockchainScripthashGetHistory("5be022609383d23e2d545b3b359446466c269686c1e697b60355424ed30490d2")
+//    println(s"blockchainScripthashGetHistory result = ${history.map(_.toString).mkString("|")}")
 
-    println
-    val pingResponse = client.serverPing()
-    println(s"ping response = $pingResponse")
+//    println
+//    val pingResponse = client.serverPing()
+//    println(s"ping response = $pingResponse")
+
+//    println
+//    val balanceResponse = client.blockchainScripthashGetBalance("5be022609383d23e2d545b3b359446466c269686c1e697b60355424ed30490d2")
+//    println(s"balanceResponse = $balanceResponse")
 
 //    Thread.sleep(60000L)
 //

@@ -51,6 +51,12 @@ case class HistoryItem (
   @BeanProperty @JsonProperty("fee") fee: Long
 )
 
+@JsonSerialize
+case class GetBalanceResult (
+  @BeanProperty @JsonProperty("confirmed") confirmed: Int,
+  @BeanProperty @JsonProperty("unconfirmed") unconfirmed: Int
+)
+
 trait Api4Electrum {
   @JsonRpcMethod("server.version")
   def serverVersion(v1: String, v2: String): Array[String]
@@ -92,11 +98,14 @@ trait Api4Electrum {
   def blockchainScripthashSubcribe(sh: String): String
 
   @JsonRpcMethod("blockchain.headers.subscribe")
-  def blockchainHeadersSubcribe(sh: String): HeadersSubscribeResult
+  def blockchainHeadersSubcribe(): HeadersSubscribeResult
 
   @JsonRpcMethod("blockchain.scripthash.get_history")
   def blockchainScripthashGetHistory(sh: String): Array[HistoryItem]
 
   @JsonRpcMethod("server.ping")
   def serverPing(): Unit
+
+  @JsonRpcMethod("blockchain.scripthash.get_balance")
+  def blockchainScripthashGetBalance(sh: String): GetBalanceResult
 }
