@@ -4,13 +4,12 @@ import java.util.concurrent.ConcurrentHashMap
 
 import com.mhm.connectors.BitcoindRpcExtendedClient
 import com.mhm.connectors.RpcWrap.wrap
+import com.mhm.util.EpsmiDataOps
 import com.mhm.util.EpsmiDataOps.{optAddr2Str, optConfirmations2Int, optSha2Sha, optSha2Str}
-import com.mhm.util.HashOps.{getStatusElectrum, script2ScriptHash}
-import com.mhm.util.{EpsmiDataOps, HashOps}
+import com.mhm.util.HashOps.script2ScriptHash
 import com.mhm.wallet.DeterministicWallet
 import grizzled.slf4j.Logging
 import org.bitcoins.commons.jsonmodels.bitcoind.{GetBlockHeaderResult, ListTransactionsResult, RpcTransaction}
-import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.protocol.transaction.CoinbaseInput
 import org.bitcoins.crypto.DoubleSha256DigestBE
 
@@ -59,7 +58,7 @@ class TransactionMonitorImpl(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed
     monitoredScriptPubKeys: Seq[String],
     deterministicWallets: Seq[DeterministicWallet]
   ): TransactionMonitorState = {
-    logger.debug("started buildAddressHistory")
+    logger.trace("started buildAddressHistory")
     val ah = AddressHistory(
       monitoredScriptPubKeys.map(k => (script2ScriptHash(k), HistoryEntry(subscribed = false, Nil))).toMap
     )
@@ -100,7 +99,7 @@ class TransactionMonitorImpl(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed
     @tailrec
     def processListTransactions(skip: Int, obtainedTxids: Set[String], state: TransactionMonitorState): TransactionMonitorState = {
       val transactions = wrap(rpcCli.listTransactions("*", BATCH_SIZE, skip, includeWatchOnly = true), "listTransactions")
-      logger.debug(s"obtained ${transactions.size} transactions (skip=$skip) ${transactions.map(_.txid.map(_.hex.substring(0,4))).mkString("|")}")
+      logger.trace(s"obtained ${transactions.size} transactions (skip=$skip) ${transactions.map(_.txid.map(_.hex.substring(0,4))).mkString("|")}")
       val lastTx = if (transactions.nonEmpty) transactions.headOption else None
       val state2 = state.setLastKnownTx(lastTx.map(last =>TxidAddress(optSha2Str(last.txid), optAddr2Str(last.address))))
       val (state3,newTxids) = insertTxsInHistory(state2, transactions.toList, Set())
@@ -115,7 +114,7 @@ class TransactionMonitorImpl(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed
 
     val state2 = processListTransactions(skip = 0, obtainedTxids = Set(), state).sortAddressHistory()
     val state3 = state2.initUnconfirmedTxes()
-    logger.debug(s"finished buildAddressHistory, history size = ${state2.addressHistory.m.size}, last known = ${state2.lastKnownTx.map(_.txid.substring(0,4))}")
+    logger.trace(s"finished buildAddressHistory, history size = ${state2.addressHistory.m.size}, last known = ${state2.lastKnownTx.map(_.txid.substring(0,4))}")
     state3
   }
 
@@ -180,7 +179,6 @@ class TransactionMonitorImpl(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed
    * @return set of updated scripthashes
    */
   def checkForNewTxs(stateArg: TransactionMonitorState): TransactionMonitorState = {
-    logger.debug("started checkForNewTxs")
     val maxAttempts = 8 // log base 2 of 256
     val state = stateArg.resetUpdatedScripthashes()
 
@@ -200,7 +198,7 @@ class TransactionMonitorImpl(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed
       if (attempt == maxAttempts) GetTrRes(containsKnown = false, 0, v.size, v)
       else {
         val transactions = wrap(rpcCli.listTransactions("*", count, 0, includeWatchOnly = true), "listTransactions")
-        logger.debug(s"obtained ${transactions.size} transactions (skip=0) ${transactions.map(_.txid.map(_.hex.substring(0,4))).mkString("|")}")
+        logger.trace(s"obtained ${transactions.size} transactions (skip=0) ${transactions.map(_.txid.map(_.hex.substring(0,4))).mkString("|")}")
         lastKnownTx match {
           case None => GetTrRes(containsKnown = false, 0, transactions.size, transactions)
           case Some(ln) =>
@@ -252,7 +250,7 @@ class TransactionMonitorImpl(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed
         .filter(_.confirmations.getOrElse(0) >= 0)
       updateStateWithTransactions(state.setLastKnownTx(newTxs.headOption.map { result => TxidAddress(optSha2Str(result.txid), optAddr2Str(result.address)) }), relevantTxs.toList)
     }
-    logger.debug(s"finished checkForNewTxs, found ${resultState.updatedScripthashes.size} new tx(s)")
+    logger.trace(s"finished checkForNewTxs, found ${resultState.updatedScripthashes.size} new tx(s)")
     resultState
   }
 
@@ -347,7 +345,7 @@ class TransactionMonitorImpl(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed
    * @return set of updated scripthashes
    */
   def checkForUpdatedTxs(state: TransactionMonitorState): (Set[String], TransactionMonitorState) = {
-    logger.debug("started checkForUpdatedTxs")
+    logger.trace("started checkForUpdatedTxs")
     val state1 = checkForNewTxs(state)
     val state2 = checkConfirmations(state1)
     val state3 = checkForReorganizations(state2)
