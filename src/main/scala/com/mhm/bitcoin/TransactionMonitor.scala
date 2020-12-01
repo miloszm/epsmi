@@ -356,7 +356,7 @@ class TransactionMonitorImpl(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed
       logger.debug(s"updated_scripthashes = ${updatedScripthashes.mkString("|")}")
     }
     val updated = updatedScripthashes.filter(sh => state3.addressHistory.m.contains(sh) && state3.addressHistory.m(sh).subscribed)
-    logger.debug(s"finished checkForUpdatedTxs, updated size = ${updated.size}")
+    logger.trace(s"finished checkForUpdatedTxs, updated size = ${updated.size}")
     (updated.toSet, state3)
   }
 
