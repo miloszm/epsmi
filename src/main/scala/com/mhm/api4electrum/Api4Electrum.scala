@@ -108,4 +108,17 @@ trait Api4Electrum {
 
   @JsonRpcMethod("blockchain.scripthash.get_balance")
   def blockchainScripthashGetBalance(sh: String): GetBalanceResult
+
+  @JsonRpcMethod("server.peers.subscribe")
+  def serverPeersSubscribe(): Array[String]
+
+  @JsonRpcMethod("server.donation_address")
+  def serverDonationAddress(): String
+
+  @JsonRpcMethod("mempool.get_fee_histogram")
+  def mempoolGetFeeHistogram(): Array[(Int, Int)]
+
+  @JsonRpcMethod("blockchain.relayfee")
+  def blockchainRelayFee(): BigDecimal
+
 }

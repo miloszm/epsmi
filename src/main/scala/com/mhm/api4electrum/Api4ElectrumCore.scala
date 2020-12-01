@@ -273,4 +273,9 @@ case class Api4ElectrumCore(rpcCli: BitcoindRpcExtendedClient) {
       (isTipNew, headerOrHashHeight)
     }
   }
+
+  def relayFee(): BigDecimal = {
+    val networkInfo = wrap(rpcCli.getNetworkInfo)
+    networkInfo.relayfee.toBigDecimal
+  }
 }

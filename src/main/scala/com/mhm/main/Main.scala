@@ -3,10 +3,11 @@ package com.mhm.main
 import com.mhm.bitcoin.TransactionMonitorFactory
 import com.mhm.connectors.BitcoinSConnector
 import com.mhm.rpcserver.RpcServer
-import com.mhm.rpcserver.RpcServer.port
 import com.typesafe.config.ConfigFactory
 
 object Main extends App {
+  val port = 50002
+//  val port = 1420
 
   def doMain(): Unit = {
     val config = ConfigFactory.load()
@@ -19,7 +20,7 @@ object Main extends App {
       scriptPubKeysToMonitorResult.wallets
     )
 
-    val server = RpcServer.startServer(1420, transactionMonitor, monitorState)
+    val server = RpcServer.startServer(port, transactionMonitor, monitorState)
 
     println(s"server started on port $port")
 

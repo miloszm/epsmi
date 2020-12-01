@@ -170,6 +170,18 @@ class Api4ElectrumImpl(core: Api4ElectrumCore, transactionMonitor: TransactionMo
     }
   }
 
+  override def serverPeersSubscribe(): Array[String] = Array.empty[String]
+
+  override def serverDonationAddress(): String = "12tohASdGUCDFvqaygaGbL7Jub7CiHdwa4"
+
+  override def mempoolGetFeeHistogram(): Array[(Int, Int)] = {
+    Array((0,0))
+  }
+
+  override def blockchainRelayFee(): BigDecimal = {
+    core.relayFee()
+  }
+
   def onUpdatedScripthashes(
     updatedScripthashes: Set[String],
     outputStream: OutputStream): Unit = {
