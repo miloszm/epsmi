@@ -1,6 +1,7 @@
 package com.mhm.bitcoin
 
 import com.mhm.util.HashOps.getStatusElectrum
+import com.mhm.wallet.DeterministicWallet
 
 
 case class ReorganizableTxEntry(txid: String, blockhash: String, height: Int, matchingShs: Seq[String])
@@ -17,6 +18,7 @@ object TransactionMonitorState {
 
 case class TransactionMonitorState(
   addressHistory: AddressHistory,
+  deterministicWallets: Seq[DeterministicWallet] = Seq(),
   unconfirmedTxes: Map[String,Seq[String]] = Map(),
   reorganizableTxes: Seq[ReorganizableTxEntry] = Seq(),
   updatedScripthashes: Seq[String] = Seq(),

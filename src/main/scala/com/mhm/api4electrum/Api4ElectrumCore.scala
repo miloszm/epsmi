@@ -5,10 +5,13 @@ import java.nio.ByteBuffer
 import java.util.concurrent.atomic.AtomicReference
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.mhm.bitcoin.{TransactionMonitor, TransactionMonitorImpl, TransactionMonitorState}
 import com.mhm.common.model.HashHeight
 import com.mhm.connectors.BitcoinSConnector.{ec, rpcCli}
 import com.mhm.connectors.BitcoindRpcExtendedClient
 import com.mhm.connectors.RpcWrap.wrap
+import com.mhm.main.Constants
+import com.mhm.main.Constants.{DONATION_ADDRESS, SERVER_VERSION}
 import com.mhm.util.EpsmiDataOps.{byteVectorOrZeroToArray, byteVectorToArray, intToArray, uint32ToArray}
 import com.mhm.util.{HashOps, MerkleProofOps}
 import javax.xml.bind.DatatypeConverter
@@ -277,5 +280,39 @@ case class Api4ElectrumCore(rpcCli: BitcoindRpcExtendedClient) {
   def relayFee(): BigDecimal = {
     val networkInfo = wrap(rpcCli.getNetworkInfo)
     networkInfo.relayfee.toBigDecimal
+  }
+
+  def serverBanner(monitorState: TransactionMonitorState): String = {
+    wrap(for {
+      networkInfo <- rpcCli.getNetworkInfo
+      blockchainInfo <- rpcCli.getBlockChainInfo
+      uptime <- rpcCli.uptime
+      //nettotals <- rpcCli.getNetTotals
+    } yield {
+      val uptimeDays = uptime.toInt / 86400
+      val numWallets = monitorState.deterministicWallets.size
+      val numAddresses = monitorState.addressHistory.m.size
+
+      val banner = s"""Welcome to EPSMI $SERVER_VERSION (based on Chris Belcher' Electrum Personal Server).""" + "\n" +
+        "\n" +
+        s"""Monitoring $numWallets deterministic wallet(s), $numAddresses addresses.""" +
+        "\n" +
+        s"""Connected bitcoin node: ${networkInfo.subversion}""" + "\n" +
+        s"""Uptime: ${uptimeDays} days""" + "\n" +
+        s"""Peers: ${networkInfo.connections}""" + "\n" +
+//        s"""Download: ${nettotals.totalbytesrecv} (${nettotals.totalbytesrecv/uptimeDays} per day)""" + "\n" +
+//        s"""Upload: ${nettotals.totalbytessent} (${nettotals.totalbytessent/uptimeDays} per day)""" + "\n" +
+        s"""Blocksonly: ${!networkInfo.localrelay}""" + "\n" +
+        s"""Pruning: ${blockchainInfo.pruned}""" + "\n" +
+        s"""Blockchain size: ${blockchainInfo.size_on_disk}""" + "\n" +
+        """https://github.com/miloszm/epsmi""" + "\n" +
+        "\n" +
+        "\n" +
+        """Donate to help maintain and improve EPSMI:""" + "\n" +
+        s"""$DONATION_ADDRESS""" + "\n" +
+        "\n" +
+        "\n"
+      banner
+    })
   }
 }

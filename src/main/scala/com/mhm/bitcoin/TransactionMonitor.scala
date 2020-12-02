@@ -62,7 +62,7 @@ class TransactionMonitorImpl(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed
     val ah = AddressHistory(
       monitoredScriptPubKeys.map(k => (script2ScriptHash(k), HistoryEntry(subscribed = false, Nil))).toMap
     )
-    val state = TransactionMonitorState(ah)
+    val state = TransactionMonitorState(addressHistory = ah, deterministicWallets = deterministicWallets)
     logger.trace(s"initialized address history keys with ${ah.m.keySet.size} key(s), head entry is ${ah.m.head}")
 
     val walletAddrScripthashes = ah.m.keySet

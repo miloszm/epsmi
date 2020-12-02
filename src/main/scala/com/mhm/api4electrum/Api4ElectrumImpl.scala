@@ -6,6 +6,8 @@ import java.util.concurrent.atomic.AtomicReference
 import com.mhm.bitcoin.{TransactionMonitor, TransactionMonitorState}
 import com.mhm.common.model.HashHeight
 import com.mhm.connectors.RpcWrap.wrap
+import com.mhm.main.Constants
+import com.mhm.main.Constants.{SERVER_NAME, SERVER_VERSION}
 import grizzled.slf4j.Logging
 
 import scala.concurrent.Await
@@ -41,7 +43,7 @@ class Api4ElectrumImpl(core: Api4ElectrumCore, transactionMonitor: TransactionMo
   }
 
   override def serverVersion(v1: String, v2: String): Array[String] = {
-    Array("epsmi 0.0.2")
+    Array(s"$SERVER_NAME $SERVER_VERSION")
   }
   override def blockchainBlockHeader(height: Int): String = {
     Try(Await.result(core.getBlockHeaderHash(height), Duration(20, SECONDS))).fold(
@@ -172,7 +174,7 @@ class Api4ElectrumImpl(core: Api4ElectrumCore, transactionMonitor: TransactionMo
 
   override def serverPeersSubscribe(): Array[String] = Array.empty[String]
 
-  override def serverDonationAddress(): String = "12tohASdGUCDFvqaygaGbL7Jub7CiHdwa4"
+  override def serverDonationAddress(): String = Constants.DONATION_ADDRESS
 
   override def mempoolGetFeeHistogram(): Array[Array[Int]] = {
     Array(Array(0,0))
@@ -182,7 +184,10 @@ class Api4ElectrumImpl(core: Api4ElectrumCore, transactionMonitor: TransactionMo
     core.relayFee()
   }
 
-  override def serverBanner(): String = "Welcome to EPSMI"
+  override def serverBanner(): String = {
+    core.serverBanner(monitorState)
+//    "Welcome to EPSMI"
+  }
 
   def onUpdatedScripthashes(
     updatedScripthashes: Set[String],

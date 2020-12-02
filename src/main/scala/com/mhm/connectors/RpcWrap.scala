@@ -12,7 +12,7 @@ object RpcWrap extends Logging {
       logger.trace(s"btcrpc: $callDescription")
     try {
       val r: Awaitable[T] = awaitable
-      Await.result(awaitable, 20.seconds)
+      Await.result(awaitable, 40.seconds)
     }
     catch {
       case e: Throwable =>
