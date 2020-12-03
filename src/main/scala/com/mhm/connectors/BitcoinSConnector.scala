@@ -10,13 +10,7 @@ import org.bitcoins.rpc.client.common.BitcoindRpcClient.ActorSystemName
 import scala.concurrent.duration.{Duration, SECONDS}
 import scala.concurrent.{Await, ExecutionContext, Future}
 
-trait BitcoinConnector {
-  def getInfo(): String
-  def getBestBlockHash(): String
-}
-
-
-object BitcoinSConnector extends BitcoinConnector {
+object BitcoinSConnector {
   import org.bitcoins.core.config._
   import org.bitcoins.rpc.config._
   import org.bitcoins.rpc.client.common._
@@ -59,18 +53,6 @@ object BitcoinSConnector extends BitcoinConnector {
    * newer APIs easily, for example, getaddressesbylabel
    */
   val rpcCli = new BitcoindRpcExtendedClient(bitcoindInstance, implicitly[ActorSystem])
-
-  def getInfo(): String = {
-    val infoFuture = rpcCli.getBlockChainInfo
-    val info = Await.result(infoFuture, Duration(20, SECONDS))
-    "" + info.blocks
-  }
-
-  def getBestBlockHash(): String = {
-    val infoFuture = rpcCli.getBlockChainInfo
-    val info = Await.result(infoFuture, Duration(20, SECONDS))
-    info.bestblockhash.hex
-  }
 
   def getLatestBlock: Future[Int] = rpcCli.getBlockChainInfo.map(_.blocks)
 

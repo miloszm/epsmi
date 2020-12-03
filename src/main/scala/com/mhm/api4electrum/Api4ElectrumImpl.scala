@@ -1,7 +1,6 @@
 package com.mhm.api4electrum
 
 import java.io.OutputStream
-import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicReference
 
 import com.mhm.bitcoin.{TransactionMonitor, TransactionMonitorState}
@@ -47,7 +46,7 @@ class Api4ElectrumImpl(core: Api4ElectrumCore, transactionMonitor: TransactionMo
     Array(s"$SERVER_NAME $SERVER_VERSION")
   }
   override def blockchainBlockHeader(height: Int): String = {
-    Try(Await.result(core.getBlockHeaderHash(height), Duration(20, SECONDS))).fold(
+    Try(wrap(core.getBlockHeaderHash(height))).fold(
       { t =>
         println(s"server caught: $t")
         throw new IllegalArgumentException(s"height $height out of range")
@@ -57,7 +56,7 @@ class Api4ElectrumImpl(core: Api4ElectrumCore, transactionMonitor: TransactionMo
   }
 
   override def blockchainBlockGetHeader(height: Int): HeaderResult = {
-    Try(Await.result(core.getBlockHeaderX(height), Duration(20, SECONDS))).fold(
+    Try(wrap(core.getBlockHeaderX(height))).fold(
       { t =>
         println(s"server caught: $t")
         throw new IllegalArgumentException(s"height $height out of range")
@@ -68,7 +67,7 @@ class Api4ElectrumImpl(core: Api4ElectrumCore, transactionMonitor: TransactionMo
   }
 
   override def estimateFee(waitBlocks: Int): BigDecimal = {
-    Try(Await.result(core.estimateSmartFee(waitBlocks), Duration(20, SECONDS))).fold(
+    Try(wrap(core.estimateSmartFee(waitBlocks))).fold(
       { t =>
         println(s"server caught: $t")
         throw new IllegalStateException(s"estimate fee for $waitBlocks block(s) wait failed")
@@ -79,7 +78,7 @@ class Api4ElectrumImpl(core: Api4ElectrumCore, transactionMonitor: TransactionMo
   }
 
   override def blockchainBlockGetChunk(index: Int): String = {
-    Try(Await.result(core.getBlockChunk(index), Duration(20, SECONDS))).fold(
+    Try(wrap(core.getBlockChunk(index))).fold(
       { t =>
         println(s"server caught: $t")
         throw new IllegalStateException(s"get block chunk for index $index failed")
@@ -89,7 +88,7 @@ class Api4ElectrumImpl(core: Api4ElectrumCore, transactionMonitor: TransactionMo
   }
 
   override def blockchainBlockHeaders(startHeight: Int, count: Int): BlockHeadersResult = {
-    Try(Await.result(core.getBlockHeaders(startHeight, count), Duration(20, SECONDS))).fold(
+    Try(wrap(core.getBlockHeaders(startHeight, count))).fold(
       { t =>
         println(s"server caught: $t")
         throw new IllegalStateException(s"get block headers for start height $startHeight, count $count failed")
@@ -99,7 +98,7 @@ class Api4ElectrumImpl(core: Api4ElectrumCore, transactionMonitor: TransactionMo
   }
 
   override def blockchainTransactionGet(txId: String): String = {
-    Try(Await.result(core.getTransaction(txId: String), Duration(20, SECONDS))).fold(
+    Try(wrap(core.getTransaction(txId: String))).fold(
       { t =>
         println(s"server caught: $t")
         throw new IllegalStateException(s"get transaction for $txId failed")
@@ -109,7 +108,7 @@ class Api4ElectrumImpl(core: Api4ElectrumCore, transactionMonitor: TransactionMo
   }
 
   override def blockchainTrIdFromPos(height: Int, txPos: Int, merkle: Boolean): String = {
-    Try(Await.result(core.trIdFromPos(height, txPos, merkle), Duration(20, SECONDS))).fold(
+    Try(wrap(core.trIdFromPos(height, txPos, merkle))).fold(
       { t =>
         println(s"server caught: $t")
         throw new IllegalStateException(s"get transaction id for $height, $txPos, merkle=$merkle failed")
@@ -187,7 +186,6 @@ class Api4ElectrumImpl(core: Api4ElectrumCore, transactionMonitor: TransactionMo
 
   override def serverBanner(): String = {
     core.serverBanner(monitorState)
-//    "Welcome to EPSMI"
   }
 
   def onUpdatedScripthashes(
