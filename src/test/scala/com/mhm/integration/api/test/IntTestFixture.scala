@@ -1,7 +1,7 @@
 package com.mhm.integration.api.test
 
 import com.googlecode.jsonrpc4j.StreamServerWithHeartbeats
-import com.mhm.api4electrum.Api4Electrum
+import com.mhm.api4electrum.{Api4Electrum, Api4ElectrumCoreConfig}
 import com.mhm.bitcoin.TransactionMonitorFactory
 import com.mhm.connectors.BitcoinSConnector
 import com.mhm.main.Setup
@@ -23,6 +23,9 @@ trait IntTestFixture extends FlatSpecLike with BeforeAndAfterAll {
   }
 
   val config = ConfigFactory.load()
+  val coreConfig = Api4ElectrumCoreConfig(
+    config.getBoolean("epsmi.enable-mempool-fee-histogram")
+  )
   val scriptPubKeysToMonitorResult = new Setup(BitcoinSConnector.rpcCli, config).getScriptPubKeysToMonitor()
 
   val transactionMonitor = TransactionMonitorFactory.create(BitcoinSConnector.rpcCli)
@@ -32,7 +35,7 @@ trait IntTestFixture extends FlatSpecLike with BeforeAndAfterAll {
     scriptPubKeysToMonitorResult.wallets
   )
 
-  lazy val fixture = Fixture(RpcServer.startServer(port, transactionMonitor, monitorState), RpcClient.createClient(port))
+  lazy val fixture = Fixture(RpcServer.startServer(port, transactionMonitor, monitorState, coreConfig), RpcClient.createClient(port))
 
   override protected def afterAll(): Unit = {
     fixture.epsmiClient.close()

@@ -1,6 +1,7 @@
 package com.mhm.api4electrum
 
 import java.io.OutputStream
+import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicReference
 
 import com.mhm.bitcoin.{TransactionMonitor, TransactionMonitorState}
@@ -176,8 +177,8 @@ class Api4ElectrumImpl(core: Api4ElectrumCore, transactionMonitor: TransactionMo
 
   override def serverDonationAddress(): String = Constants.DONATION_ADDRESS
 
-  override def mempoolGetFeeHistogram(): Array[Array[Int]] = {
-    Array(Array(0,0))
+  override def mempoolGetFeeHistogram(): Array[Array[BigDecimal]] = {
+    core.mempoolGetFeeHistogram()
   }
 
   override def blockchainRelayFee(): BigDecimal = {
@@ -207,7 +208,7 @@ class Api4ElectrumImpl(core: Api4ElectrumCore, transactionMonitor: TransactionMo
     }
   }
 
-  def triggerHeartbeatConnected(outputStream: OutputStream): Unit = {
+  def triggerHeartbeatConnected(outputStream: OutputStream): Unit = try {
     logger.trace("triggerHeartbeatConnected")
     val (isTipUpdated, headerOrHashHeight) = wrap(core.checkForNewBlockchainTip(areHeadersRaw))
     val tipHashHeight = headerOrHashHeight.getOrElse(throw new IllegalArgumentException("headers should be raw")) // TODO simplify this - it will not work for raw == false
@@ -217,6 +218,11 @@ class Api4ElectrumImpl(core: Api4ElectrumCore, transactionMonitor: TransactionMo
     }
     val updatedTxs = updateMonitorStateWithExtraResult(transactionMonitor.checkForUpdatedTxs)
     onUpdatedScripthashes(updatedTxs, outputStream)
+  } catch {
+    case e: java.util.concurrent.TimeoutException =>
+      logger.warn(s"timeout when processing heartbeat connected, caught: ${e.getClass.getCanonicalName} - ${e.getMessage}")
+    case e: Throwable =>
+      throw e
   }
 
 }

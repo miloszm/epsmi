@@ -1,5 +1,6 @@
 package com.mhm.main
 
+import com.mhm.api4electrum.Api4ElectrumCoreConfig
 import com.mhm.bitcoin.TransactionMonitorFactory
 import com.mhm.connectors.BitcoinSConnector
 import com.mhm.rpcserver.RpcServer
@@ -11,6 +12,10 @@ object Main extends App {
 
   def doMain(): Unit = {
     val config = ConfigFactory.load()
+    val coreConfig = Api4ElectrumCoreConfig(
+      config.getBoolean("epsmi.enable-mempool-fee-histogram")
+    )
+
     val scriptPubKeysToMonitorResult = new Setup(BitcoinSConnector.rpcCli, config).getScriptPubKeysToMonitor()
 
     val transactionMonitor = TransactionMonitorFactory.create(BitcoinSConnector.rpcCli)
@@ -20,7 +25,7 @@ object Main extends App {
       scriptPubKeysToMonitorResult.wallets
     )
 
-    val server = RpcServer.startServer(port, transactionMonitor, monitorState)
+    val server = RpcServer.startServer(port, transactionMonitor, monitorState, coreConfig)
 
     println(s"server started on port $port")
 

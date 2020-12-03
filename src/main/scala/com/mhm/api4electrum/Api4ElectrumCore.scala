@@ -2,28 +2,26 @@ package com.mhm.api4electrum
 
 import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
-import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.atomic.{AtomicBoolean, AtomicReference}
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.mhm.bitcoin.{TransactionMonitor, TransactionMonitorImpl, TransactionMonitorState}
+import com.mhm.bitcoin.TransactionMonitorState
 import com.mhm.common.model.HashHeight
-import com.mhm.connectors.BitcoinSConnector.{ec, rpcCli}
+import com.mhm.connectors.BitcoinSConnector.ec
 import com.mhm.connectors.BitcoindRpcExtendedClient
 import com.mhm.connectors.RpcWrap.wrap
 import com.mhm.main.Constants
 import com.mhm.main.Constants.{DONATION_ADDRESS, SERVER_VERSION}
 import com.mhm.util.EpsmiDataOps.{byteVectorOrZeroToArray, byteVectorToArray, intToArray, uint32ToArray}
 import com.mhm.util.{HashOps, MerkleProofOps}
+import grizzled.slf4j.Logging
 import javax.xml.bind.DatatypeConverter
-import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockHeaderResult
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.FeeEstimationMode
-import org.bitcoins.core.protocol.blockchain.MerkleBlock
+import org.bitcoins.commons.jsonmodels.bitcoind.{GetBlockHeaderResult, GetMemPoolResult}
 import org.bitcoins.crypto.DoubleSha256DigestBE
-import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
-import scala.concurrent.duration.{Duration, SECONDS}
-import scala.concurrent.{Await, Future}
+import scala.concurrent.Future
 import scala.math.BigDecimal.RoundingMode
 import scala.util.{Failure, Success, Try}
 
@@ -35,14 +33,24 @@ case class ElectrumMerkleProof(
   merkleRoot: String
 )
 
+object Api4ElectrumCoreConfig {
+  def getDefault = Api4ElectrumCoreConfig(
+    enableMempoolFeeHistogram = false
+  )
+}
+
+case class Api4ElectrumCoreConfig(
+  enableMempoolFeeHistogram: Boolean
+)
 
 /**
  * This class is futurized and does not necessarily conform
  * to json rpc requirements.
  */
 
-case class Api4ElectrumCore(rpcCli: BitcoindRpcExtendedClient) {
+case class Api4ElectrumCore(rpcCli: BitcoindRpcExtendedClient, config: Api4ElectrumCoreConfig = Api4ElectrumCoreConfig.getDefault) extends Logging {
   val bestBlockHash = new AtomicReference[Option[String]](None)
+  val printedSlowMempoolWarning = new AtomicBoolean(false)
 
   def getBlockHeaderHash(blockHeight: Int): Future[String] = {
     for {
@@ -315,4 +323,43 @@ case class Api4ElectrumCore(rpcCli: BitcoindRpcExtendedClient) {
       banner
     })
   }
+
+  //  #algorithm copied from the relevant place in ElectrumX
+  //  #https://github.com/kyuupichan/electrumx/blob/e92c9bd4861c1e35989ad2773d33e01219d33280/server/mempool.py
+  private def feeHistogram(mempool: Map[DoubleSha256DigestBE, GetMemPoolResult]): Array[Array[BigDecimal]] = {
+    val feeHistogram = mempool.values.collect { case memPoolResult if memPoolResult.fee.isDefined =>
+      memPoolResult.fee.get.toBigDecimal * 100000000 -> memPoolResult.size
+    }.toList.sortWith((a,b) => a._1 < b._1)
+    @tailrec
+    def go(histo: List[(BigDecimal, Int)], binSize: Double, r: Double, size: Int, acc: List[(BigDecimal, Int)]): List[(BigDecimal, Int)] = histo match {
+      case Nil => acc
+      case (feeRate, s)::xs =>
+        val sz = size + s
+        if ((sz + r) > binSize)
+          go(xs, binSize*1.1, r + sz - binSize, 0, acc :+ (feeRate, s))
+        else
+          go(xs, binSize, r, sz, acc)
+    }
+    val result = go(feeHistogram, 100000.0, 0, 0, Nil)
+    result.map{case(feeRate, sz) => Array(feeRate, BigDecimal(sz))}.toArray
+  }
+
+  def mempoolGetFeeHistogram(): Array[Array[BigDecimal]] = {
+    if (config.enableMempoolFeeHistogram){
+      val start = System.currentTimeMillis()
+      val mempool: Map[DoubleSha256DigestBE, GetMemPoolResult] = wrap(rpcCli.getRawMemPoolWithTransactions)
+      val stop = System.currentTimeMillis()
+      if ((stop-start) > Constants.MEMPOOL_WARNING_DURATION*1000){
+        printedSlowMempoolWarning.compareAndSet(false, {
+          def f(u: Unit): Boolean = { true }
+          f(logger.warn(s"Mempool very large resulting in slow response by server (${(stop-start)/1000} seconds)." +
+            "Consider setting 'enable_mempool_fee_histogram = false'"))
+        })
+      }
+      feeHistogram(mempool)
+    } else {
+      Array(Array(0,0))
+    }
+  }
+
 }

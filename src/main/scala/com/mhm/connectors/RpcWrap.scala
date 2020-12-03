@@ -1,5 +1,6 @@
 package com.mhm.connectors
 
+import com.mhm.main.Constants.BTC_RPC_TIMEOUT
 import grizzled.slf4j.Logging
 
 import scala.concurrent.duration.DurationInt
@@ -11,8 +12,7 @@ object RpcWrap extends Logging {
     if (!callDescription.isEmpty)
       logger.trace(s"btcrpc: $callDescription")
     try {
-      val r: Awaitable[T] = awaitable
-      Await.result(awaitable, 40.seconds)
+      Await.result(awaitable, BTC_RPC_TIMEOUT.seconds)
     }
     catch {
       case e: Throwable =>

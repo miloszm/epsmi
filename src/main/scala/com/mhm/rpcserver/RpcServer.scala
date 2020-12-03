@@ -7,7 +7,7 @@ import java.util
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.googlecode.jsonrpc4j.{JsonRpcBasicServer, JsonRpcInterceptor, RequestInterceptor, StreamServerWithHeartbeats}
-import com.mhm.api4electrum.{Api4Electrum, Api4ElectrumCore, Api4ElectrumImpl}
+import com.mhm.api4electrum.{Api4Electrum, Api4ElectrumCore, Api4ElectrumCoreConfig, Api4ElectrumImpl}
 import com.mhm.bitcoin.{TransactionMonitor, TransactionMonitorState}
 import com.mhm.connectors.BitcoinSConnector
 import com.mhm.securesocket.SecureSocketMetaFactory
@@ -19,9 +19,9 @@ import scala.jdk.CollectionConverters.SeqHasAsJava
 object RpcServer extends Logging{
   val maxThreads = 1
 
-  def startServer(port: Int, transactionMonitor: TransactionMonitor, monitorState: TransactionMonitorState): StreamServerWithHeartbeats = {
+  def startServer(port: Int, transactionMonitor: TransactionMonitor, monitorState: TransactionMonitorState, coreConfig: Api4ElectrumCoreConfig): StreamServerWithHeartbeats = {
 
-    val service = new Api4ElectrumImpl(Api4ElectrumCore(BitcoinSConnector.rpcCli), transactionMonitor, monitorState)
+    val service = new Api4ElectrumImpl(Api4ElectrumCore(BitcoinSConnector.rpcCli, coreConfig), transactionMonitor, monitorState)
     val jsonRpcServer = new JsonRpcBasicServer(service, classOf[Api4Electrum])
 
     val requestInterceptor = new RequestInterceptor {
@@ -78,7 +78,13 @@ object RpcServer extends Logging{
     //serverSocket.setNeedClientAuth(true)
     val streamServer = new StreamServerWithHeartbeats(jsonRpcServer, maxThreads, serverSocket)
 
-    streamServer.start()
+    try {
+      streamServer.start()
+    } catch {
+      case e: Throwable =>
+        logger.error(s"rcp server caught ${e.getClass.getCanonicalName} exception: ${e.getMessage}")
+        throw e
+    }
 
     streamServer
   }
