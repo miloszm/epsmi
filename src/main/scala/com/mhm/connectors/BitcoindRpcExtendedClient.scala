@@ -5,8 +5,8 @@ import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LabelPurpose
 import org.bitcoins.commons.jsonmodels.bitcoind.{DeriveAddressesResult, LabelResult}
 import org.bitcoins.commons.serializers.JsonReaders.LabelPurposeReads
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.rpc.client.common.{BitcoindRpcClient, DescriptorRpc}
-import org.bitcoins.rpc.client.v17.V17LabelRpc
+import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion, DescriptorRpc}
+import org.bitcoins.rpc.client.v17.{BitcoindV17RpcClient, V17LabelRpc}
 import org.bitcoins.rpc.config.BitcoindInstance
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
@@ -14,7 +14,7 @@ import play.api.libs.json._
 import scala.concurrent.Future
 
 class BitcoindRpcExtendedClient(bitcoindInstance: BitcoindInstance, actorSystem: ActorSystem)
-  extends BitcoindRpcClient(bitcoindInstance)(implicitly[ActorSystem](actorSystem))
+  extends BitcoindV17RpcClient(bitcoindInstance)(implicitly[ActorSystem](actorSystem))
   with V17LabelRpc with DescriptorRpc {
   /**
    * have to override reads for LabelResult
@@ -40,4 +40,6 @@ class BitcoindRpcExtendedClient(bitcoindInstance: BitcoindInstance, actorSystem:
     val resultFut = bitcoindCall[Array[String]]("deriveaddresses", params)
     resultFut.map(result => DeriveAddressesResult(result.toVector.map(a => BitcoinAddress(a))))
   }
+
+  override def version: BitcoindVersion = BitcoindVersion.Unknown
 }

@@ -188,12 +188,16 @@ class Api4ElectrumImpl(core: Api4ElectrumCore, transactionMonitor: TransactionMo
     core.serverBanner(monitorState)
   }
 
+  override def blockchainTransactionBroadcast(txhex: String): String = {
+    core.blockchainTransactionBroadcast(txhex)
+  }
+
   def onUpdatedScripthashes(
     updatedScripthashes: Set[String],
     outputStream: OutputStream): Unit = {
     updatedScripthashes.foreach { sh =>
       val historyHash = currentMonitorState.get.getElectrumHistoryHash(sh)
-      val update = s"""{"jsonrpc":"2.0","method": "blockchain.scripthash.subscribe", "params": [$sh, $historyHash]}""" + "\n"
+      val update = s"""{"jsonrpc": "2.0", "method": "blockchain.scripthash.subscribe", "params": [$sh, $historyHash]}""" + "\n"
       outputStream.write(update.getBytes())
     }
   }
@@ -201,7 +205,7 @@ class Api4ElectrumImpl(core: Api4ElectrumCore, transactionMonitor: TransactionMo
   def onBlockchainTipUpdated(hashHeight: HashHeight, outputStream: OutputStream): Unit = {
     logger.debug(s"onBlockchainTipUpdated, subscribed to headers=${currentMonitorState.get.subscribedToHeaders}")
     if (currentMonitorState.get.subscribedToHeaders){
-      val update = s"""{"jsonrpc":"2.0", "method": "blockchain.headers.subscribe", "params": [{"hex": "${hashHeight.hash}", "height": ${hashHeight.height}}]}""" + "\n"
+      val update = s"""{"jsonrpc": "2.0", "method": "blockchain.headers.subscribe", "params": [{"hex": "${hashHeight.hash}", "height": ${hashHeight.height}}]}""" + "\n"
       outputStream.write(update.getBytes())
     }
   }

@@ -5,7 +5,7 @@ import java.nio.ByteBuffer
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicReference}
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.mhm.bitcoin.TransactionMonitorState
+import com.mhm.bitcoin.{BroadcastMethod, OwnNode, TransactionMonitorState}
 import com.mhm.common.model.HashHeight
 import com.mhm.connectors.BitcoinSConnector.ec
 import com.mhm.connectors.BitcoindRpcExtendedClient
@@ -18,6 +18,7 @@ import grizzled.slf4j.Logging
 import javax.xml.bind.DatatypeConverter
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.FeeEstimationMode
 import org.bitcoins.commons.jsonmodels.bitcoind.{GetBlockHeaderResult, GetMemPoolResult}
+import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.DoubleSha256DigestBE
 
 import scala.annotation.tailrec
@@ -35,12 +36,14 @@ case class ElectrumMerkleProof(
 
 object Api4ElectrumCoreConfig {
   def getDefault = Api4ElectrumCoreConfig(
-    enableMempoolFeeHistogram = false
+    enableMempoolFeeHistogram = false,
+    broadcastMethod = OwnNode
   )
 }
 
 case class Api4ElectrumCoreConfig(
-  enableMempoolFeeHistogram: Boolean
+  enableMempoolFeeHistogram: Boolean,
+  broadcastMethod: BroadcastMethod
 )
 
 /**
@@ -359,6 +362,28 @@ case class Api4ElectrumCore(rpcCli: BitcoindRpcExtendedClient, config: Api4Elect
       feeHistogram(mempool)
     } else {
       Array(Array(0,0))
+    }
+  }
+
+  def blockchainTransactionBroadcast(txhex: String): String = {
+    val transaction = Transaction.fromHex(txhex)
+    val txReport = wrap(rpcCli.testMempoolAccept(transaction))
+    if (txReport.allowed){
+      logger.info(s"broadcasting tx ${txReport.txid}")
+      if (config.broadcastMethod == OwnNode){
+        val localRelay = wrap(rpcCli.getNetworkInfo).localrelay
+        if (localRelay){
+          wrap(rpcCli.sendRawTransaction(transaction))
+          txReport.txid.hex
+        } else {
+          logger.warn("Transaction broadcasting disabled when blocksonly")
+          throw new IllegalStateException("broadcast disabled when using blocksonly")
+        }
+      } else {
+        throw new IllegalArgumentException(s"unsupported broadcast method: ${config.broadcastMethod}")
+      }
+    } else {
+      throw new IllegalStateException(s"broadcast not possible for the following reject reason: ${txReport.rejectReason.getOrElse("unknown")}")
     }
   }
 

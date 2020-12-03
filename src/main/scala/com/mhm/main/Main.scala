@@ -1,7 +1,7 @@
 package com.mhm.main
 
 import com.mhm.api4electrum.Api4ElectrumCoreConfig
-import com.mhm.bitcoin.TransactionMonitorFactory
+import com.mhm.bitcoin.{OwnNode, TransactionMonitorFactory, UnsupportedBroadcastMethod}
 import com.mhm.connectors.BitcoinSConnector
 import com.mhm.rpcserver.RpcServer
 import com.typesafe.config.ConfigFactory
@@ -13,7 +13,11 @@ object Main extends App {
   def doMain(): Unit = {
     val config = ConfigFactory.load()
     val coreConfig = Api4ElectrumCoreConfig(
-      config.getBoolean("epsmi.enable-mempool-fee-histogram")
+      config.getBoolean("epsmi.enable-mempool-fee-histogram"),
+      config.getString("epsmi.broadcast-method") match {
+        case "own-node" => OwnNode
+        case _ => UnsupportedBroadcastMethod
+      }
     )
 
     val scriptPubKeysToMonitorResult = new Setup(BitcoinSConnector.rpcCli, config).getScriptPubKeysToMonitor()

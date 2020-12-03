@@ -7,7 +7,6 @@ import com.mhm.bitcoin.{HistoryElement, HistoryEntry, TransactionMonitorFactory}
 import com.mhm.connectors.RpcWrap.wrap
 import com.mhm.epsmi.dummymonitor.DummyTxCreator.createDummyFundingTx
 import com.mhm.epsmi.dummymonitor.{DummyBtcRpc, DummyDeterministicWallet}
-import com.mhm.epsmi.dummyprotocol.DummyBtcProtocolRpc
 import com.mhm.util.HashOps
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers.{contain, convertToAnyShouldWrapper}
@@ -45,7 +44,7 @@ class HeartbeatRoundtripSpec extends FlatSpec {
   protocol.currentMonitorState.get().addressHistory.m shouldBe Map(sh -> HistoryEntry(subscribed = true,List(HistoryElement(dummyTx.txId,0,2))))
   val output = streamOutput.toString
   val expectedHistoryHash = protocol.currentMonitorState.get.getElectrumHistoryHash(sh)
-  output shouldBe s"""{"method": "blockchain.scripthash.subscribe", "params": [$sh, $expectedHistoryHash]}""" + "\n"
+  output shouldBe s"""{"jsonrpc": "2.0", "method": "blockchain.scripthash.subscribe", "params": [$sh, $expectedHistoryHash]}""" + "\n"
 
   // subscribing to headers
   val monitorState4 = monitorState3.subscribeToHeaders(true)
@@ -53,10 +52,12 @@ class HeartbeatRoundtripSpec extends FlatSpec {
   val streamOutput2 = new ByteArrayOutputStream()
   protocol2.triggerHeartbeatConnected(streamOutput2)
   val output2 = streamOutput2.toString
-  println(output2)
-  val expectedBestBlockHeader = wrap(Api4ElectrumCore(rpc2).getBlockHeader(wrap(rpc2.getBestBlockHash), raw = true)).map(_.hash).getOrElse(fail)
-  output2 shouldBe s"""{"method": "blockchain.headers.subscribe", "params": $expectedBestBlockHeader""" + "\n" +
-    s"""{"method": "blockchain.scripthash.subscribe", "params": [$sh, $expectedHistoryHash]}""" + "\n"
+
+  val expectedBestBlockHashHeight = wrap(Api4ElectrumCore(rpc2).getBlockHeader(wrap(rpc2.getBestBlockHash), raw = true)).getOrElse(fail)
+  val expected = s"""{"jsonrpc": "2.0", "method": "blockchain.headers.subscribe", "params": [${expectedBestBlockHashHeight.asJson}]}""" + "\n" +
+    s"""{"jsonrpc": "2.0", "method": "blockchain.scripthash.subscribe", "params": [$sh, $expectedHistoryHash]}""" + "\n"
+
+  output2 shouldBe expected
 
   // check history
   protocol2.blockchainScripthashGetHistory(sh).map(_.txHash) should contain theSameElementsAs Seq(dummyTx.txId)

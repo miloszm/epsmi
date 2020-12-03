@@ -124,4 +124,7 @@ trait Api4Electrum {
   @JsonRpcMethod("server.banner")
   def serverBanner(): String
 
+  @JsonRpcMethod("blockchain.transaction.broadcast")
+  def blockchainTransactionBroadcast(txhex: String): String
+
 }
