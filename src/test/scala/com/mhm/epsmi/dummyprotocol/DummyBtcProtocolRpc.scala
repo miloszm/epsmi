@@ -2,6 +2,7 @@ package com.mhm.epsmi.dummyprotocol
 
 import com.mhm.connectors.{BitcoinSConnector, BitcoindRpcExtendedClient}
 import com.mhm.epsmi.dummyprotocol.DummyBtcProtocolRpc.DummyJsonrpcBlockchainHeight
+import com.mhm.epsmi.testbtcrpc.TestBitcoinSConnector
 import org.bitcoins.commons.jsonmodels.bitcoind.{GetBlockHeaderResult, GetTransactionResult}
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.number.UInt32
@@ -13,7 +14,7 @@ object DummyBtcProtocolRpc {
   val DummyJsonrpcBlockchainHeight = 100000
 }
 
-case class DummyBtcProtocolRpc() extends BitcoindRpcExtendedClient(BitcoinSConnector.bitcoindInstance, BitcoinSConnector.system){
+case class DummyBtcProtocolRpc() extends BitcoindRpcExtendedClient(TestBitcoinSConnector.bitcoindInstance, TestBitcoinSConnector.system){
 
   val blockchainHeight = DummyJsonrpcBlockchainHeight
 

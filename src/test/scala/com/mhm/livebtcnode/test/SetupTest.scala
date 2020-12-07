@@ -1,6 +1,7 @@
 package com.mhm.livebtcnode.test
 
 import com.mhm.connectors.BitcoinSConnector
+import com.mhm.epsmi.testbtcrpc.TestBitcoinSConnector
 import com.mhm.main.Setup
 import com.typesafe.config.ConfigFactory
 import org.scalatest.FlatSpec
@@ -11,7 +12,7 @@ class SetupTest extends FlatSpec {
 
   "setup" should "obtain list of script pub keys to monitor" in {
     val config = ConfigFactory.load()
-    val result = new Setup(BitcoinSConnector.rpcCli, config).getScriptPubKeysToMonitor()
+    val result = new Setup(TestBitcoinSConnector.rpcCli, config).getScriptPubKeysToMonitor()
     result.spksToMonitor.nonEmpty shouldBe true
     result.wallets.nonEmpty shouldBe true
     println(s"getScriptPubKeysToMonitor result:")

@@ -7,7 +7,6 @@ import java.util.concurrent.atomic.{AtomicBoolean, AtomicReference}
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.mhm.bitcoin.{BroadcastMethod, OwnNode, TransactionMonitorState}
 import com.mhm.common.model.HashHeight
-import com.mhm.connectors.BitcoinSConnector.ec
 import com.mhm.connectors.BitcoindRpcExtendedClient
 import com.mhm.connectors.RpcWrap.wrap
 import com.mhm.main.Constants
@@ -22,7 +21,7 @@ import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.DoubleSha256DigestBE
 
 import scala.annotation.tailrec
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.math.BigDecimal.RoundingMode
 import scala.util.{Failure, Success, Try}
 
@@ -37,13 +36,21 @@ case class ElectrumMerkleProof(
 object Api4ElectrumCoreConfig {
   def getDefault = Api4ElectrumCoreConfig(
     enableMempoolFeeHistogram = false,
-    broadcastMethod = OwnNode
+    broadcastMethod = OwnNode,
+    port = 50002,
+    isTestnet = false,
+    btcRpcUsername = "foo",
+    btcRpcPassword = "bar"
   )
 }
 
 case class Api4ElectrumCoreConfig(
   enableMempoolFeeHistogram: Boolean,
-  broadcastMethod: BroadcastMethod
+  broadcastMethod: BroadcastMethod,
+  port: Int,
+  isTestnet: Boolean,
+  btcRpcUsername: String,
+  btcRpcPassword: String
 )
 
 /**
@@ -51,7 +58,7 @@ case class Api4ElectrumCoreConfig(
  * to json rpc requirements.
  */
 
-case class Api4ElectrumCore(rpcCli: BitcoindRpcExtendedClient, config: Api4ElectrumCoreConfig = Api4ElectrumCoreConfig.getDefault) extends Logging {
+case class Api4ElectrumCore(rpcCli: BitcoindRpcExtendedClient, config: Api4ElectrumCoreConfig = Api4ElectrumCoreConfig.getDefault)(implicit ec: ExecutionContext) extends Logging {
   val bestBlockHash = new AtomicReference[Option[String]](None)
   val printedSlowMempoolWarning = new AtomicBoolean(false)
 

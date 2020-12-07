@@ -1,6 +1,6 @@
 package com.mhm.livewallet.test
 
-import com.mhm.connectors.BitcoinSConnector.rpcCli
+import com.mhm.epsmi.testbtcrpc.TestBitcoinSConnector.rpcCli
 import com.mhm.wallet.{DeterministicWallet, SingleSigWallet, XpubDescTempl}
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers.{contain, convertToAnyShouldWrapper, have}

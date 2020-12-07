@@ -4,6 +4,7 @@ import com.googlecode.jsonrpc4j.StreamServerWithHeartbeats
 import com.mhm.api4electrum.{Api4Electrum, Api4ElectrumCoreConfig}
 import com.mhm.bitcoin.{OwnNode, TransactionMonitorFactory}
 import com.mhm.connectors.BitcoinSConnector
+import com.mhm.epsmi.testbtcrpc.TestBitcoinSConnector
 import com.mhm.main.Setup
 import com.mhm.rpcclient.{EpsmiClient, RpcClient}
 import com.mhm.rpcserver.RpcServer
@@ -23,10 +24,10 @@ trait IntTestFixture extends FlatSpecLike with BeforeAndAfterAll {
   }
 
   val config = ConfigFactory.load()
-  val coreConfig = Api4ElectrumCoreConfig(enableMempoolFeeHistogram = false, broadcastMethod = OwnNode)
-  val scriptPubKeysToMonitorResult = new Setup(BitcoinSConnector.rpcCli, config).getScriptPubKeysToMonitor()
+  val coreConfig = Api4ElectrumCoreConfig(enableMempoolFeeHistogram = false, broadcastMethod = OwnNode, port = port, isTestnet = false, btcRpcUsername = "foo", btcRpcPassword = "bar")
+  val scriptPubKeysToMonitorResult = new Setup(TestBitcoinSConnector.rpcCli, config).getScriptPubKeysToMonitor()
 
-  val transactionMonitor = TransactionMonitorFactory.create(BitcoinSConnector.rpcCli)
+  val transactionMonitor = TransactionMonitorFactory.create(TestBitcoinSConnector.rpcCli)
 
   val monitorState = transactionMonitor.buildAddressHistory(
     scriptPubKeysToMonitorResult.spksToMonitor,

@@ -32,7 +32,8 @@ class Setup(rpcCli: BitcoindRpcExtendedClient, config: Config) extends Logging {
 
     val initialImportCount = config.getInt("epsmi.initial-import-count")
 
-    val mpkConfig = config.getConfig("epsmi.master-public-keys")
+    val isTestnet = config.getBoolean("epsmi.testnet")
+    val mpkConfig = config.getConfig(s"epsmi.master-public-keys${if (isTestnet) "-testnet" else ""}")
     val mpks = mpkConfig.entrySet()
     val keyAndWallets = mpks.asScala.toSeq.map{ _.getKey}.zip(deterministicWallets)
     val walletsToImport = keyAndWallets.flatMap { case (key, wal) =>

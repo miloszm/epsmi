@@ -10,6 +10,8 @@ import com.mhm.epsmi.dummymonitor.{DummyBtcRpc, DummyDeterministicWallet}
 import com.mhm.util.HashOps
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers.{contain, convertToAnyShouldWrapper}
+import com.mhm.epsmi.testbtcrpc.TestBitcoinSConnector.ec
+
 
 class HeartbeatRoundtripSpec extends FlatSpec {
 

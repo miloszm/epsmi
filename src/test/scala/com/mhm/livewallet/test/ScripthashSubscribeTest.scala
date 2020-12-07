@@ -2,6 +2,7 @@ package com.mhm.livewallet.test
 
 import com.mhm.connectors.BitcoinSConnector
 import com.mhm.connectors.RpcWrap.wrap
+import com.mhm.epsmi.testbtcrpc.TestBitcoinSConnector
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers.convertToAnyShouldWrapper
@@ -20,6 +21,6 @@ class ScripthashSubscribeTest extends FlatSpec with ServiceFixture {
    * note - prefix "19" in the below is a problem - we need to remove it in a place where we use validateAddress - deterministic wallet
    * see note there, DeterministicWallet.getAddresses, ca. line 30
    */
-  private val validationResult = BitcoinSConnector.rpcCli.validateAddress(BitcoinAddress("12tohASdGUCDFvqaygaGbL7Jub7CiHdwa4"))
+  private val validationResult = TestBitcoinSConnector.rpcCli.validateAddress(BitcoinAddress("12tohASdGUCDFvqaygaGbL7Jub7CiHdwa4"))
   wrap(validationResult).scriptPubKey.map(_.hex).getOrElse(fail) shouldBe "1976a91414c45115d49cf4568d0d7229a9a0c58b64041c5388ac"
 }

@@ -3,6 +3,7 @@ package com.mhm.epsmi.dummymonitor
 import com.mhm.connectors.{BitcoinSConnector, BitcoindRpcExtendedClient}
 import com.mhm.epsmi.dummymonitor.DummyTxCreator.{DummyTx, DummyVin, DummyVout}
 import com.mhm.epsmi.dummyprotocol.DummyBtcProtocolRpc
+import com.mhm.epsmi.testbtcrpc.TestBitcoinSConnector
 import org.bitcoins.commons.jsonmodels.bitcoind._
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.number.UInt32
@@ -14,7 +15,7 @@ import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import scala.concurrent.Future
 
 case class DummyBtcRpc(txList: Seq[DummyTx], utxoSet: Seq[DummyVin] = Nil, blockHeights: Map[String, Int] = Map())
-  extends BitcoindRpcExtendedClient(BitcoinSConnector.bitcoindInstance, BitcoinSConnector.system){
+  extends BitcoindRpcExtendedClient(TestBitcoinSConnector.bitcoindInstance, TestBitcoinSConnector.system){
 
   val protocolRpc = DummyBtcProtocolRpc()
 

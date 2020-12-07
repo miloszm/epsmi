@@ -7,33 +7,38 @@ import com.mhm.rpcserver.RpcServer
 import com.typesafe.config.ConfigFactory
 
 object Main extends App {
-  val port = 50002
-//  val port = 1420
-
   def doMain(): Unit = {
     val config = ConfigFactory.load()
+    val isTestnet = config.getBoolean("epsmi.testnet")
+    val (btcRpcUsername, btcRpcPassword) = (config.getString("epsmi.btc-rpc-username"), config.getString("epsmi.btc-rpc-password"))
     val coreConfig = Api4ElectrumCoreConfig(
       config.getBoolean("epsmi.enable-mempool-fee-histogram"),
       config.getString("epsmi.broadcast-method") match {
         case "own-node" => OwnNode
         case _ => UnsupportedBroadcastMethod
-      }
+      },
+      config.getInt(s"epsmi.server-port${if (isTestnet) "-testnet" else ""}"),
+      isTestnet,
+      btcRpcUsername,
+      btcRpcPassword
     )
 
-    val scriptPubKeysToMonitorResult = new Setup(BitcoinSConnector.rpcCli, config).getScriptPubKeysToMonitor()
+    val bitcoinSConnector = BitcoinSConnector(isTestnet, btcRpcUsername, btcRpcPassword)
 
-    val transactionMonitor = TransactionMonitorFactory.create(BitcoinSConnector.rpcCli)
+    val scriptPubKeysToMonitorResult = new Setup(bitcoinSConnector.rpcCli, config).getScriptPubKeysToMonitor()
+
+    val transactionMonitor = TransactionMonitorFactory.create(bitcoinSConnector.rpcCli)
 
     val monitorState = transactionMonitor.buildAddressHistory(
       scriptPubKeysToMonitorResult.spksToMonitor,
       scriptPubKeysToMonitorResult.wallets
     )
 
-    val server = RpcServer.startServer(port, transactionMonitor, monitorState, coreConfig)
+    val server = RpcServer.startServer(coreConfig.port, transactionMonitor, monitorState, coreConfig)
 
-    println(s"server started on port $port")
+    println(s"server started on port ${coreConfig.port}")
 
-    Thread.sleep(36000000L)
+    Thread.sleep(360000000L)
 
     server.stop()
   }

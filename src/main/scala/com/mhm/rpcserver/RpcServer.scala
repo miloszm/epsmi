@@ -13,6 +13,7 @@ import com.mhm.connectors.BitcoinSConnector
 import com.mhm.securesocket.SecureSocketMetaFactory
 import grizzled.slf4j.Logging
 import javax.net.ssl.SSLServerSocket
+import scala.concurrent.ExecutionContext.Implicits.global
 
 import scala.jdk.CollectionConverters.SeqHasAsJava
 
@@ -20,8 +21,8 @@ object RpcServer extends Logging{
   val maxThreads = 1
 
   def startServer(port: Int, transactionMonitor: TransactionMonitor, monitorState: TransactionMonitorState, coreConfig: Api4ElectrumCoreConfig): StreamServerWithHeartbeats = {
-
-    val service = new Api4ElectrumImpl(Api4ElectrumCore(BitcoinSConnector.rpcCli, coreConfig), transactionMonitor, monitorState)
+    val bitcoinSConnector = BitcoinSConnector(coreConfig.isTestnet, coreConfig.btcRpcUsername, coreConfig.btcRpcPassword)
+    val service = new Api4ElectrumImpl(Api4ElectrumCore(bitcoinSConnector.rpcCli, coreConfig), transactionMonitor, monitorState)
     val jsonRpcServer = new JsonRpcBasicServer(service, classOf[Api4Electrum])
 
     val requestInterceptor = new RequestInterceptor {

@@ -2,14 +2,15 @@ package com.mhm.epsmi.base
 
 import com.mhm.api4electrum.{Api4ElectrumCore, Api4ElectrumImpl}
 import com.mhm.bitcoin.TransactionMonitorState
-import com.mhm.connectors.BitcoinSConnector
 import com.mhm.epsmi.dummyprotocol.DummyTransactionMonitor
+import com.mhm.epsmi.testbtcrpc.TestBitcoinSConnector
+import com.mhm.epsmi.testbtcrpc.TestBitcoinSConnector.ec
 
 import scala.sys.exit
 
 object BitcoinSConnectorTest extends App {
 
-  println(new Api4ElectrumImpl(Api4ElectrumCore(BitcoinSConnector.rpcCli), new DummyTransactionMonitor, TransactionMonitorState.createEmpty()).blockchainBlockHeader(652221))
+  println(new Api4ElectrumImpl(Api4ElectrumCore(TestBitcoinSConnector.rpcCli), new DummyTransactionMonitor, TransactionMonitorState.createEmpty()).blockchainBlockHeader(652221))
   println("00004020e028cc7a4447b6edb4a70c9165b7e11e2908c50483aa000000000000000000005df5cc1d04d234630bd7db39936d231a5f1ebb877d53be3961d88d37ed1be12340c9825fde950e172ea7194d".toUpperCase)
 
   exit(0)

@@ -16,7 +16,7 @@ object RpcWrap extends Logging {
     }
     catch {
       case e: Throwable =>
-        logger.error(s"caught: ${e.getClass.getCanonicalName} - ${e.getMessage}")
+        logger.error(s"caught: ${e.getClass.getCanonicalName} - ${e.getMessage} - $callDescription")
         throw e
     }
   }

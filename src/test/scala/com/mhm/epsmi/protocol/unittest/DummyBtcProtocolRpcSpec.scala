@@ -4,6 +4,7 @@ import com.mhm.api4electrum.Api4ElectrumCore
 import com.mhm.connectors.RpcWrap.wrap
 import com.mhm.epsmi.dummyprotocol.DummyBtcProtocolRpc
 import com.mhm.epsmi.dummyprotocol.DummyBtcProtocolRpc.DummyJsonrpcBlockchainHeight
+import com.mhm.epsmi.testbtcrpc.TestBitcoinSConnector.ec
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers.convertToAnyShouldWrapper
 
