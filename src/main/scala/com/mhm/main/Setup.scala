@@ -6,6 +6,7 @@ import com.mhm.wallet.{AddrsSpks, DeterministicWallet}
 import com.typesafe.config.Config
 import grizzled.slf4j.Logging
 import org.bitcoins.core.config.{MainNet, NetworkParameters, RegTest, TestNet3}
+import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.rpc.client.common.{BlockchainRpc, DescriptorRpc, UtilRpc}
 import org.bitcoins.rpc.client.v17.V17LabelRpc
 
@@ -21,8 +22,12 @@ class Setup(rpcCli: BitcoindRpcExtendedClient, config: Config) extends Logging {
   type SetupRpc = BlockchainRpc with DescriptorRpc with V17LabelRpc with UtilRpc
 
   def getScriptPubKeysToMonitor(): ScriptPubKeysToMonitorResult = {
-    logger.info("started getScriptPubKeysToMonitor")
-    val importedAddresses = wrap(rpcCli.getAddressesByLabel("electrum-watchonly-addresses"), "getAddressesByLabel").keySet
+    logger.trace("started getScriptPubKeysToMonitor")
+    val listedLabels = wrap(rpcCli.listLabels())
+    val importedAddresses = if (listedLabels.contains(Constants.ADDRESSES_LABEL)) {
+      wrap(rpcCli.getAddressesByLabel("electrum-watchonly-addresses"), "getAddressesByLabel").keySet
+    } else Set[BitcoinAddress]()
+
     logger.debug(s"imported ${importedAddresses.size} addresses, head is ${importedAddresses.headOption}")
 
     val deterministicWallets = obtainDeterministicWallets(rpcCli, config)
@@ -64,7 +69,7 @@ class Setup(rpcCli: BitcoindRpcExtendedClient, config: Config) extends Logging {
       }).flatten
       ScriptPubKeysToMonitorResult(false, spksToMonitor, deterministicWallets)
     }
-    logger.info(s"finished getScriptPubKeysToMonitor with ${result.spksToMonitor.size} ScriptPubKeys to monitor from ${result.wallets.size} wallet(s)")
+    logger.trace(s"finished getScriptPubKeysToMonitor with ${result.spksToMonitor.size} ScriptPubKeys to monitor from ${result.wallets.size} wallet(s)")
     result
   }
 
@@ -77,7 +82,8 @@ class Setup(rpcCli: BitcoindRpcExtendedClient, config: Config) extends Logging {
 
   def obtainDeterministicWallets(rpcCli: BlockchainRpc with DescriptorRpc, config: Config): Seq[DeterministicWallet] = {
     logger.info("obtaining deterministic wallets")
-    val mpkConfig = config.getConfig("epsmi.master-public-keys")
+    val isTestnet = config.getBoolean("epsmi.testnet")
+    val mpkConfig = config.getConfig(s"epsmi.master-public-keys${if (isTestnet) "-testnet" else ""}")
     val mpks = mpkConfig.entrySet()
     val chain = networkString(wrap(rpcCli.getBlockChainInfo, "getBlockChainInfo").chain)
     logger.info(s"chain is: $chain")

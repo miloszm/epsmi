@@ -29,18 +29,22 @@ object Main extends App {
 
     val transactionMonitor = TransactionMonitorFactory.create(bitcoinSConnector.rpcCli)
 
-    val monitorState = transactionMonitor.buildAddressHistory(
-      scriptPubKeysToMonitorResult.spksToMonitor,
-      scriptPubKeysToMonitorResult.wallets
-    )
+    if (scriptPubKeysToMonitorResult.importNeeded){
+      ???
+    } else {
+      val monitorState = transactionMonitor.buildAddressHistory(
+        scriptPubKeysToMonitorResult.spksToMonitor,
+        scriptPubKeysToMonitorResult.wallets
+      )
+      val server = RpcServer.startServer(coreConfig.port, transactionMonitor, monitorState, coreConfig)
 
-    val server = RpcServer.startServer(coreConfig.port, transactionMonitor, monitorState, coreConfig)
+      println(s"server started on port ${coreConfig.port}")
 
-    println(s"server started on port ${coreConfig.port}")
+      Thread.sleep(360000000L)
 
-    Thread.sleep(360000000L)
+      server.stop()
+    }
 
-    server.stop()
   }
 
   doMain

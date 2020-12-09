@@ -2,4 +2,6 @@
 .idea
 target/
 .DS_Store
+logs
+
 

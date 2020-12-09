@@ -20,8 +20,8 @@ case class BitcoinSConnector(
   lazy val bitcoindInstance = if (isTestnet) {
     BitcoindInstance(
       network = TestNet3,
-      uri = new URI(s"http://localhost:${TestNet3.port}"),
-      rpcUri = new URI(s"http://localhost:${TestNet3.rpcPort}"),
+      uri = new URI(s"""http://localhost:${TestNet3.port}"""),
+      rpcUri = new URI(s"""http://localhost:${TestNet3.rpcPort}"""),
       authCredentials = authCredentials
     )
   }

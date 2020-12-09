@@ -197,13 +197,13 @@ class TransactionMonitorImpl(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed
     def getTransactions(attempt: Int, maxAttempts: Int, count: Int, v: Vector[ListTransactionsResult], lastKnownTx: Option[TxidAddress]): GetTrRes = {
       if (attempt == maxAttempts) GetTrRes(containsKnown = false, 0, v.size, v)
       else {
-        val transactions = wrap(rpcCli.listTransactions("*", count, 0, includeWatchOnly = true), "listTransactions")
+        val transactions = wrap(rpcCli.listTransactions("*", count, 0, includeWatchOnly = true), "listTransactions").reverse
         logger.trace(s"obtained ${transactions.size} transactions (skip=0) ${transactions.map(_.txid.map(_.hex.substring(0,4))).mkString("|")}")
         lastKnownTx match {
           case None => GetTrRes(containsKnown = false, 0, transactions.size, transactions)
           case Some(ln) =>
             val found = transactions.zipWithIndex.find{ case (t, _) => optSha2Str(t.txid) == ln.txid && optAddr2Str(t.address) == ln.address }
-            logger.trace(s"found last known at index: ${found.map(_._2)} from among: ${transactions.map(_.txid.map(_.hex.substring(0,4))).mkString("|")}")
+            logger.trace(s"found last known ${ln.txid.substring(0,4)} at index: ${found.map(_._2)} from among: ${transactions.map(_.txid.map(_.hex.substring(0,4))).mkString("|")}")
             found match {
               case Some((_, recentTxIndex)) if count != transactions.size => GetTrRes(containsKnown = true, 0, recentTxIndex, transactions)
               case _ => getTransactions(attempt+1, maxAttempts, count * 2, transactions, lastKnownTx)
@@ -356,7 +356,7 @@ class TransactionMonitorImpl(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed
       logger.debug(s"updated_scripthashes = ${updatedScripthashes.mkString("|")}")
     }
     val updated = updatedScripthashes.filter(sh => state3.addressHistory.m.contains(sh) && state3.addressHistory.m(sh).subscribed)
-    logger.trace(s"finished checkForUpdatedTxs, updated size = ${updated.size}")
+    logger.debug(s"finished checkForUpdatedTxs, updated size = ${updated.size}")
     (updated.toSet, state3)
   }
 

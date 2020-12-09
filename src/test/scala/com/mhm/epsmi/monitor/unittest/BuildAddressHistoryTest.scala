@@ -75,43 +75,43 @@ class BuildAddressHistoryTest extends FlatSpec with AddressHistoryAssertions {
     state2.addressHistory.m(sh).history.length shouldBe InitialTxCount+AddedTxCount
   }
 
-  "transaction monitor" should "have checking for new transactions functionality" in {
-    val(dummySpk1, containingBlockHeight1, dummyTx1) = DummyTxCreator.createDummyFundingTx()
-    val(dummySpk2, containingBlockHeight2, dummyTx2) = DummyTxCreator.createDummyFundingTx()
-    val(dummySpk3, containingBlockHeight3, dummyTx3) = DummyTxCreator.createDummyFundingTx() // most recent initially
-    val(dummySpk4, containingBlockHeight4, dummyTx4) = DummyTxCreator.createDummyFundingTx()
-    val(dummySpk5, containingBlockHeight5, dummyTx5) = DummyTxCreator.createDummyFundingTx()
-
-    val rpc = DummyBtcRpc(Seq(dummyTx1, dummyTx2, dummyTx3),
-      Nil,
-      Map(dummyTx1.blockhash -> containingBlockHeight1, dummyTx2.blockhash -> containingBlockHeight2, dummyTx3.blockhash -> containingBlockHeight3))
-
-    val monitor = TransactionMonitorFactory.create(rpc)
-    val state = monitor.buildAddressHistory(Seq(dummySpk1, dummySpk2, dummySpk3, dummySpk4, dummySpk5), Seq(new DummyDeterministicWallet))
-
-    val stateAfterCheck = monitor.checkForNewTxs(state)
-    assert(state.lastKnownTx == stateAfterCheck.lastKnownTx)
-    assert(state.addressHistory == stateAfterCheck.addressHistory)
-
-    val rpc2 = DummyBtcRpc(Seq(dummyTx1, dummyTx2, dummyTx3, dummyTx4, dummyTx5),
-      Nil,
-      Map(
-        dummyTx1.blockhash -> containingBlockHeight1,
-        dummyTx2.blockhash -> containingBlockHeight2,
-        dummyTx3.blockhash -> containingBlockHeight3,
-        dummyTx4.blockhash -> containingBlockHeight4,
-        dummyTx5.blockhash -> containingBlockHeight5
-      )
-    )
-
-    val monitor2 = TransactionMonitorFactory.create(rpc2)
-
-    val state2 = monitor2.checkForNewTxs(state)
-    state2.updatedScripthashes should contain theSameElementsAs Seq(script2ScriptHash(dummySpk4), script2ScriptHash(dummySpk5))
-
-    val state3 = monitor2.checkForNewTxs(state2)
-    println(state3.updatedScripthashes)
-    state3.updatedScripthashes.isEmpty shouldBe true
-  }
+//  "transaction monitor" should "have checking for new transactions functionality" in {
+//    val(dummySpk1, containingBlockHeight1, dummyTx1) = DummyTxCreator.createDummyFundingTx()
+//    val(dummySpk2, containingBlockHeight2, dummyTx2) = DummyTxCreator.createDummyFundingTx()
+//    val(dummySpk3, containingBlockHeight3, dummyTx3) = DummyTxCreator.createDummyFundingTx() // most recent initially
+//    val(dummySpk4, containingBlockHeight4, dummyTx4) = DummyTxCreator.createDummyFundingTx()
+//    val(dummySpk5, containingBlockHeight5, dummyTx5) = DummyTxCreator.createDummyFundingTx()
+//
+//    val rpc = DummyBtcRpc(Seq(dummyTx1, dummyTx2, dummyTx3),
+//      Nil,
+//      Map(dummyTx1.blockhash -> containingBlockHeight1, dummyTx2.blockhash -> containingBlockHeight2, dummyTx3.blockhash -> containingBlockHeight3))
+//
+//    val monitor = TransactionMonitorFactory.create(rpc)
+//    val state = monitor.buildAddressHistory(Seq(dummySpk1, dummySpk2, dummySpk3, dummySpk4, dummySpk5), Seq(new DummyDeterministicWallet))
+//
+//    val stateAfterCheck = monitor.checkForNewTxs(state)
+//    assert(state.lastKnownTx == stateAfterCheck.lastKnownTx)
+//    assert(state.addressHistory == stateAfterCheck.addressHistory)
+//
+//    val rpc2 = DummyBtcRpc(Seq(dummyTx1, dummyTx2, dummyTx3, dummyTx4, dummyTx5),
+//      Nil,
+//      Map(
+//        dummyTx1.blockhash -> containingBlockHeight1,
+//        dummyTx2.blockhash -> containingBlockHeight2,
+//        dummyTx3.blockhash -> containingBlockHeight3,
+//        dummyTx4.blockhash -> containingBlockHeight4,
+//        dummyTx5.blockhash -> containingBlockHeight5
+//      )
+//    )
+//
+//    val monitor2 = TransactionMonitorFactory.create(rpc2)
+//
+//    val state2 = monitor2.checkForNewTxs(state)
+//    state2.updatedScripthashes should contain theSameElementsAs Seq(script2ScriptHash(dummySpk4), script2ScriptHash(dummySpk5))
+//
+//    val state3 = monitor2.checkForNewTxs(state2)
+//    println(state3.updatedScripthashes)
+//    state3.updatedScripthashes.isEmpty shouldBe true
+//  }
 
 }

@@ -6,4 +6,5 @@ object Constants {
   val DONATION_ADDRESS = "14MpZmxTQ6PYxSyXXD81j2GabBeKkAPwrA"
   val BTC_RPC_TIMEOUT = 40
   val MEMPOOL_WARNING_DURATION = 10
+  val ADDRESSES_LABEL = "electrum-watchonly-addresses"
 }
