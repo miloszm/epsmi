@@ -54,7 +54,7 @@ class TransactionMonitorTest extends FlatSpec {
 
     val txid = "22667c482f0f69daefabdf0969be53b8d539e1d2abbfc1c7a193ae38ec0d3e31"
     val rawTx: GetRawTransactionResult = wrap(rpcCli.getRawTransaction(DoubleSha256DigestBE.fromHex(txid)))
-    val tx = Tx4HistoryGen(rawTx.confirmations.getOrElse(fail), txid, rawTx.blockhash.getOrElse(fail))
+    val tx = Tx4HistoryGen(rawTx.confirmations.getOrElse(fail), txid, rawTx.blockhash)
     val txd = wrap(rpcCli.decodeRawTransaction(rawTx.hex))
 
     val newHistoryElement = transactionMonitor.generateNewHistoryElement(tx, txd)

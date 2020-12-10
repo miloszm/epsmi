@@ -18,7 +18,7 @@ import scala.collection.mutable.ListBuffer
 import scala.jdk.CollectionConverters.SetHasAsScala
 import scala.util.{Failure, Success, Try}
 
-case class Tx4HistoryGen(confirmations: Int, txid: String, blockhash: DoubleSha256DigestBE)
+case class Tx4HistoryGen(confirmations: Int, txid: String, blockhashOpt: Option[DoubleSha256DigestBE])
 case class LastKnown(lastKnownTx: Option[TxidAddress])
 case class AddressBalance(confirmed: BigDecimal, unconfirmed: BigDecimal)
 
@@ -83,7 +83,11 @@ class TransactionMonitorImpl(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed
               val overrunDepths = wal.haveScriptpubkeysOverrunGaplimit(outputScriptpubkeys)
               if (overrunDepths.nonEmpty) throw new IllegalStateException("not enough addresses imported, see transactionmonitor.py line 155")
             }
-            val tx4HistoryGen = Tx4HistoryGen(tx.confirmations.get, tx.txid.map(_.hex).get, tx.blockhash.get)
+            val tx4HistoryGen = Tx4HistoryGen(
+              tx.confirmations.get,
+              tx.txid.map(_.hex).get,
+              tx.blockhash
+            )
             val newHistoryElement = generateNewHistoryElement(tx4HistoryGen, txd)
             val state1 = state
               .addHistoryItemForScripthashes(shToAdd.toSeq, newHistoryElement)
@@ -172,7 +176,7 @@ class TransactionMonitorImpl(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed
       HistoryElement(tx.txid, height, fee)
     }
     else {
-      val blockHeader: GetBlockHeaderResult = wrap(rpcCli.getBlockHeader(tx.blockhash))
+      val blockHeader: GetBlockHeaderResult = wrap(rpcCli.getBlockHeader(tx.blockhashOpt.getOrElse(throw new IllegalArgumentException("blockhash missing"))))
       HistoryElement(tx.txid, blockHeader.height)
     }
   }
@@ -224,7 +228,7 @@ class TransactionMonitorImpl(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed
         val (outputScriptpubkeys, inputScriptpubkeys, txd) = getInputAndOutputScriptpubkeys(tx.txid.get)
         val matchingScripthashes = (outputScriptpubkeys ++ inputScriptpubkeys)
           .map(script2ScriptHash).filter(state.addressHistory.m.keySet.contains)
-        val newHistoryElement = generateNewHistoryElement(Tx4HistoryGen(optConfirmations2Int(tx.confirmations), txid, blockhash), txd)
+        val newHistoryElement = generateNewHistoryElement(Tx4HistoryGen(optConfirmations2Int(tx.confirmations), txid, Some(blockhash)), txd)
         logger.trace(s"adding new history element: ${newHistoryElement.txHash} height=${newHistoryElement.height}")
         val newState = state
           .addUpdatedScripthashes(matchingScripthashes)
@@ -315,7 +319,7 @@ class TransactionMonitorImpl(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed
             val state1 = state.addUnconfirmedScripthases(txid, matchingShs)
             val state2 = if (!isOrphan) { // TODO not sure why details is a vector and if this category extraction is correct here
                 val txd = wrap(rpcCli.decodeRawTransaction(tx.hex))
-                val newHistoryElement = generateNewHistoryElement(Tx4HistoryGen(tx.confirmations, tx.txid.hex, EpsmiDataOps.optSha2Sha(tx.blockhash)), txd)
+                val newHistoryElement = generateNewHistoryElement(Tx4HistoryGen(tx.confirmations, tx.txid.hex, tx.blockhash), txd)
                 state1.addHistoryItemForScripthashes(matchingShs, newHistoryElement)
               } else state1
             state2

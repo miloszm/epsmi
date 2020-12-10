@@ -47,7 +47,7 @@ case class HeadersSubscribeResult (
 @JsonSerialize
 case class HistoryItem (
   @BeanProperty @JsonProperty("height") height: Int,
-  @BeanProperty @JsonProperty("tx_hash") txHash: String,
+  @BeanProperty @JsonProperty("tx_hash") tx_hash: String,
   @BeanProperty @JsonProperty("fee") fee: Long
 )
 

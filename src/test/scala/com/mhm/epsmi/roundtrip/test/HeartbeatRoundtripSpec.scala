@@ -62,5 +62,5 @@ class HeartbeatRoundtripSpec extends FlatSpec {
   output2 shouldBe expected
 
   // check history
-  protocol2.blockchainScripthashGetHistory(sh).map(_.txHash) should contain theSameElementsAs Seq(dummyTx.txId)
+  protocol2.blockchainScripthashGetHistory(sh).map(_.tx_hash) should contain theSameElementsAs Seq(dummyTx.txId)
 }

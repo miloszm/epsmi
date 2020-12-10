@@ -46,9 +46,13 @@ object RpcServer extends Logging{
 
       override def preHandle(target: Any, method: Method, params: util.List[JsonNode]): Unit = {}
 
-      override def postHandle(target: Any, method: Method, params: util.List[JsonNode], result: JsonNode): Unit = {}
+      override def postHandle(target: Any, method: Method, params: util.List[JsonNode], result: JsonNode): Unit = {
+      }
 
-      override def postHandleJson(json: JsonNode): Unit = {}
+      override def postHandleJson(json: JsonNode): Unit = {
+        logger.trace(s">>==>> json=${json}")
+        println(s">>==>> json=${json}")
+      }
 
       override def onHeartbeatConnected(outputStream: OutputStream): Unit = {
         service.triggerHeartbeatConnected(outputStream)

@@ -154,7 +154,7 @@ class Api4ElectrumImpl(core: Api4ElectrumCore, transactionMonitor: TransactionMo
 
   override def blockchainScripthashGetHistory(sh: String): Array[HistoryItem] = {
     val history = currentMonitorState.get.getElectrumHistory(sh).getOrElse(Nil).map{ e =>
-      HistoryItem(height = e.height, txHash = e.txHash, fee = e.fee.toInt)
+      HistoryItem(height = e.height, tx_hash = e.txHash, fee = e.fee.toInt)
     }
     if (history.isEmpty){
       //logger.warn(s"Address history not known to server, hash(address) = $sh")

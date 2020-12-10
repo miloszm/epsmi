@@ -19,7 +19,7 @@ class TransactionMonitorDummyTest extends FlatSpec {
     val tx = Tx4HistoryGen(
       dummyTx.confirmations,
       dummyTx.txId,
-      DoubleSha256DigestBE.fromHex(dummyTx.blockhash)
+      Some(DoubleSha256DigestBE.fromHex(dummyTx.blockhash))
     )
     val txd = dummyBtcRpc.toRpcTransaction(dummyTx)
 
@@ -39,7 +39,7 @@ class TransactionMonitorDummyTest extends FlatSpec {
     val tx = Tx4HistoryGen(
       dummyTx.confirmations,
       dummyTx.txId,
-      DoubleSha256DigestBE.fromHex(dummyTx.blockhash)
+      Some(DoubleSha256DigestBE.fromHex(dummyTx.blockhash))
     )
     val txd = dummyBtcRpc.toRpcTransaction(dummyTx)
 
