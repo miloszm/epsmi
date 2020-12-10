@@ -114,7 +114,10 @@ class TransactionMonitorImpl(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed
 
     val state2 = processListTransactions(skip = 0, obtainedTxids = Set(), state).sortAddressHistory()
     val state3 = state2.initUnconfirmedTxes()
-    logger.trace(s"finished buildAddressHistory, history size = ${state2.addressHistory.m.size}, last known = ${state2.lastKnownTx.map(_.txid.substring(0,4))}")
+    logger.trace(s"finished buildAddressHistory, history size = ${state3.addressHistory.m.size}, last known = ${state3.lastKnownTx.map(_.txid.substring(0,4))}")
+    state3.addressHistory.m.foreach{ case (k, v) =>
+      logger.trace(s"ah k=$k --> $v")
+    }
     state3
   }
 
@@ -251,6 +254,9 @@ class TransactionMonitorImpl(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed
       updateStateWithTransactions(state.setLastKnownTx(newTxs.headOption.map { result => TxidAddress(optSha2Str(result.txid), optAddr2Str(result.address)) }), relevantTxs.toList)
     }
     logger.trace(s"finished checkForNewTxs, found ${resultState.updatedScripthashes.size} new tx(s)")
+    resultState.addressHistory.m.foreach{ case (k, v) =>
+      logger.trace(s"ah k=$k --> $v")
+    }
     resultState
   }
 

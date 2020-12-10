@@ -141,7 +141,7 @@ class Api4ElectrumImpl(core: Api4ElectrumCore, transactionMonitor: TransactionMo
         + "master public key.")
     }
     val historyHash = state.getElectrumHistoryHash(sh)
-    logger.trace(s"historyHash for script hash $sh is${if (historyHash.isEmpty) " empty" else ": " + historyHash}")
+    //logger.trace(s"historyHash for script hash $sh is${if (historyHash.isEmpty) " empty" else ": " + historyHash}")
     historyHash
   }
 
@@ -157,10 +157,13 @@ class Api4ElectrumImpl(core: Api4ElectrumCore, transactionMonitor: TransactionMo
       HistoryItem(height = e.height, txHash = e.txHash, fee = e.fee.toInt)
     }
     if (history.isEmpty){
-      logger.warn(s"Address history not known to server, hash(address) = $sh")
-      // TODO original eps throws error here, not sure this is necessary
+      //logger.warn(s"Address history not known to server, hash(address) = $sh")
+      // TODO original eps skips sending response at all, I don't know how to do it in jsonrpc4j
+      Array()
     }
-    history.toArray
+    else {
+      history.toArray
+    }
   }
 
   override def serverPing(): Unit = {}
