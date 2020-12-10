@@ -13,7 +13,7 @@ class GetMerkleApiTest extends FlatSpec with IntTestFixture {
     val txId4GetMerkle = fixture.client.blockchainTrIdFromPos(652742, 5, false)
     val merkle = fixture.client.blockchainTransactionGetMerkle(txId4GetMerkle)
 
-    merkle.blockHeight shouldBe 652742
+    merkle.block_height shouldBe 652742
     merkle.pos shouldBe 5
 
     merkle.merkle should contain theSameElementsAs List(
@@ -32,7 +32,7 @@ class GetMerkleApiTest extends FlatSpec with IntTestFixture {
     )
 
     println(s"get merkle result = ")
-    println(s"   blockHeight=${merkle.blockHeight}")
+    println(s"   blockHeight=${merkle.block_height}")
     println(s"   pos=${merkle.pos}")
     println(s"   merkle=")
     merkle.merkle.foreach{println(_)}

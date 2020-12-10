@@ -25,8 +25,8 @@ case class EpsmiClient(client: Api4Electrum, socket: Socket){
 }
 
 object RpcClient extends App {
-//    val port = 50002
-    val port = 1420
+    val port = 50002
+//    val port = 1420
   var socket: Socket = null //TODO
 
   def createClient(port: Int = port): EpsmiClient = {
@@ -121,14 +121,14 @@ object RpcClient extends App {
 //    println("merkle=")
 //    merkleResult.merkle.foreach{println(_)}
 
-//    println
-//    val txId4GetMerkle = client.blockchainTrIdFromPos(652742, 5, false) // otherwise it won't be found
-//    val merkle = client.blockchainTransactionGetMerkle(txId4GetMerkle)
-//    println(s"get merkle result = ")
-//    println(s"   blockHeight=${merkle.blockHeight}")
-//    println(s"   pos=${merkle.pos}")
-//    println(s"   merkle=")
-//    merkle.merkle.foreach{println(_)}
+    println
+    val txId4GetMerkle = client.blockchainTrIdFromPos(652742, 5, false) // otherwise it won't be found
+    val merkle = client.blockchainTransactionGetMerkle(txId4GetMerkle)
+    println(s"get merkle result = ")
+    println(s"   blockHeight=${merkle.block_height}")
+    println(s"   pos=${merkle.pos}")
+    println(s"   merkle=")
+    merkle.merkle.foreach{println(_)}
 
 //    val socketInputStream = socket.getInputStream
 //    while (true) {

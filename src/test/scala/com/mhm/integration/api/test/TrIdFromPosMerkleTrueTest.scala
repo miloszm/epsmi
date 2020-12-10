@@ -17,7 +17,7 @@ class TrIdFromPosMerkleTrueTest extends FlatSpec with IntTestFixture {
         objectMapper.readValue[MerkleResult](s, classOf[MerkleResult])
       }
 
-    merkleResult.txHash shouldBe "5ce117fa1878fabc0d4c3153dad4e904593fc80c31aec6ebf4b3b5106f12c8d2"
+    merkleResult.tx_hash shouldBe "5ce117fa1878fabc0d4c3153dad4e904593fc80c31aec6ebf4b3b5106f12c8d2"
     merkleResult.merkle should contain theSameElementsAs List(
       "151A1E0A44A7484387F9D8E4FAFC2175FF4C92EAB50B4D4D994F40EBFF4FF4A9",
       "7FEB3FF49BB97D219130086C79B2C01DEACC3A436DA00BC20229EBA899B1AC4B",
@@ -33,7 +33,7 @@ class TrIdFromPosMerkleTrueTest extends FlatSpec with IntTestFixture {
       "126A3DC903183FD81CD3BFB80FD558A746B5442010C5E2CBE5DECFB92C589F10"
     )
 
-    println(s"txHash= ${merkleResult.txHash}")
+    println(s"txHash= ${merkleResult.tx_hash}")
     println("merkle=")
     merkleResult.merkle.foreach{println(_)}
   }

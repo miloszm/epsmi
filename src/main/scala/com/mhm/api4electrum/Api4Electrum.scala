@@ -9,10 +9,10 @@ import scala.beans.BeanProperty
 
 @JsonSerialize
 case class HeaderResult (
-  @BeanProperty @JsonProperty("block_height") blockHeight: Int,
-  @BeanProperty @JsonProperty("prev_block_hash") prevBlockHash: String,
+  @BeanProperty @JsonProperty("block_height") block_height: Int,
+  @BeanProperty @JsonProperty("prev_block_hash") prev_block_hash: String,
   @BeanProperty @JsonProperty("timestamp") timestamp: Long,
-  @BeanProperty @JsonProperty("merkle_root") merkleRoot: String,
+  @BeanProperty @JsonProperty("merkle_root") merkle_root: String,
   @BeanProperty @JsonProperty("version") version: Long,
   @BeanProperty @JsonProperty("nonce") nonce: Long,
   @BeanProperty @JsonProperty("bits") bits: Long
@@ -27,13 +27,13 @@ case class BlockHeadersResult (
 
 @JsonSerialize
 case class MerkleResult (
-  @BeanProperty @JsonProperty("tx_hash") txHash: String,
+  @BeanProperty @JsonProperty("tx_hash") tx_hash: String,
   @BeanProperty @JsonProperty("merkle") merkle: Array[String]
 )
 
 @JsonSerialize
 case class GetMerkleResult (
-  @BeanProperty @JsonProperty("block_height") blockHeight: Int,
+  @BeanProperty @JsonProperty("block_height") block_height: Int,
   @BeanProperty @JsonProperty("pos") pos: Int,
   @BeanProperty @JsonProperty("merkle") merkle: Array[String]
 )

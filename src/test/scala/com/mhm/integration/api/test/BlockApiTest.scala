@@ -22,9 +22,9 @@ class BlockApiTest extends FlatSpec with IntTestFixture {
 
   "blockchain.block.get_header" should "return block header information" in {
     val headerResult = fixture.client.blockchainBlockGetHeader(652221)
-    headerResult.blockHeight shouldBe 652221
-    headerResult.prevBlockHash shouldBe "00000000000000000000aa8304c508291ee1b765910ca7b4edb647447acc28e0"
-    headerResult.merkleRoot shouldBe "23e11bed378dd86139be537d87bb1e5f1a236d9339dbd70b6334d2041dccf55d"
+    headerResult.block_height shouldBe 652221
+    headerResult.prev_block_hash shouldBe "00000000000000000000aa8304c508291ee1b765910ca7b4edb647447acc28e0"
+    headerResult.merkle_root shouldBe "23e11bed378dd86139be537d87bb1e5f1a236d9339dbd70b6334d2041dccf55d"
     headerResult.version shouldBe 541065216
     headerResult.nonce shouldBe 1293526830
     headerResult.bits shouldBe 386831838
