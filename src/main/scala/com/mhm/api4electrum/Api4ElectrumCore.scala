@@ -311,7 +311,7 @@ case class Api4ElectrumCore(rpcCli: BitcoindRpcExtendedClient, config: Api4Elect
       val numWallets = monitorState.deterministicWallets.size
       val numAddresses = monitorState.addressHistory.m.size
 
-      val banner = s"""Welcome to EPSMI $SERVER_VERSION (based on Chris Belcher' Electrum Personal Server).""" + "\n" +
+      val banner = s"""Welcome to EPSMI $SERVER_VERSION (based on Electrum Personal Server).""" + "\n" +
         "\n" +
         s"""Monitoring $numWallets deterministic wallet(s), $numAddresses addresses.""" +
         "\n" +
@@ -336,7 +336,7 @@ case class Api4ElectrumCore(rpcCli: BitcoindRpcExtendedClient, config: Api4Elect
 
   //  #algorithm copied from the relevant place in ElectrumX
   //  #https://github.com/kyuupichan/electrumx/blob/e92c9bd4861c1e35989ad2773d33e01219d33280/server/mempool.py
-  private def feeHistogram(mempool: Map[DoubleSha256DigestBE, GetMemPoolResult]): Array[Array[BigDecimal]] = {
+  private def feeHistogram(mempool: Map[DoubleSha256DigestBE, GetMemPoolResult]): Array[Array[Int]] = {
     val feeHistogram = mempool.values.collect { case memPoolResult if memPoolResult.fee.isDefined =>
       memPoolResult.fee.get.toBigDecimal * 100000000 -> memPoolResult.size
     }.toList.sortWith((a,b) => a._1 < b._1)
@@ -351,10 +351,10 @@ case class Api4ElectrumCore(rpcCli: BitcoindRpcExtendedClient, config: Api4Elect
           go(xs, binSize, r, sz, acc)
     }
     val result = go(feeHistogram, 100000.0, 0, 0, Nil)
-    result.map{case(feeRate, sz) => Array(feeRate, BigDecimal(sz))}.toArray
+    result.map{case(feeRate, sz) => Array(feeRate, BigDecimal(sz)).map(_.toInt)}.toArray
   }
 
-  def mempoolGetFeeHistogram(): Array[Array[BigDecimal]] = {
+  def mempoolGetFeeHistogram(): Array[Array[Int]] = {
     if (config.enableMempoolFeeHistogram){
       val start = System.currentTimeMillis()
       val mempool: Map[DoubleSha256DigestBE, GetMemPoolResult] = wrap(rpcCli.getRawMemPoolWithTransactions)

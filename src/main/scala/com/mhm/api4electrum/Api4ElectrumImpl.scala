@@ -43,7 +43,7 @@ class Api4ElectrumImpl(core: Api4ElectrumCore, transactionMonitor: TransactionMo
   }
 
   override def serverVersion(v1: String, v2: String): Array[String] = {
-    Array(s"$SERVER_NAME $SERVER_VERSION")
+    Array(SERVER_NAME, SERVER_VERSION)
   }
   override def blockchainBlockHeader(height: Int): String = {
     Try(wrap(core.getBlockHeaderHash(height))).fold(
@@ -179,7 +179,7 @@ class Api4ElectrumImpl(core: Api4ElectrumCore, transactionMonitor: TransactionMo
 
   override def serverDonationAddress(): String = Constants.DONATION_ADDRESS
 
-  override def mempoolGetFeeHistogram(): Array[Array[BigDecimal]] = {
+  override def mempoolGetFeeHistogram(): Array[Array[Int]] = {
     core.mempoolGetFeeHistogram()
   }
 
