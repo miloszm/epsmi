@@ -257,9 +257,9 @@ class TransactionMonitorImpl(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed
         .filter(_.confirmations.getOrElse(0) >= 0)
       updateStateWithTransactions(state.setLastKnownTx(newTxs.headOption.map { result => TxidAddress(optSha2Str(result.txid), optAddr2Str(result.address)) }), relevantTxs.toList)
     }
-    logger.trace(s"finished checkForNewTxs, found ${resultState.updatedScripthashes.size} new tx(s)")
-    resultState.addressHistory.m.foreach{ case (k, v) =>
-      logger.trace(s"ah k=$k --> $v")
+    logger.debug(s"finished checkForNewTxs, found ${resultState.updatedScripthashes.size} new tx(s)")
+    resultState.addressHistory.m.foreach{ case (k, v) if v.history.nonEmpty =>
+      logger.debug(s"ah k=$k --> $v")
     }
     resultState
   }

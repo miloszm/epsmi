@@ -50,8 +50,8 @@ object RpcServer extends Logging{
       }
 
       override def postHandleJson(json: JsonNode): Unit = {
-        logger.trace(s">>==>> json=${json}")
-        println(s">>==>> json=${json}")
+//        logger.trace(s">>==>> json=${json}")
+//        println(s">>==>> json=${json}")
       }
 
       override def onHeartbeatConnected(outputStream: OutputStream): Unit = {
