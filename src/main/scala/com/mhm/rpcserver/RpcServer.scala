@@ -27,7 +27,7 @@ object RpcServer extends Logging{
 
     val requestInterceptor = new RequestInterceptor {
       override def interceptRequest(request: JsonNode): Unit = {
-        logger.trace(s"request intercepted:$request")
+        logger.debug(s"<= $request")
         // example: {"id":"1049080132","jsonrpc":"2.0","method":"blockchain.transaction.id_from_pos","params":[652742,5,false]}
         // when method is 'blockchain.transaction.id_from_pos' and third parameter is true
         //    change the method to 'blockchain.transaction.id_from_pos_merkle_true'
@@ -50,8 +50,7 @@ object RpcServer extends Logging{
       }
 
       override def postHandleJson(json: JsonNode): Unit = {
-//        logger.trace(s">>==>> json=${json}")
-//        println(s">>==>> json=${json}")
+        logger.debug(s"=> $json")
       }
 
       override def onHeartbeatConnected(outputStream: OutputStream): Unit = {

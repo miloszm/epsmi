@@ -14,14 +14,15 @@
     </appender>
 
     <appender name="FILE" class="ch.qos.logback.core.FileAppender">
-        <file>logs/epsmi4.log</file>
+        <file>logs/epsmi.log</file>
         <encoder>
             <pattern>%d %p %c{1.} [%t] %m%n</pattern>
         </encoder>
     </appender>
 
-    <logger name="com.mhm" level="trace" additivity="false">
+    <logger name="com.mhm" level="debug" additivity="false">
         <appender-ref ref="FILE"/>
+        <appender-ref ref="ASYNC"/>
     </logger>
 
     <logger name="com.googlecode.jsonrpc4j" level="info" additivity="false">

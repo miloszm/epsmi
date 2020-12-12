@@ -258,8 +258,9 @@ class TransactionMonitorImpl(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed
       updateStateWithTransactions(state.setLastKnownTx(newTxs.headOption.map { result => TxidAddress(optSha2Str(result.txid), optAddr2Str(result.address)) }), relevantTxs.toList)
     }
     logger.debug(s"finished checkForNewTxs, found ${resultState.updatedScripthashes.size} new tx(s)")
-    resultState.addressHistory.m.foreach{ case (k, v) if v.history.nonEmpty =>
-      logger.debug(s"ah k=$k --> $v")
+    resultState.addressHistory.m.foreach {
+      case (k, v) if v.history.nonEmpty => logger.debug(s"ah k=$k --> $v")
+      case (k, v) => ()
     }
     resultState
   }
@@ -295,7 +296,9 @@ class TransactionMonitorImpl(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed
           go(newState, xs)
         }
     }
-    go(state, state.unconfirmedTxes.map{case(k, v) => UnconfirmedTxEntry(k, v)}.toList)
+    val newState = go(state, state.unconfirmedTxes.map{case(k, v) => UnconfirmedTxEntry(k, v)}.toList)
+    logger.debug("finished checkConfirmations")
+    newState
   }
 
   /**
@@ -348,14 +351,16 @@ class TransactionMonitorImpl(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed
           go(state, xs)
         }
     }
-    go(state, state.reorganizableTxes.toList)
+    val newState = go(state, state.reorganizableTxes.toList)
+    logger.debug("finished checkForReorganizations")
+    newState
   }
 
   /**
    * @return set of updated scripthashes
    */
   def checkForUpdatedTxs(state: TransactionMonitorState): (Set[String], TransactionMonitorState) = {
-    logger.trace("started checkForUpdatedTxs")
+    logger.debug("started checkForUpdatedTxs")
     val state1 = checkForNewTxs(state)
     val state2 = checkConfirmations(state1)
     val state3 = checkForReorganizations(state2)

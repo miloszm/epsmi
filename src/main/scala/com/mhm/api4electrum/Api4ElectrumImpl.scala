@@ -142,7 +142,7 @@ class Api4ElectrumImpl(core: Api4ElectrumCore, transactionMonitor: TransactionMo
     }
     val historyHash = state.getElectrumHistoryHash(sh)
     //logger.trace(s"historyHash for script hash $sh is${if (historyHash.isEmpty) " empty" else ": " + historyHash}")
-    historyHash
+    if (historyHash.isEmpty) null else historyHash
   }
 
   override def blockchainHeadersSubcribe(): HeadersSubscribeResult = {
@@ -214,7 +214,7 @@ class Api4ElectrumImpl(core: Api4ElectrumCore, transactionMonitor: TransactionMo
   }
 
   def triggerHeartbeatConnected(outputStream: OutputStream): Unit = try {
-    logger.trace("triggerHeartbeatConnected")
+    logger.debug("start triggerHeartbeatConnected")
     val (isTipUpdated, headerOrHashHeight) = wrap(core.checkForNewBlockchainTip(areHeadersRaw))
     val tipHashHeight = headerOrHashHeight.getOrElse(throw new IllegalArgumentException("headers should be raw")) // TODO simplify this - it will not work for raw == false
     if (isTipUpdated){
@@ -222,12 +222,14 @@ class Api4ElectrumImpl(core: Api4ElectrumCore, transactionMonitor: TransactionMo
       onBlockchainTipUpdated(tipHashHeight, outputStream)
     }
     val updatedTxs = updateMonitorStateWithExtraResult(transactionMonitor.checkForUpdatedTxs)
-    onUpdatedScripthashes(updatedTxs, outputStream)
+    //onUpdatedScripthashes(updatedTxs, outputStream)
   } catch {
     case e: java.util.concurrent.TimeoutException =>
       logger.warn(s"timeout when processing heartbeat connected, caught: ${e.getClass.getCanonicalName} - ${e.getMessage}")
     case e: Throwable =>
+      logger.error(s"exception caught while servicing heartbeat connected: ${e.getClass.getCanonicalName}", e)
       throw e
+  } finally {
+    logger.debug("finished triggerHeartbeatConnected")
   }
-
 }
