@@ -91,10 +91,10 @@ class TransactionMonitorImpl(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed
             val newHistoryElement = generateNewHistoryElement(tx4HistoryGen, txd)
             val state1 = state
               .addHistoryItemForScripthashes(shToAdd.toSeq, newHistoryElement)
-              .applyIf(tx.confirmations.isDefined && tx.confirmations.get > 0 && tx.confirmations.get < ConfirmationsSafeFromReorg){
-                _.addReorganizableTx(ReorganizableTxEntry(optSha2Str(tx.txid), optSha2Str(tx.blockhash), newHistoryElement.height, shToAdd.toSeq))
-              }
-            insertTxsInHistory(state1, xs, obtainedTxids + optSha2Str(tx.txid))
+            val state2 = if (tx.confirmations.isDefined && tx.confirmations.get > 0 && tx.confirmations.get < ConfirmationsSafeFromReorg){
+                state1.addReorganizableTx(ReorganizableTxEntry(optSha2Str(tx.txid), optSha2Str(tx.blockhash), newHistoryElement.height, shToAdd.toSeq))
+            } else state1
+            insertTxsInHistory(state2, xs, obtainedTxids + optSha2Str(tx.txid))
           }
         }
         else insertTxsInHistory(state, xs, obtainedTxids)
@@ -230,23 +230,30 @@ class TransactionMonitorImpl(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed
           .map(script2ScriptHash).filter(state.addressHistory.m.keySet.contains)
         val newHistoryElement = generateNewHistoryElement(Tx4HistoryGen(optConfirmations2Int(tx.confirmations), txid, Some(blockhash)), txd)
         logger.trace(s"adding new history element: ${newHistoryElement.txHash} height=${newHistoryElement.height}")
+        val isReorganizable = tx.confirmations.isDefined && tx.confirmations.get > 0 && tx.confirmations.get < ConfirmationsSafeFromReorg
+        val isUnconfirmed = newHistoryElement.height <= 0
+        logger.trace(s"adding with: reorganizable=$isReorganizable, unconfirmed=$isUnconfirmed")
         val newState = state
           .addUpdatedScripthashes(matchingScripthashes)
           .addHistoryItemForScripthashes(matchingScripthashes, newHistoryElement)
-          .applyIf(newHistoryElement.height <= 0){
-            _.addUnconfirmedScripthases(txid, matchingScripthashes)
-          }
-          .applyIf(tx.confirmations.isDefined && tx.confirmations.get > 0 && tx.confirmations.get < ConfirmationsSafeFromReorg) {
-            logger.debug(s"adding reorganizable $txid")
-            _.addReorganizableTx(ReorganizableTxEntry(txid, blockhash.hex, newHistoryElement.height, matchingScripthashes))
-          }
-        updateStateWithTransactions(newState, xs)
+
+        val newState2 = if (isUnconfirmed) {
+            logger.trace(s"adding unconfirmed for $txid")
+            newState.addUnconfirmedScripthases(txid, matchingScripthashes)
+        } else newState
+
+        val newState3 = if (isReorganizable) {
+            logger.trace(s"adding reorganizable for $txid")
+            newState2.addReorganizableTx(ReorganizableTxEntry(txid, blockhash.hex, newHistoryElement.height, matchingScripthashes))
+        } else newState2
+
+        updateStateWithTransactions(newState3, xs)
       }
     }
     val getTrRes = getTransactions(0, maxAttempts, 2, Vector(), state.lastKnownTx)
     val resultState = if (getTrRes.isKnownOnly){
       val newLastKnownTx = Some(getTrRes.transactions(getTrRes.knownBegin)).map { result => TxidAddress(optSha2Str(result.txid), optAddr2Str(result.address)) }
-      val state1 = state.applyIf(getTrRes.transactions.nonEmpty){_.setLastKnownTx(newLastKnownTx)}
+      val state1 = if (getTrRes.transactions.nonEmpty) state.setLastKnownTx(newLastKnownTx) else state
       state1
     } else {
       val newTxs = getTrRes.transactions.slice(getTrRes.newBegin, getTrRes.newEnd)
@@ -297,7 +304,11 @@ class TransactionMonitorImpl(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed
         }
     }
     val newState = go(state, state.unconfirmedTxes.map{case(k, v) => UnconfirmedTxEntry(k, v)}.toList)
-    logger.debug("finished checkConfirmations")
+    logger.debug(s"finished checkConfirmations, unconfirmed=${newState.unconfirmedTxes.keys.mkString("|")}")
+    val unconfirmedInAh = newState.addressHistory.m.collect{
+      case (_,h) => h.history.filter(_.height <= 0)
+    }.flatten.map(_.txHash)
+    logger.debug(s"unconfirmed in ah: ${unconfirmedInAh.mkString("|")}")
     newState
   }
 

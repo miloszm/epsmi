@@ -20,7 +20,7 @@
         </encoder>
     </appender>
 
-    <logger name="com.mhm" level="debug" additivity="false">
+    <logger name="com.mhm" level="trace" additivity="false">
         <appender-ref ref="FILE"/>
         <appender-ref ref="ASYNC"/>
     </logger>

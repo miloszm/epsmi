@@ -94,9 +94,6 @@ case class TransactionMonitorState(
     val sortedConfirmedTxs = confirmedTxs.sortWith((e1, e2) => e1.height < e2.height)
     historyEntry.copy(history = sortedConfirmedTxs ++ unconfirmedTxs)
   }
-  def applyIf(b: Boolean)(f: TransactionMonitorState => TransactionMonitorState): TransactionMonitorState = {
-    if (b) f(this) else this
-  }
   def resetUpdatedScripthashes(): TransactionMonitorState = {
     this.copy(updatedScripthashes = Nil)
   }
