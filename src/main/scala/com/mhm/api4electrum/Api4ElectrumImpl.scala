@@ -222,7 +222,7 @@ class Api4ElectrumImpl(core: Api4ElectrumCore, transactionMonitor: TransactionMo
       onBlockchainTipUpdated(tipHashHeight, outputStream)
     }
     val updatedTxs = updateMonitorStateWithExtraResult(transactionMonitor.checkForUpdatedTxs)
-    //onUpdatedScripthashes(updatedTxs, outputStream)
+    onUpdatedScripthashes(updatedTxs, outputStream)
   } catch {
     case e: java.util.concurrent.TimeoutException =>
       logger.warn(s"timeout when processing heartbeat connected, caught: ${e.getClass.getCanonicalName} - ${e.getMessage}")
