@@ -154,7 +154,7 @@ class Api4ElectrumImpl(core: Api4ElectrumCore, transactionMonitor: TransactionMo
 
   override def blockchainScripthashGetHistory(sh: String): Array[HistoryItem] = {
     val history = currentMonitorState.get.getElectrumHistory(sh).getOrElse(Nil).map{ e =>
-      HistoryItem(height = e.height, tx_hash = e.txHash, fee = e.fee.toInt)
+      HistoryItem(height = e.height, tx_hash = e.txHash, fee = Math.max(0, e.fee.toInt))
     }
     if (history.isEmpty){
       //logger.warn(s"Address history not known to server, hash(address) = $sh")
@@ -200,7 +200,8 @@ class Api4ElectrumImpl(core: Api4ElectrumCore, transactionMonitor: TransactionMo
     outputStream: OutputStream): Unit = {
     updatedScripthashes.foreach { sh =>
       val historyHash = currentMonitorState.get.getElectrumHistoryHash(sh)
-      val update = s"""{"jsonrpc": "2.0", "method": "blockchain.scripthash.subscribe", "params": [$sh, $historyHash]}""" + "\n"
+      logger.trace(s"writing update for sh: $sh with history hash: $historyHash")
+      val update = s"""{"jsonrpc": "2.0", "method": "blockchain.scripthash.subscribe", "params": ["$sh", "$historyHash"]}""" + "\n"
       outputStream.write(update.getBytes())
     }
   }
