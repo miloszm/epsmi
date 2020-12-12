@@ -9,7 +9,7 @@ import com.mhm.util.EpsmiDataOps.{optAddr2Str, optConfirmations2Int, optSha2Sha,
 import com.mhm.util.HashOps.script2ScriptHash
 import com.mhm.wallet.DeterministicWallet
 import grizzled.slf4j.Logging
-import org.bitcoins.commons.jsonmodels.bitcoind.{GetBlockHeaderResult, ListTransactionsResult, RpcTransaction}
+import org.bitcoins.commons.jsonmodels.bitcoind.{GetBlockHeaderResult, GetTxOutResult, ListTransactionsResult, RpcTransaction}
 import org.bitcoins.core.protocol.transaction.CoinbaseInput
 import org.bitcoins.crypto.DoubleSha256DigestBE
 
@@ -92,7 +92,7 @@ class TransactionMonitorImpl(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed
             val state1 = state
               .addHistoryItemForScripthashes(shToAdd.toSeq, newHistoryElement)
             val state2 = if (tx.confirmations.isDefined && tx.confirmations.get > 0 && tx.confirmations.get < ConfirmationsSafeFromReorg){
-                state1.addReorganizableTx(ReorganizableTxEntry(optSha2Str(tx.txid), optSha2Str(tx.blockhash), newHistoryElement.height, shToAdd.toSeq))
+                state1.addReorganizableTx(ReorganizableTxEntry(optSha2Str(tx.txid), tx.blockhash.map(_.hex), newHistoryElement.height, shToAdd.toSeq))
             } else state1
             insertTxsInHistory(state2, xs, obtainedTxids + optSha2Str(tx.txid))
           }
@@ -164,9 +164,14 @@ class TransactionMonitorImpl(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed
       var unconfirmedInput = false
       var totalInputValue = BigDecimal(0)
       for (inn <- txd.vin){
-        val utxo = wrap(rpcCli.getTxOut(inn.previousOutput.txIdBE, inn.previousOutput.vout.toInt), "getTxOut")
-        totalInputValue = totalInputValue + utxo.value.toBigDecimal
-        unconfirmedInput = unconfirmedInput || utxo.confirmations == 0
+        logger.trace(s"calling getTxOut with ${inn.previousOutput.txIdBE}, ${inn.previousOutput.vout.toInt}")
+        /**
+         * Note - for utxo that is spent we will get exception so we use try here
+         */
+        Try(wrap(rpcCli.getTxOut(inn.previousOutput.txIdBE, inn.previousOutput.vout.toInt), "getTxOut")).foreach{ utxo =>
+          totalInputValue = totalInputValue + utxo.value.toBigDecimal
+          unconfirmedInput = unconfirmedInput || utxo.confirmations == 0
+        }
       }
       val height = if (unconfirmedInput) -1 else 0
       val totalOut = (
@@ -224,11 +229,11 @@ class TransactionMonitorImpl(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed
       case tx :: xs =>
         val txid = optSha2Str(tx.txid)
         logger.debug(s"updating state for $txid")
-        val blockhash = optSha2Sha(tx.blockhash)
+        val blockhashOpt = tx.blockhash
         val (outputScriptpubkeys, inputScriptpubkeys, txd) = getInputAndOutputScriptpubkeys(tx.txid.get)
         val matchingScripthashes = (outputScriptpubkeys ++ inputScriptpubkeys)
           .map(script2ScriptHash).filter(state.addressHistory.m.keySet.contains)
-        val newHistoryElement = generateNewHistoryElement(Tx4HistoryGen(optConfirmations2Int(tx.confirmations), txid, Some(blockhash)), txd)
+        val newHistoryElement = generateNewHistoryElement(Tx4HistoryGen(optConfirmations2Int(tx.confirmations), txid, blockhashOpt), txd)
         logger.trace(s"adding new history element: ${newHistoryElement.txHash} height=${newHistoryElement.height}")
         val isReorganizable = tx.confirmations.isDefined && tx.confirmations.get > 0 && tx.confirmations.get < ConfirmationsSafeFromReorg
         val isUnconfirmed = newHistoryElement.height <= 0
@@ -244,7 +249,7 @@ class TransactionMonitorImpl(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed
 
         val newState3 = if (isReorganizable) {
             logger.trace(s"adding reorganizable for $txid")
-            newState2.addReorganizableTx(ReorganizableTxEntry(txid, blockhash.hex, newHistoryElement.height, matchingScripthashes))
+            newState2.addReorganizableTx(ReorganizableTxEntry(txid, blockhashOpt.map(_.hex), newHistoryElement.height, matchingScripthashes))
         } else newState2
 
         updateStateWithTransactions(newState3, xs)
@@ -290,7 +295,7 @@ class TransactionMonitorImpl(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed
           val newState = state
             .deleteHistoryItemForScripthashes(shs, txid)
             .addHistoryItemForScripthashes(shs, HistoryElement(txid, blockHeight, 0))
-            .addReorganizableTx(ReorganizableTxEntry(txid, optSha2Str(tx.blockhash), blockHeight, shs))
+            .addReorganizableTx(ReorganizableTxEntry(txid, tx.blockhash.map(_.hex), blockHeight, shs))
             .removeUnconfirmed(Seq(unconfirmed))
             .addUpdatedScripthashes(shs)
           go(newState, xs)

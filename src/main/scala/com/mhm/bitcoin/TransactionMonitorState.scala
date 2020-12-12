@@ -4,7 +4,7 @@ import com.mhm.util.HashOps.getStatusElectrum
 import com.mhm.wallet.DeterministicWallet
 
 
-case class ReorganizableTxEntry(txid: String, blockhash: String, height: Int, matchingShs: Seq[String])
+case class ReorganizableTxEntry(txid: String, blockhashOpt: Option[String], height: Int, matchingShs: Seq[String])
 case class UnconfirmedTxEntry(txid: String, matchingShs: Seq[String])
 case class TxidAddress(txid: String, address: String)
 
