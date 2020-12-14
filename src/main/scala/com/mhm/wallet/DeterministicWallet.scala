@@ -80,7 +80,10 @@ abstract class DescriptorDeterministicWallet(xpubVbytes: ByteVector, args: XpubD
   def deriveAddresses(rpcCli: DescriptorRpc, change: Int, fromIndex: Int, count: Int): Seq[String] = {
     val range: Vector[Double] = Vector(fromIndex, fromIndex + count - 1)
     val result: DeriveAddressesResult = wrap(rpcCli.deriveAddresses(descriptors(change), Some(range)), "deriveAddresses")
-    logger.info(s"derived ${result.addresses.size} addresses from descriptors, head is ${result.addresses.headOption}")
+    logger.info(s"derived ${result.addresses.size} addresses from descriptors ${descriptors(change)}, head is ${result.addresses.headOption}")
+    result.addresses.foreach{ ba =>
+      logger.trace(s"derived addr = ${ba.value}")
+    }
     result.addresses.map(_.value)
   }
 }

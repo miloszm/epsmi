@@ -2,6 +2,7 @@ package com.mhm.main
 
 import com.mhm.connectors.BitcoindRpcExtendedClient
 import com.mhm.connectors.RpcWrap.wrap
+import com.mhm.util.HashOps
 import com.mhm.wallet.{AddrsSpks, DeterministicWallet}
 import com.typesafe.config.Config
 import grizzled.slf4j.Logging
@@ -27,6 +28,9 @@ class Setup(rpcCli: BitcoindRpcExtendedClient, config: Config) extends Logging {
     val importedAddresses = if (listedLabels.contains(Constants.ADDRESSES_LABEL)) {
       wrap(rpcCli.getAddressesByLabel("electrum-watchonly-addresses"), "getAddressesByLabel").keySet
     } else Set[BitcoinAddress]()
+    importedAddresses.foreach { ia =>
+      logger.trace(s"imported addr = ${ia.value}")
+    }
 
     logger.debug(s"imported ${importedAddresses.size} addresses, head is ${importedAddresses.headOption}")
 
@@ -65,6 +69,9 @@ class Setup(rpcCli: BitcoindRpcExtendedClient, config: Config) extends Logging {
       } yield {
         logger.debug(s"getting $initialImportCount addresses from index 0 with change=$change")
         val AddrsSpks(addrs, spks) = wal.getAddresses(rpcCli, change, 0, initialImportCount)
+        addrs.zip(spks).foreach { case (addr, spk) =>
+          logger.trace(s"addr = $addr  <==>  spk = $spk  <==>  sh = ${HashOps.script2ScriptHash(spk)}")
+        }
         spks
       }).flatten
       ScriptPubKeysToMonitorResult(false, spksToMonitor, deterministicWallets)
