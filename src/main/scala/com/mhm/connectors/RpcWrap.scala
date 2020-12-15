@@ -10,7 +10,7 @@ object RpcWrap extends Logging {
 
   def wrap[T](awaitable: Awaitable[T], callDescription: String = ""): T = {
     if (!callDescription.isEmpty)
-      logger.trace(s"btcrpc: $callDescription")
+      logger.info(s"btcrpc: $callDescription")
     try {
       Await.result(awaitable, BTC_RPC_TIMEOUT.seconds)
     }

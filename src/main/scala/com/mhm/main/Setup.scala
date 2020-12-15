@@ -61,6 +61,7 @@ class Setup(rpcCli: BitcoindRpcExtendedClient, config: Config) extends Logging {
     val importNeeded = walletsToImport.nonEmpty
     logger.debug(s"import needed is set to $importNeeded")
     val result = if (importNeeded){
+      logger.info(s"Importing ${walletsToImport.size} wallets into the Bitcoin node")
       ScriptPubKeysToMonitorResult(importNeeded, Nil, walletsToImport)
     } else {
       val spksToMonitor = (for{
@@ -72,7 +73,10 @@ class Setup(rpcCli: BitcoindRpcExtendedClient, config: Config) extends Logging {
         addrs.zip(spks).foreach { case (addr, spk) =>
           logger.trace(s"addr = $addr  <==>  spk = $spk  <==>  sh = ${HashOps.script2ScriptHash(spk)}")
         }
-        spks
+        val firstNotImported = wal.findFirstNotImported(rpcCli, change, importedAddresses)
+        logger.trace(s"found first not imported: $firstNotImported")
+        wal.rewindOne(change)
+        spks :+ firstNotImported
       }).flatten
       ScriptPubKeysToMonitorResult(false, spksToMonitor, deterministicWallets)
     }

@@ -1,0 +1,12 @@
+
+
+
+setup
+    getScriptPubKeysToMonitor
+        getAddressesByLabel
+
+
+
+at the beginning there are descriptors
+from descriptores addresses are gotten via deriveaddresses
+from addresses scriptpubkeys are obtained via validateaddress

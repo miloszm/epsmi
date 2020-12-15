@@ -7,6 +7,7 @@ import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.rpc.client.common.{DescriptorRpc, UtilRpc}
 import scodec.bits.{ByteVector, HexStringSyntax}
 
+import scala.annotation.tailrec
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
@@ -14,7 +15,9 @@ case class XpubDescTempl(xpub: String, descTempl: String)
 
 case class AddrsSpks(addrs: Seq[String], spks: Seq[String])
 
-case class ChangeIndex(change: Int, index: Int)
+case class ChangeIndex(change: Int, index: Int){
+  override def toString: String = s"(change=$change, index=$index)"
+}
 
 abstract class DeterministicWallet(gapLimit: Int, val walletName: String) extends Logging {
   def deriveAddresses(rpcCli: DescriptorRpc, change: Int, fromIndex: Int, count: Int): Seq[String]
@@ -33,7 +36,11 @@ abstract class DeterministicWallet(gapLimit: Int, val walletName: String) extend
     spks.indices.foreach{ index =>
       scriptPubKeyIndex.put(spks(index), ChangeIndex(change, fromIndex + index))
     }
+    scriptPubKeyIndex.foreach { case (spk, ci) =>
+      logger.trace(s"scriptPubKeyIndex spk=$spk => $ci")
+    }
     nextIndex.put(change, Math.max(nextIndex.getOrElse(change, 0), fromIndex+count))
+    logger.trace(s"next index = $nextIndex")
     AddrsSpks(addrs, spks)
   }
   val scriptPubKeyIndex = scala.collection.mutable.Map[String, ChangeIndex]()
@@ -43,6 +50,16 @@ abstract class DeterministicWallet(gapLimit: Int, val walletName: String) extend
   }
   def rewindOne(change: Int): Unit = {
     nextIndex.put(change, nextIndex.getOrElse(change, 1) - 1)
+  }
+  def findFirstNotImported(rpcCli: DescriptorRpc with UtilRpc, change: Int, importedAddresses: Set[BitcoinAddress]): String = {
+    @tailrec
+    def go(): String = {
+      val addrsSpks = getNewAddresses(rpcCli, change, 1)
+      if (importedAddresses.map(_.value).contains(addrsSpks.addrs.head)) go() else {
+        addrsSpks.spks.head
+      }
+    }
+    go()
   }
 
   /**

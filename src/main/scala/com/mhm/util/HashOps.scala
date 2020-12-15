@@ -40,7 +40,7 @@ object HashOps {
   }
 
   def script2ScriptHash(s: String): String = {
-    val h = sha256BV(ByteVector.fromHex(s).getOrElse(throw new IllegalArgumentException("could not convert to hex"))).take(32)
+    val h = sha256BV(ByteVector.fromHex(s).getOrElse(throw new IllegalArgumentException(s"could not convert to hex: '$s'"))).take(32)
     h.reverse.toHex
   }
 

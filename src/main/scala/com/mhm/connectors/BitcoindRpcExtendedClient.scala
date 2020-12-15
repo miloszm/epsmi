@@ -2,20 +2,20 @@ package com.mhm.connectors
 
 import akka.actor.ActorSystem
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.{ImportMultiAddress, LabelPurpose}
-import org.bitcoins.commons.jsonmodels.bitcoind.{DeriveAddressesResult, ImportMultiResult, LabelResult, RpcOpts}
+import org.bitcoins.commons.jsonmodels.bitcoind.{DeriveAddressesResult, ImportMultiResult, LabelResult, TestMempoolAcceptResult}
 import org.bitcoins.commons.serializers.JsonReaders._
 import org.bitcoins.commons.serializers.JsonSerializers._
 import org.bitcoins.commons.serializers.JsonWriters._
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script.ScriptPubKey
+import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.ECPrivateKey
-import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion, DescriptorRpc}
+import org.bitcoins.rpc.client.common.{BitcoindVersion, DescriptorRpc}
 import org.bitcoins.rpc.client.v17.{BitcoindV17RpcClient, V17LabelRpc}
 import org.bitcoins.rpc.config.BitcoindInstance
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
-
 
 import scala.concurrent.Future
 
@@ -72,6 +72,19 @@ class BitcoindRpcExtendedClient(bitcoindInstance: BitcoindInstance, actorSystem:
     bitcoindCall[Vector[ImportMultiResult]](
       "importmulti",
       List(Json.toJson(requests), JsObject(Map("rescan" -> JsBoolean(rescan)))))
+  }
+
+  override def testMempoolAccept(
+    transaction: Transaction,
+    allowHighFees: Boolean = false): Future[TestMempoolAcceptResult] = {
+    logger.info("calling testMempoolAccept")
+    val feeParameter = JsNumber(0.1) // TODO we'd need to expose it, at the moment bitcoin-s supports deprecated interface
+    val ret = bitcoindCall[Vector[TestMempoolAcceptResult]](
+      "testmempoolaccept",
+      List(JsArray(Vector(Json.toJson(transaction))), feeParameter))
+      .map(_.head)
+    logger.info(s"finished testMempoolAccept")
+    ret
   }
 
   override def version: BitcoindVersion = BitcoindVersion.Unknown

@@ -81,7 +81,7 @@ class TransactionMonitorImpl(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed
           if (shToAdd.isEmpty) insertTxsInHistory(state, xs, obtainedTxids) else {
             for(wal <- deterministicWallets){
               val overrunDepths = wal.haveScriptpubkeysOverrunGaplimit(outputScriptpubkeys)
-              if (overrunDepths.nonEmpty) throw new IllegalStateException("not enough addresses imported, see transactionmonitor.py line 155")
+              if (overrunDepths.nonEmpty) throw new IllegalStateException(s"not enough addresses imported, overrun depths=$overrunDepths, see transactionmonitor.py line 155")
             }
             val tx4HistoryGen = Tx4HistoryGen(
               tx.confirmations.get,
