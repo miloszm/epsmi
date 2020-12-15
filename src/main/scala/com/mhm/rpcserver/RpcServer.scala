@@ -42,7 +42,9 @@ object RpcServer extends Logging{
     }
 
     val jsonRpcInterceptor = new JsonRpcInterceptor {
-      override def preHandleJson(json: JsonNode): Unit = {}
+      override def preHandleJson(json: JsonNode): Unit = {
+        logger.info(s"===> $json")
+      }
 
       override def preHandle(target: Any, method: Method, params: util.List[JsonNode]): Unit = {}
 

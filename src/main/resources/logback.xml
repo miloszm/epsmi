@@ -14,7 +14,7 @@
     </appender>
 
     <appender name="FILE" class="ch.qos.logback.core.FileAppender">
-        <file>logs/epsmi2.log</file>
+        <file>logs/epsmi3.log</file>
         <encoder>
             <pattern>%d %p %c{1.} [%t] %m%n</pattern>
         </encoder>

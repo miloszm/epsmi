@@ -123,7 +123,7 @@ object RpcClient extends App {
 
     println
     val txId4GetMerkle = client.blockchainTrIdFromPos(652742, 5, false) // otherwise it won't be found
-    val merkle = client.blockchainTransactionGetMerkle(txId4GetMerkle)
+    val merkle = client.blockchainTransactionGetMerkle(txId4GetMerkle, 0)
     println(s"get merkle result = ")
     println(s"   blockHeight=${merkle.block_height}")
     println(s"   pos=${merkle.pos}")

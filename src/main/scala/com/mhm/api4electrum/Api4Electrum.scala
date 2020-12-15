@@ -92,7 +92,7 @@ trait Api4Electrum {
   def blockchainTrIdFromPosMerkleTrue(height: Int, txPos: Int, merkle: Boolean): MerkleResult
 
   @JsonRpcMethod("blockchain.transaction.get_merkle")
-  def blockchainTransactionGetMerkle(txid: String): GetMerkleResult
+  def blockchainTransactionGetMerkle(txid: String, height: Int): GetMerkleResult
 
   @JsonRpcMethod("blockchain.scripthash.subscribe")
   def blockchainScripthashSubcribe(sh: String): String

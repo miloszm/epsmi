@@ -119,7 +119,7 @@ class Api4ElectrumImpl(core: Api4ElectrumCore, transactionMonitor: TransactionMo
 
   override def blockchainTrIdFromPosMerkleTrue(height: Int, txPos: Int, merkle: Boolean): MerkleResult = ???
 
-  override def blockchainTransactionGetMerkle(txId: String): GetMerkleResult = {
+  override def blockchainTransactionGetMerkle(txId: String, height: Int): GetMerkleResult = {
     Try(wrap(core.transactionGetMerkle(txId: String))).fold(
       { t =>
         println(s"server caught: $t")
@@ -200,8 +200,8 @@ class Api4ElectrumImpl(core: Api4ElectrumCore, transactionMonitor: TransactionMo
     outputStream: OutputStream): Unit = {
     updatedScripthashes.foreach { sh =>
       val historyHash = currentMonitorState.get.getElectrumHistoryHash(sh)
-      logger.trace(s"writing update for sh: $sh with history hash: $historyHash")
       val update = s"""{"jsonrpc": "2.0", "method": "blockchain.scripthash.subscribe", "params": ["$sh", "$historyHash"]}""" + "\n"
+      logger.info(s"writing update $update for sh: $sh with history hash: $historyHash")
       outputStream.write(update.getBytes())
     }
   }

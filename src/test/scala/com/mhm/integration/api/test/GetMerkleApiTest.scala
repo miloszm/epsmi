@@ -11,7 +11,7 @@ class GetMerkleApiTest extends FlatSpec with IntTestFixture {
      * so we search transaction first for it to be found by get merkle
      */
     val txId4GetMerkle = fixture.client.blockchainTrIdFromPos(652742, 5, false)
-    val merkle = fixture.client.blockchainTransactionGetMerkle(txId4GetMerkle)
+    val merkle = fixture.client.blockchainTransactionGetMerkle(txId4GetMerkle, 0)
 
     merkle.block_height shouldBe 652742
     merkle.pos shouldBe 5
