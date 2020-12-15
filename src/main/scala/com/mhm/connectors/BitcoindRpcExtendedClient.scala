@@ -113,8 +113,10 @@ class BitcoindRpcExtendedClient(bitcoindInstance: BitcoindInstance, actorSystem:
        * XPUBs, balances, etc). It's therefore not a good idea to enable
        * this logging in production.
        */
-       logger.info(s"Command: $command ${parameters.map(_.toString).mkString(" ")}")
-       logger.info(s"Payload: \n${Json.prettyPrint(payload)}")
+       if (!List("listtransactions", "gettransaction", "getblockheader", "getbestblockhash").contains(command)) {
+         logger.info(s"Command: $command ${parameters.map(_.toString).mkString(" ")}")
+//       logger.info(s"Payload: \n${Json.prettyPrint(payload)}")
+       }
       parseResult(result = (payload \ resultKey).validate[T],
         json = payload,
         printError = printError,

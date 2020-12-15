@@ -9,8 +9,10 @@ import scala.concurrent.{Await, Awaitable}
 object RpcWrap extends Logging {
 
   def wrap[T](awaitable: Awaitable[T], callDescription: String = ""): T = {
-    if (!callDescription.isEmpty)
-      logger.info(s"btcrpc: $callDescription")
+    if (!callDescription.isEmpty) {
+      if (!List("listTransactions").contains(callDescription))
+        logger.info(s"btcrpc: $callDescription")
+    }
     try {
       Await.result(awaitable, BTC_RPC_TIMEOUT.seconds)
     }
