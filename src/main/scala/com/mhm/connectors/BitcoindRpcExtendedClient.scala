@@ -11,6 +11,7 @@ import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.ECPrivateKey
+import org.bitcoins.rpc.BitcoindException
 import org.bitcoins.rpc.client.common.{BitcoindVersion, DescriptorRpc}
 import org.bitcoins.rpc.client.v17.{BitcoindV17RpcClient, V17LabelRpc}
 import org.bitcoins.rpc.config.BitcoindInstance
@@ -88,4 +89,86 @@ class BitcoindRpcExtendedClient(bitcoindInstance: BitcoindInstance, actorSystem:
   }
 
   override def version: BitcoindVersion = BitcoindVersion.Unknown
+
+  /**
+   * from here to the EOF there is part duplicated from bitcoin-s Client.scala, for diagnostics reasons
+   * can be safely deleted once troubleshooting is done
+   */
+  protected override def bitcoindCall[T](
+    command: String,
+    parameters: List[JsValue] = List.empty,
+    printError: Boolean = true)(implicit reader: Reads[T]): Future[T] = {
+
+    val request = buildRequest(instance, command, JsArray(parameters))
+    val responseF = sendRequest(request)
+
+    val payloadF: Future[JsValue] =
+      responseF.flatMap(getPayload(_, command, request, parameters))
+
+    payloadF.map { payload =>
+      /**
+       * These lines are handy if you want to inspect what's being sent to and
+       * returned from bitcoind before it's parsed into a Scala type. However,
+       * there will sensitive material in some of those calls (private keys,
+       * XPUBs, balances, etc). It's therefore not a good idea to enable
+       * this logging in production.
+       */
+       logger.info(s"Command: $command ${parameters.map(_.toString).mkString(" ")}")
+       logger.info(s"Payload: \n${Json.prettyPrint(payload)}")
+      parseResult(result = (payload \ resultKey).validate[T],
+        json = payload,
+        printError = printError,
+        command = command)
+    }
+  }
+
+  private val resultKey: String = "result"
+  private val errorKey: String = "error"
+
+
+  // Should both logging and throwing be happening?
+  private def parseResult[T](
+    result: JsResult[T],
+    json: JsValue,
+    printError: Boolean,
+    command: String
+  ): T = {
+    checkUnitError[T](result, json, printError)
+
+    result match {
+      case JsSuccess(value, _) => value
+      case res: JsError =>
+        (json \ errorKey).validate[BitcoindException] match {
+          case JsSuccess(err, _) =>
+            if (printError) {
+              logger.error(s"$err")
+            }
+            throw err
+          case _: JsError =>
+            val jsonResult = (json \ resultKey).get
+            val errString =
+              s"Error when parsing result of '$command': ${JsError.toJson(res).toString}!"
+            if (printError) logger.error(errString + s"JSON: $jsonResult")
+            throw new IllegalArgumentException(
+              s"Could not parse JsResult: $jsonResult! Error: $errString")
+        }
+    }
+  }
+
+  // Catches errors thrown by calls with Unit as the expected return type (which isn't handled by UnitReads)
+  private def checkUnitError[T](
+    result: JsResult[T],
+    json: JsValue,
+    printError: Boolean): Unit = {
+    if (result == JsSuccess(())) {
+      (json \ errorKey).validate[BitcoindException] match {
+        case JsSuccess(err, _) =>
+          if (printError) {
+            logger.error(s"$err")
+          }
+          throw err
+        case _: JsError =>
+      }
+    }
+  }
 }
