@@ -13,39 +13,32 @@ object Main extends App with Logging {
     val coreConfig = Api4ElectrumCoreConfig.init(config)
 
     val bitcoinSConnector = BitcoinSConnector(coreConfig.isTestnet, coreConfig.btcRpcUsername, coreConfig.btcRpcPassword)
+    val SpksToMonitorResult(importNeeded, spksToMonitor, wallets) = new SpksToMonitorFinder(bitcoinSConnector.rpcCli, config).getScriptPubKeysToMonitor()
 
-    val scriptPubKeysToMonitorResult = new Setup(bitcoinSConnector.rpcCli, config).getScriptPubKeysToMonitor()
-
-    val transactionMonitor = TransactionMonitorFactory.create(bitcoinSConnector.rpcCli)
-
-    if (scriptPubKeysToMonitorResult.importNeeded){
+    if (importNeeded){
       AddressImporter.importAddresses(
         rpcCli = bitcoinSConnector.rpcCli,
-        watchonlyAddresses = scriptPubKeysToMonitorResult.spksToMonitor,
-        wallets = scriptPubKeysToMonitorResult.wallets,
+        watchonlyAddresses = spksToMonitor,
+        wallets = wallets,
         changeParam = -1,
         count = coreConfig.initialImportCount
       )
-      logger.info("Import done. \nIf recovering a wallet which already has existing" +
-        " transactions, then\nrun the rescan script (NOT IMPLEMENTED YET). If you're confident" +
-        " that the wallets are new\nand empty then there's no need to" +
-        " rescan, just restart this script")
-    } else {
-      val monitorState = transactionMonitor.buildAddressHistory(
-        scriptPubKeysToMonitorResult.spksToMonitor,
-        scriptPubKeysToMonitorResult.wallets
+      logger.info(
+        "Import done. " +
+        "\nIf recovering a wallet which already has existing transactions, then" +
+        "\nrun the rescan script (NOT IMPLEMENTED YET)." +
+        "\nIf you're confident that the wallets are new and empty" +
+        "\nthen there's no need to rescan, just restart this script."
       )
-      val server = RpcServer.startServer(coreConfig.port, transactionMonitor, monitorState, coreConfig)
-
-      println(s"server started on port ${coreConfig.port}")
-
-      Thread.sleep(360000000L)
-
+    } else {
+      val transactionMonitor = TransactionMonitorFactory.create(bitcoinSConnector.rpcCli)
+      val monitorState = transactionMonitor.buildAddressHistory(spksToMonitor, wallets)
+      val server = RpcServer.startServer(transactionMonitor, monitorState, coreConfig)
+      logger.info(s"server started on port ${coreConfig.port}")
+      Thread.sleep(31536000000L)
       server.stop()
     }
-
   }
 
   doMain
-
 }

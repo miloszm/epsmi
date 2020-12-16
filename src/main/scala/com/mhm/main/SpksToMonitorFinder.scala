@@ -1,7 +1,6 @@
 package com.mhm.main
 
 import java.util
-import java.util.Map
 
 import com.mhm.connectors.BitcoindRpcExtendedClient
 import com.mhm.connectors.RpcWrap.wrap
@@ -14,33 +13,13 @@ import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.rpc.client.common.{BlockchainRpc, DescriptorRpc, UtilRpc}
 import org.bitcoins.rpc.client.v17.V17LabelRpc
 
-import scala.jdk.CollectionConverters.SetHasAsScala
 
-
-case class ScriptPubKeysToMonitorResult(importNeeded: Boolean, spksToMonitor:Seq[String], wallets:Seq[DeterministicWallet])
-
-case class SetupConfig(
-  isTestnet: Boolean,
-  mpks: Seq[util.Map.Entry[String, ConfigValue]],
-  initialImportCount: Int
-)
-
-object SetupConfig {
-  def init(config: Config): SetupConfig = {
-    val isTestnet = config.getBoolean("epsmi.testnet")
-    val mpkConfig = config.getConfig(s"epsmi.master-public-keys${if (isTestnet) "-testnet" else ""}")
-    val mpks = mpkConfig.entrySet().asScala.toSeq
-    val initialImportCount = config.getInt("epsmi.initial-import-count")
-    SetupConfig(isTestnet, mpks, initialImportCount)
-  }
-}
-
-class Setup(rpcCli: BitcoindRpcExtendedClient, config: Config) extends Logging {
+class SpksToMonitorFinder(rpcCli: BitcoindRpcExtendedClient, config: Config) extends Logging {
 
   val TEST_ADDR_COUNT = 3
   type SetupRpc = BlockchainRpc with DescriptorRpc with V17LabelRpc with UtilRpc
 
-  def getScriptPubKeysToMonitor(): ScriptPubKeysToMonitorResult = {
+  def getScriptPubKeysToMonitor(): SpksToMonitorResult = {
     logger.trace("started getScriptPubKeysToMonitor")
     val listedLabels = wrap(rpcCli.listLabels())
     val importedAddresses = if (listedLabels.contains(Constants.ADDRESSES_LABEL)) {
@@ -48,7 +27,7 @@ class Setup(rpcCli: BitcoindRpcExtendedClient, config: Config) extends Logging {
     } else Set[BitcoinAddress]()
     importedAddresses.foreach { ia => logger.trace(s"imported addr = ${ia.value}") }
     logger.debug(s"imported ${importedAddresses.size} addresses, head is ${importedAddresses.headOption}")
-    val setupConfig = SetupConfig.init(config)
+    val setupConfig = SpksToMonitorFinderConfig.init(config)
 
     val deterministicWallets = obtainDeterministicWallets(rpcCli, setupConfig.mpks)
     val walletsToImport = determineWalletsToImport(deterministicWallets, setupConfig.mpks, setupConfig.initialImportCount, importedAddresses)
@@ -56,10 +35,10 @@ class Setup(rpcCli: BitcoindRpcExtendedClient, config: Config) extends Logging {
     logger.debug(s"import needed is set to $importNeeded")
     val result = if (importNeeded){
       logger.info(s"Importing ${walletsToImport.size} wallets into the Bitcoin node")
-      ScriptPubKeysToMonitorResult(importNeeded, Nil, walletsToImport)
+      SpksToMonitorResult(importNeeded, Nil, walletsToImport)
     } else {
       val spksToMonitor = determineScriptPubKeysToMonitor(importedAddresses, deterministicWallets, setupConfig.initialImportCount)
-      ScriptPubKeysToMonitorResult(importNeeded = false, spksToMonitor, deterministicWallets)
+      SpksToMonitorResult(importNeeded = false, spksToMonitor, deterministicWallets)
     }
     logger.trace(s"finished getScriptPubKeysToMonitor with ${result.spksToMonitor.size} ScriptPubKeys to monitor from ${result.wallets.size} wallet(s)")
     result
@@ -106,14 +85,14 @@ class Setup(rpcCli: BitcoindRpcExtendedClient, config: Config) extends Logging {
     walletsToImport
   }
 
-  def networkString(network: NetworkParameters) =
+  private def networkString(network: NetworkParameters) =
     network match {
       case MainNet  => "main"
       case RegTest  => "regtest"
       case TestNet3 => "test"
     }
 
-  def obtainDeterministicWallets(rpcCli: BlockchainRpc with DescriptorRpc, mpks: Seq[util.Map.Entry[String, ConfigValue]]): Seq[DeterministicWallet] = {
+  private def obtainDeterministicWallets(rpcCli: BlockchainRpc with DescriptorRpc, mpks: Seq[util.Map.Entry[String, ConfigValue]]): Seq[DeterministicWallet] = {
     logger.info("obtaining deterministic wallets")
     val chain = networkString(wrap(rpcCli.getBlockChainInfo, "getBlockChainInfo").chain)
     logger.info(s"chain is: $chain")

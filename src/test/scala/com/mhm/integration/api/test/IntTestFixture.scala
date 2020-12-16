@@ -2,10 +2,11 @@ package com.mhm.integration.api.test
 
 import com.googlecode.jsonrpc4j.StreamServerWithHeartbeats
 import com.mhm.api4electrum.{Api4Electrum, Api4ElectrumCoreConfig}
-import com.mhm.bitcoin.{OwnNode, TransactionMonitorFactory}
+import com.mhm.bitcoin.TransactionMonitorFactory
+import com.mhm.common.model.OwnNode
 import com.mhm.connectors.BitcoinSConnector
 import com.mhm.epsmi.testbtcrpc.TestBitcoinSConnector
-import com.mhm.main.Setup
+import com.mhm.main.SpksToMonitorFinder
 import com.mhm.rpcclient.{EpsmiClient, RpcClient}
 import com.mhm.rpcserver.RpcServer
 import com.typesafe.config.ConfigFactory
@@ -25,7 +26,7 @@ trait IntTestFixture extends FlatSpecLike with BeforeAndAfterAll {
 
   val config = ConfigFactory.load()
   val coreConfig = Api4ElectrumCoreConfig(enableMempoolFeeHistogram = false, broadcastMethod = OwnNode, port = port, isTestnet = false, btcRpcUsername = "foo", btcRpcPassword = "bar", initialImportCount = 1000)
-  val scriptPubKeysToMonitorResult = new Setup(TestBitcoinSConnector.rpcCli, config).getScriptPubKeysToMonitor()
+  val scriptPubKeysToMonitorResult = new SpksToMonitorFinder(TestBitcoinSConnector.rpcCli, config).getScriptPubKeysToMonitor()
 
   val transactionMonitor = TransactionMonitorFactory.create(TestBitcoinSConnector.rpcCli)
 
@@ -34,7 +35,7 @@ trait IntTestFixture extends FlatSpecLike with BeforeAndAfterAll {
     scriptPubKeysToMonitorResult.wallets
   )
 
-  lazy val fixture = Fixture(RpcServer.startServer(port, transactionMonitor, monitorState, coreConfig), RpcClient.createClient(port))
+  lazy val fixture = Fixture(RpcServer.startServer(transactionMonitor, monitorState, coreConfig), RpcClient.createClient(port))
 
   override protected def afterAll(): Unit = {
     fixture.epsmiClient.close()

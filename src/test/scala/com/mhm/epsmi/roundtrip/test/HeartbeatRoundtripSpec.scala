@@ -3,7 +3,8 @@ package com.mhm.epsmi.roundtrip.test
 import java.io.ByteArrayOutputStream
 
 import com.mhm.api4electrum.{Api4ElectrumCore, Api4ElectrumImpl}
-import com.mhm.bitcoin.{HistoryElement, HistoryEntry, TransactionMonitorFactory}
+import com.mhm.bitcoin.TransactionMonitorFactory
+import com.mhm.common.model.{HistoryElement, HistoryEntry}
 import com.mhm.connectors.RpcWrap.wrap
 import com.mhm.epsmi.dummymonitor.DummyTxCreator.createDummyFundingTx
 import com.mhm.epsmi.dummymonitor.{DummyBtcRpc, DummyDeterministicWallet}

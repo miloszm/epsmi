@@ -1,5 +1,6 @@
 package com.mhm.bitcoin
 
+import com.mhm.common.model.{AddressHistory, HistoryElement, HistoryEntry}
 import com.mhm.util.HashOps.getStatusElectrum
 import com.mhm.wallet.DeterministicWallet
 

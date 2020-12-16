@@ -1,6 +1,6 @@
 package com.mhm.epsmi.monitor.unittest
 
-import com.mhm.bitcoin.AddressHistory
+import com.mhm.common.model.AddressHistory
 import com.mhm.util.HashOps
 import org.scalatest.Matchers
 

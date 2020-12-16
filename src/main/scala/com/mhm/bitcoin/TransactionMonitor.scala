@@ -2,6 +2,7 @@ package com.mhm.bitcoin
 
 import java.util.concurrent.ConcurrentHashMap
 
+import com.mhm.common.model.{AddressHistory, HistoryElement, HistoryEntry}
 import com.mhm.connectors.BitcoindRpcExtendedClient
 import com.mhm.connectors.RpcWrap.wrap
 import com.mhm.util.EpsmiDataOps

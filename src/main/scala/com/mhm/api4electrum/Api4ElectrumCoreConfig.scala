@@ -1,6 +1,6 @@
 package com.mhm.api4electrum
 
-import com.mhm.bitcoin.{BroadcastMethod, OwnNode, UnsupportedBroadcastMethod}
+import com.mhm.common.model.{BroadcastMethod, OwnNode, UnsupportedBroadcastMethod}
 import com.typesafe.config.Config
 
 

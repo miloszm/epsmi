@@ -36,8 +36,7 @@ case class BitcoinSConnector(
 
   /**
    * we have to use internal bitcoin-s actor system name here
-   * as due to weridness of bitcoin-s it does not cover
-   * all APIs
+   * as bitcoin-s it does not cover all APIs
    * since we have 2 clients, one "normal" and one "extended"
    * we have to have the actor system here, hence we need to
    * use the name here

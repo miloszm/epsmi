@@ -1,6 +1,4 @@
-package com.mhm.bitcoin
-
-import com.mhm.common.model.HashHeight
+package com.mhm.common.model
 
 case class HistoryElement (
   txHash: String,

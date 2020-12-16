@@ -3,7 +3,7 @@ package com.mhm.api4electrum
 import com.fasterxml.jackson.annotation.{JsonCreator, JsonProperty}
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import com.googlecode.jsonrpc4j.{JsonRpcError, JsonRpcErrors, JsonRpcMethod}
-import com.mhm.bitcoin.HistoryElement
+import com.mhm.common.model.HistoryElement
 
 import scala.beans.BeanProperty
 

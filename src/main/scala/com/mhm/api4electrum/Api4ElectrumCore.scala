@@ -5,8 +5,8 @@ import java.nio.ByteBuffer
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicReference}
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.mhm.bitcoin.{BroadcastMethod, OwnNode, TransactionMonitorState, UnsupportedBroadcastMethod}
-import com.mhm.common.model.HashHeight
+import com.mhm.bitcoin.TransactionMonitorState
+import com.mhm.common.model.{HashHeight, OwnNode}
 import com.mhm.connectors.BitcoindRpcExtendedClient
 import com.mhm.connectors.RpcWrap.wrap
 import com.mhm.main.Constants

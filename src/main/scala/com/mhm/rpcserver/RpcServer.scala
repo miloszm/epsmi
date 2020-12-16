@@ -20,7 +20,7 @@ import scala.jdk.CollectionConverters.SeqHasAsJava
 object RpcServer extends Logging{
   val maxThreads = 1
 
-  def startServer(port: Int, transactionMonitor: TransactionMonitor, monitorState: TransactionMonitorState, coreConfig: Api4ElectrumCoreConfig): StreamServerWithHeartbeats = {
+  def startServer(transactionMonitor: TransactionMonitor, monitorState: TransactionMonitorState, coreConfig: Api4ElectrumCoreConfig): StreamServerWithHeartbeats = {
     val bitcoinSConnector = BitcoinSConnector(coreConfig.isTestnet, coreConfig.btcRpcUsername, coreConfig.btcRpcPassword)
     val service = new Api4ElectrumImpl(Api4ElectrumCore(bitcoinSConnector.rpcCli, coreConfig), transactionMonitor, monitorState)
     val jsonRpcServer = new JsonRpcBasicServer(service, classOf[Api4Electrum])
@@ -80,7 +80,7 @@ object RpcServer extends Logging{
 
 
     val serverSocketFactory = SecureSocketMetaFactory.createServerSocketFactory()
-    val serverSocket = serverSocketFactory.createServerSocket(port).asInstanceOf[SSLServerSocket]
+    val serverSocket = serverSocketFactory.createServerSocket(coreConfig.port).asInstanceOf[SSLServerSocket]
     //serverSocket.setNeedClientAuth(true)
     val streamServer = new StreamServerWithHeartbeats(jsonRpcServer, maxThreads, serverSocket)
 

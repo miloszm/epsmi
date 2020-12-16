@@ -1,6 +1,7 @@
 package com.mhm.epsmi.dummyprotocol
 
-import com.mhm.bitcoin.{AddressBalance, HistoryElement, TransactionMonitor, TransactionMonitorState, Tx4HistoryGen}
+import com.mhm.bitcoin.{AddressBalance, TransactionMonitor, TransactionMonitorState, Tx4HistoryGen}
+import com.mhm.common.model.HistoryElement
 import com.mhm.wallet.DeterministicWallet
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcTransaction
 import org.bitcoins.crypto.DoubleSha256DigestBE

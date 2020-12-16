@@ -1,4 +1,4 @@
-package com.mhm.bitcoin
+package com.mhm.common.model
 
 sealed trait BroadcastMethod
 
