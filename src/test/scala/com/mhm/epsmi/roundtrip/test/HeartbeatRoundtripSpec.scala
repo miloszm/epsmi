@@ -46,7 +46,7 @@ class HeartbeatRoundtripSpec extends FlatSpec {
   protocol.currentMonitorState.get().addressHistory.m shouldBe Map(sh -> HistoryEntry(subscribed = true,List(HistoryElement(dummyTx.txId,0,2))))
   val output = streamOutput.toString
   val expectedHistoryHash = protocol.currentMonitorState.get.getElectrumHistoryHash(sh)
-  output shouldBe s"""{"jsonrpc": "2.0", "method": "blockchain.scripthash.subscribe", "params": [$sh, $expectedHistoryHash]}""" + "\n"
+  output shouldBe s"""{"jsonrpc": "2.0", "method": "blockchain.scripthash.subscribe", "params": ["$sh", "$expectedHistoryHash"]}""" + "\n"
 
   // subscribing to headers
   val monitorState4 = monitorState3.subscribeToHeaders(true)
@@ -57,7 +57,7 @@ class HeartbeatRoundtripSpec extends FlatSpec {
 
   val expectedBestBlockHashHeight = wrap(Api4ElectrumCore(rpc2).getBlockHeader(wrap(rpc2.getBestBlockHash), raw = true)).getOrElse(fail)
   val expected = s"""{"jsonrpc": "2.0", "method": "blockchain.headers.subscribe", "params": [${expectedBestBlockHashHeight.asJson}]}""" + "\n" +
-    s"""{"jsonrpc": "2.0", "method": "blockchain.scripthash.subscribe", "params": [$sh, $expectedHistoryHash]}""" + "\n"
+    s"""{"jsonrpc": "2.0", "method": "blockchain.scripthash.subscribe", "params": ["$sh", "$expectedHistoryHash"]}""" + "\n"
 
   output2 shouldBe expected
 
