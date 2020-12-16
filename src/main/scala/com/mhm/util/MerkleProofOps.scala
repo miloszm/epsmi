@@ -1,11 +1,10 @@
 package com.mhm.util
 
 import java.nio.ByteBuffer
-import java.security.MessageDigest
 
-import com.mhm.api4electrum.ElectrumMerkleProof
+import com.mhm.common.model.ElectrumMerkleProof
 import com.mhm.util.EpsmiDataOps.intCeilLog2
-import com.mhm.util.HashOps.{doHash, sha256}
+import com.mhm.util.HashOps.doHash
 import javax.xml.bind.DatatypeConverter
 
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}

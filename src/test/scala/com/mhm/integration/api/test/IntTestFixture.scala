@@ -24,7 +24,7 @@ trait IntTestFixture extends FlatSpecLike with BeforeAndAfterAll {
   }
 
   val config = ConfigFactory.load()
-  val coreConfig = Api4ElectrumCoreConfig(enableMempoolFeeHistogram = false, broadcastMethod = OwnNode, port = port, isTestnet = false, btcRpcUsername = "foo", btcRpcPassword = "bar")
+  val coreConfig = Api4ElectrumCoreConfig(enableMempoolFeeHistogram = false, broadcastMethod = OwnNode, port = port, isTestnet = false, btcRpcUsername = "foo", btcRpcPassword = "bar", initialImportCount = 1000)
   val scriptPubKeysToMonitorResult = new Setup(TestBitcoinSConnector.rpcCli, config).getScriptPubKeysToMonitor()
 
   val transactionMonitor = TransactionMonitorFactory.create(TestBitcoinSConnector.rpcCli)

@@ -5,7 +5,7 @@ import java.nio.ByteBuffer
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicReference}
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.mhm.bitcoin.{BroadcastMethod, OwnNode, TransactionMonitorState}
+import com.mhm.bitcoin.{BroadcastMethod, OwnNode, TransactionMonitorState, UnsupportedBroadcastMethod}
 import com.mhm.common.model.HashHeight
 import com.mhm.connectors.BitcoindRpcExtendedClient
 import com.mhm.connectors.RpcWrap.wrap
@@ -13,6 +13,7 @@ import com.mhm.main.Constants
 import com.mhm.main.Constants.{DONATION_ADDRESS, SERVER_VERSION}
 import com.mhm.util.EpsmiDataOps.{byteVectorOrZeroToArray, byteVectorToArray, intToArray, uint32ToArray}
 import com.mhm.util.{HashOps, MerkleProofOps}
+import com.typesafe.config.Config
 import grizzled.slf4j.Logging
 import javax.xml.bind.DatatypeConverter
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.FeeEstimationMode
@@ -26,32 +27,6 @@ import scala.math.BigDecimal.RoundingMode
 import scala.util.{Failure, Success, Try}
 
 
-case class ElectrumMerkleProof(
-  pos: Int,
-  merkle: Array[String],
-  txId: String,
-  merkleRoot: String
-)
-
-object Api4ElectrumCoreConfig {
-  def getDefault = Api4ElectrumCoreConfig(
-    enableMempoolFeeHistogram = false,
-    broadcastMethod = OwnNode,
-    port = 50002,
-    isTestnet = false,
-    btcRpcUsername = "foo",
-    btcRpcPassword = "bar"
-  )
-}
-
-case class Api4ElectrumCoreConfig(
-  enableMempoolFeeHistogram: Boolean,
-  broadcastMethod: BroadcastMethod,
-  port: Int,
-  isTestnet: Boolean,
-  btcRpcUsername: String,
-  btcRpcPassword: String
-)
 
 /**
  * This class is futurized and does not necessarily conform
