@@ -31,11 +31,19 @@ class SpksToMonitorFinder(rpcCli: BitcoindRpcExtendedClient, config: Config) ext
 
     val deterministicWallets = obtainDeterministicWallets(rpcCli, setupConfig.mpks)
     val walletsToImport = determineWalletsToImport(deterministicWallets, setupConfig.mpks, setupConfig.initialImportCount, importedAddresses)
-    val importNeeded = walletsToImport.nonEmpty
+    val importNeededForWallets = walletsToImport.nonEmpty
+
+    val watchOnlyAddresses = setupConfig.woas.map(_.getValue.unwrapped().toString()).toSet
+    val importedAddressesStrings = importedAddresses.map(_.value)
+    val importNeededForWatchOnlyAddresses = !watchOnlyAddresses.subsetOf(importedAddressesStrings)
+    val watchOnlyAddressesToImport = watchOnlyAddresses.diff(importedAddressesStrings).toSeq
+
+    val importNeeded = importNeededForWallets || importNeededForWatchOnlyAddresses
     logger.debug(s"import needed is set to $importNeeded")
+
     val result = if (importNeeded){
-      logger.info(s"Importing ${walletsToImport.size} wallets into the Bitcoin node")
-      SpksToMonitorResult(importNeeded, Nil, walletsToImport)
+      logger.info(s"Importing ${walletsToImport.size} wallets and ${watchOnlyAddressesToImport.size} watch-only addresses into the Bitcoin node")
+      SpksToMonitorResult(importNeeded, watchOnlyAddressesToImport, walletsToImport)
     } else {
       val spksToMonitor = determineScriptPubKeysToMonitor(importedAddresses, deterministicWallets, setupConfig.initialImportCount)
       SpksToMonitorResult(importNeeded = false, spksToMonitor, deterministicWallets)
