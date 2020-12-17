@@ -7,6 +7,8 @@ import com.mhm.rpcserver.RpcServer
 import com.typesafe.config.ConfigFactory
 import grizzled.slf4j.Logging
 
+import scala.sys.exit
+
 object Main extends App with Logging {
   def doMain(): Unit = {
     val config = ConfigFactory.load()
@@ -40,5 +42,17 @@ object Main extends App with Logging {
     }
   }
 
-  doMain
+  try {
+    doMain
+  }
+  catch {
+    case e:
+      Throwable =>
+        logger.error(s"exception caught in main: ${e.getClass.getName}", e)
+        logger.info(s"${Constants.SERVER_NAME} exiting...")
+        exit(1)
+  }
+  finally {
+    logger.info(s"${Constants.SERVER_NAME} terminating...")
+  }
 }
