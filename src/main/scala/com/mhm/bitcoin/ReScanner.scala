@@ -3,7 +3,7 @@ package com.mhm.bitcoin
 import com.mhm.connectors.BitcoindRpcExtendedClient
 import com.mhm.connectors.RpcWrap.wrap
 import com.typesafe.config.Config
-import grizzled.slf4j.{Logger, Logging}
+import grizzled.slf4j.Logging
 
 case class RescanConfig (
   rescan: Boolean,
@@ -22,7 +22,7 @@ object RescanConfig {
 object ReScanner extends Logging {
 
   def rescan(rpcCli: BitcoindRpcExtendedClient, startBlock: Int): Unit = {
-    logger.info("Rescanning. . . for progress indicator see the bitcoin node's debug.log file")
+    logger.info("Rescanning... see the bitcoin node's debug.log file")
     wrap(rpcCli.rescanBlockChain(startBlock))
   }
 
