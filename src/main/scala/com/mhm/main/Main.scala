@@ -54,5 +54,6 @@ object Main extends App with Logging {
   }
   finally {
     logger.info(s"${Constants.SERVER_NAME} terminating...")
+    exit(0)
   }
 }
