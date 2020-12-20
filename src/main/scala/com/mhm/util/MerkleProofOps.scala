@@ -50,7 +50,7 @@ object MerkleProofOps {
       expandTreeHashing(right.asInstanceOf[TupleMerkleNode])
     else
       StrMerkleNode(getNodeHash(right.value))
-    val hs = hashEncode(doHash(hashDecode(hashLeft.value) ++ hashDecode(hashRight.value)))
+    val hs = hashEncodeRev(doHash(hashDecodeRev(hashLeft.value) ++ hashDecodeRev(hashRight.value)))
     StrMerkleNode(hs)
   }
 

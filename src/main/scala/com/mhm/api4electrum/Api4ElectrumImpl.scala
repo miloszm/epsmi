@@ -122,8 +122,8 @@ class Api4ElectrumImpl(core: Api4ElectrumCore, transactionMonitor: TransactionMo
   override def blockchainTransactionGetMerkle(txId: String, height: Int): GetMerkleResult = {
     Try(wrap(core.transactionGetMerkle(txId: String))).fold(
       { t =>
-        println(s"server caught: $t")
-        throw new IllegalStateException(s"transaction get merkle for $txId failed")
+        logger.error(s"server caught: $t")
+        throw t
       },
       identity
     )

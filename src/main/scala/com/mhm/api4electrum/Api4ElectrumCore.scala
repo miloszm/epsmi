@@ -247,7 +247,7 @@ case class Api4ElectrumCore(rpcCli: BitcoindRpcExtendedClient, config: Api4Elect
       val electrumProof = MerkleProofOps.convertCoreToElectrumMerkleProof(coreProof.hex)
       val impliedMerkleRoot = HashOps.hashMerkleRoot(electrumProof.merkle, txId, electrumProof.pos)
       if (impliedMerkleRoot != electrumProof.merkleRoot)
-        throw new IllegalStateException(s"value error in get merkle for $txId")
+        throw new IllegalStateException(s"value error in get merkle for $txId, implied merkle root: $impliedMerkleRoot is not equal Electrum merkle root: ${electrumProof.merkleRoot}")
       GetMerkleResult(blockHeader.height, electrumProof.pos, electrumProof.merkle)
     }
   }
