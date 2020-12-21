@@ -22,8 +22,10 @@ lazy val root = (project in file(".")).
 
       "com.typesafe.akka" %% "akka-http-testkit"        % akkaHttpVersion % Test,
       "com.typesafe.akka" %% "akka-actor-testkit-typed" % akkaVersion     % Test,
-      "org.scalatest"     %% "scalatest"                % "3.0.8"         % Test
+      "org.scalatest"     %% "scalatest"                % "3.0.8"         % Test,
+      "org.pegdown"       %  "pegdown"                  % "1.6.0"         % Test
       //"org.bitcoin-s"     %% "bitcoin-s-testkit"        % "0.4.0"         % Test
     ),
-    parallelExecution in Test := false
+    parallelExecution in Test := false,
+    ThisBuild / Test / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-h", "target/test-reports")
   )
