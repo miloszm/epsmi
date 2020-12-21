@@ -47,4 +47,3 @@ server.donation_address
 server.peers.subscribe
 
 ###### blockchain.transaction.id_from_pos
-
