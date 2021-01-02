@@ -10,7 +10,7 @@ import org.scalatest.FlatSpec
 // ### confirmed, the first tx gets conflicted status
 
 class ReorgFinneyAttackTest extends FlatSpec with AddressHistoryAssertions {
-  "tx1 unconfirmed becomes conflicted, tx2 that has tx1 as input confirms (finney attack)" should "remove tx1 from history, add tx2 to history" in {
+  "tx1 unconfirmed becomes conflicted, tx2 that has tx1 as input, confirms (finney attack)" should "remove tx1 from history, add tx2 to history" in {
     val (dummySpk1, containingBlockHeight1, dummyTx1) = createDummyFundingTx(confirmations = 0)
     val (dummySpk2, containingBlockHeight2, dummyTx2) = createDummyFundingTx(confirmations = 0, inputTxid = dummyTx1.vin.txId)
 
