@@ -5,9 +5,10 @@ import org.scalatest.Matchers.convertToAnyShouldWrapper
 
 class HeadersSubscribeTest extends FlatSpec with ServiceFixture {
 
-  val subscribeResult = service.blockchainHeadersSubcribe()
-
-  subscribeResult.height > 0 shouldBe true
-  subscribeResult.hex.length shouldBe 160
+  "headers subscribe" should "return subscribe result" in {
+    val subscribeResult = service.blockchainHeadersSubcribe()
+    subscribeResult.height > 0 shouldBe true
+    subscribeResult.hex.length shouldBe 160
+  }
 
 }
