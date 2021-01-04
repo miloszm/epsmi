@@ -2,7 +2,6 @@ package com.mhm.livebtcnode.test
 
 import com.mhm.bitcoin.{TransactionMonitorFactory, TransactionMonitorImpl, Tx4HistoryGen}
 import com.mhm.common.model.{HistoryElement, HistoryEntry}
-import com.mhm.connectors.BitcoinSConnector
 import com.mhm.epsmi.testbtcrpc.TestBitcoinSConnector.rpcCli
 import com.mhm.connectors.RpcWrap.wrap
 import com.mhm.epsmi.testbtcrpc.TestBitcoinSConnector

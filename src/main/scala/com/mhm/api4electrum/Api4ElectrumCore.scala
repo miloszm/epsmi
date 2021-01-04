@@ -40,7 +40,7 @@ case class Api4ElectrumCore(rpcCli: BitcoindRpcExtendedClient, config: Api4Elect
   def getBlockHeaderHash(blockHeight: Int): Future[String] = {
     for {
       blockHash <- rpcCli.getBlockHash(blockHeight)
-      (blockHeaderHash, nextBlockHashOpt) <- getBlockHeaderHashFromBlockHash(blockHash)
+      (blockHeaderHash, _) <- getBlockHeaderHashFromBlockHash(blockHash)
     } yield {
       blockHeaderHash
     }
@@ -49,20 +49,10 @@ case class Api4ElectrumCore(rpcCli: BitcoindRpcExtendedClient, config: Api4Elect
   /**
    * returns block header hash and next block hash
    */
-  private def getBlockHeaderHashFromBlockHash(blockHash: DoubleSha256DigestBE): Future[(String,Option[DoubleSha256DigestBE])] = {
+  def getBlockHeaderHashFromBlockHash(blockHash: DoubleSha256DigestBE): Future[(String,Option[DoubleSha256DigestBE])] = {
     for {
       blockHeader <- rpcCli.getBlockHeader(blockHash)
     } yield {
-      val prevBlockHashArray = Array.fill[Byte](32)(0)
-
-      blockHeader.previousblockhash match {
-        case Some(b) => b.bytes.copyToArray(prevBlockHashArray, 0)
-        case _ => ()
-      }
-
-      val merkleRootArray = Array.fill[Byte](32)(0)
-      blockHeader.merkleroot.bytes.copyToArray(merkleRootArray, 0)
-
       val headHex: String = hashBlockHeaderRaw(blockHeader)
       (headHex, blockHeader.nextblockhash)
     }
