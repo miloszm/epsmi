@@ -32,10 +32,6 @@ class TrIdFromPosMerkleTrueTest extends FlatSpec with IntTestFixture {
       "55EC3D5F6059A947DE3D3CFA57EFFC2001E7DD4E2773F59D43099585AB51A357",
       "126A3DC903183FD81CD3BFB80FD558A746B5442010C5E2CBE5DECFB92C589F10"
     )
-
-    println(s"txHash= ${merkleResult.tx_hash}")
-    println("merkle=")
-    merkleResult.merkle.foreach{println(_)}
   }
 
 }

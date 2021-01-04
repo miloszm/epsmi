@@ -59,7 +59,7 @@ case class Api4ElectrumCore(rpcCli: BitcoindRpcExtendedClient, config: Api4Elect
   }
 
 
-  private def hashBlockHeaderRaw(blockHeader: GetBlockHeaderResult) = {
+  private def hashBlockHeaderRaw(blockHeader: GetBlockHeaderResult): String = {
     // <i32s32sIII
     // little endian int | byte[32] | byte[32] | unsigned int | unsigned int | unsigned int
     val head = ByteBuffer.allocate(80)
@@ -185,10 +185,8 @@ case class Api4ElectrumCore(rpcCli: BitcoindRpcExtendedClient, config: Api4Elect
 
   def getTransaction(txId: String): Future[String] = {
     val sha = DoubleSha256DigestBE.fromHex(txId.toUpperCase)
-    for {
-      transactionResult <- rpcCli.getRawTransaction(sha)
-    } yield {
-      transactionResult.hex.hex
+    rpcCli.getTransaction(sha).map(_.hex.hex).recoverWith{ _ =>
+      rpcCli.getRawTransaction(sha).map(_.hex.hex)
     }
   }
 
@@ -210,7 +208,7 @@ case class Api4ElectrumCore(rpcCli: BitcoindRpcExtendedClient, config: Api4Elect
   }
 
   private def trIdFromPosMerkleTrue(height: Int, txPos: Int): Future[String] = {
-    val merkleResutlFuture = for {
+    val merkleResultFuture = for {
       blockHash <- rpcCli.getBlockHash(height)
       block <- rpcCli.getBlock(blockHash)
       txId = block.tx(txPos)
@@ -219,7 +217,7 @@ case class Api4ElectrumCore(rpcCli: BitcoindRpcExtendedClient, config: Api4Elect
       val emp = MerkleProofOps.convertCoreToElectrumMerkleProof(merkleBlock.hex)
       MerkleResult(txId.hex, emp.merkle)
     }
-    merkleResutlFuture.map{mr =>
+    merkleResultFuture.map{mr =>
       val objectMapper = new ObjectMapper()
       val out = new ByteArrayOutputStream()
       objectMapper.writeValue(out, mr)
