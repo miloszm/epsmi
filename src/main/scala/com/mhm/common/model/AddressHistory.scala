@@ -5,7 +5,7 @@ case class HistoryElement (
   height: Int,
   fee: BigDecimal = 0
 ){
-  def asHashHeight = HashHeight(txHash, height)
+  def asHashHeight = HexHeight(txHash, height)
 }
 
 case class HistoryEntry(

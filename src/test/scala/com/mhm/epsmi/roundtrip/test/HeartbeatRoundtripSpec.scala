@@ -56,7 +56,7 @@ class HeartbeatRoundtripSpec extends FlatSpec {
     protocol2.triggerHeartbeatConnected(streamOutput2)
     val output2 = streamOutput2.toString
 
-    val expectedBestBlockHashHeight = wrap(Api4ElectrumCore(rpc2).getBlockHeader(wrap(rpc2.getBestBlockHash), raw = true)).getOrElse(fail)
+    val expectedBestBlockHashHeight = wrap(Api4ElectrumCore(rpc2).getBlockHeaderRaw(wrap(rpc2.getBestBlockHash)))
     val expected =
       s"""{"jsonrpc": "2.0", "method": "blockchain.headers.subscribe", "params": [${expectedBestBlockHashHeight.asJson}]}""" + "\n" +
         s"""{"jsonrpc": "2.0", "method": "blockchain.scripthash.subscribe", "params": ["$sh", "$expectedHistoryHash"]}""" + "\n"

@@ -4,14 +4,12 @@ import java.io.OutputStream
 import java.util.concurrent.atomic.AtomicReference
 
 import com.mhm.bitcoin.{TransactionMonitor, TransactionMonitorState}
-import com.mhm.common.model.HashHeight
+import com.mhm.common.model.HexHeight
 import com.mhm.connectors.RpcWrap.wrap
 import com.mhm.main.Constants
 import com.mhm.main.Constants.{SERVER_NAME, SERVER_VERSION}
 import grizzled.slf4j.Logging
 
-import scala.concurrent.Await
-import scala.concurrent.duration.{Duration, SECONDS}
 import scala.math.BigDecimal.RoundingMode
 import scala.util.Try
 
@@ -23,8 +21,6 @@ import scala.util.Try
 class Api4ElectrumImpl(core: Api4ElectrumCore, transactionMonitor: TransactionMonitor, monitorState: TransactionMonitorState) extends Api4Electrum with Logging {
 
   val currentMonitorState = new AtomicReference(monitorState)
-
-  val areHeadersRaw = true // TODO must be true for now, consider removing, for the time being some parts of code do not support it being false
 
   def updateMonitorState(fun : TransactionMonitorState => TransactionMonitorState): Unit = {
     def uniFun(s: TransactionMonitorState): TransactionMonitorState = fun(s)
@@ -147,9 +143,8 @@ class Api4ElectrumImpl(core: Api4ElectrumCore, transactionMonitor: TransactionMo
 
   override def blockchainHeadersSubcribe(): HeadersSubscribeResult = {
     updateMonitorState(_.copy(subscribedToHeaders = true))
-    val (_, headerEither) = wrap(core.getCurrentHeader(true))
-    val hashHeight = headerEither.getOrElse(throw new IllegalArgumentException("non raw header returned from get current header"))
-    HeadersSubscribeResult(hex = hashHeight.hash, height = hashHeight.height)
+    val (_, hexHeight) = wrap(core.getCurrentHeaderRaw())
+    HeadersSubscribeResult(hex = hexHeight.hex, height = hexHeight.height)
   }
 
   override def blockchainScripthashGetHistory(sh: String): Array[HistoryItem] = {
@@ -206,21 +201,20 @@ class Api4ElectrumImpl(core: Api4ElectrumCore, transactionMonitor: TransactionMo
     }
   }
 
-  def onBlockchainTipUpdated(hashHeight: HashHeight, outputStream: OutputStream): Unit = {
+  def onBlockchainTipUpdated(hexHeight: HexHeight, outputStream: OutputStream): Unit = {
     logger.debug(s"onBlockchainTipUpdated, subscribed to headers=${currentMonitorState.get.subscribedToHeaders}")
     if (currentMonitorState.get.subscribedToHeaders){
-      val update = s"""{"jsonrpc": "2.0", "method": "blockchain.headers.subscribe", "params": [{"hex": "${hashHeight.hash}", "height": ${hashHeight.height}}]}""" + "\n"
+      val update = s"""{"jsonrpc": "2.0", "method": "blockchain.headers.subscribe", "params": [{"hex": "${hexHeight.hex}", "height": ${hexHeight.height}}]}""" + "\n"
       outputStream.write(update.getBytes())
     }
   }
 
   def triggerHeartbeatConnected(outputStream: OutputStream): Unit = try {
     logger.debug("start triggerHeartbeatConnected")
-    val (isTipUpdated, headerOrHashHeight) = wrap(core.checkForNewBlockchainTip(areHeadersRaw))
-    val tipHashHeight = headerOrHashHeight.getOrElse(throw new IllegalArgumentException("headers should be raw")) // TODO simplify this - it will not work for raw == false
+    val (isTipUpdated, tipHexHeight) = wrap(core.checkForNewBlockchainTip())
     if (isTipUpdated){
-      logger.debug(s"Blockchain tip updated ${tipHashHeight.height}")
-      onBlockchainTipUpdated(tipHashHeight, outputStream)
+      logger.debug(s"Blockchain tip updated ${tipHexHeight.height}")
+      onBlockchainTipUpdated(tipHexHeight, outputStream)
     }
     val updatedTxs = updateMonitorStateWithExtraResult(transactionMonitor.checkForUpdatedTxs)
     onUpdatedScripthashes(updatedTxs, outputStream)

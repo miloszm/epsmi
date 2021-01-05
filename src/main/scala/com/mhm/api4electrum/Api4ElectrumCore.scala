@@ -6,7 +6,7 @@ import java.util.concurrent.atomic.{AtomicBoolean, AtomicReference}
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.mhm.bitcoin.TransactionMonitorState
-import com.mhm.common.model.{HashHeight, OwnNode}
+import com.mhm.common.model.{HexHeight, OwnNode}
 import com.mhm.connectors.BitcoindRpcExtendedClient
 import com.mhm.connectors.RpcWrap.wrap
 import com.mhm.main.Constants
@@ -53,13 +53,13 @@ case class Api4ElectrumCore(rpcCli: BitcoindRpcExtendedClient, config: Api4Elect
     for {
       blockHeader <- rpcCli.getBlockHeader(blockHash)
     } yield {
-      val headHex: String = hashBlockHeaderRaw(blockHeader)
+      val headHex = hexBlockHeaderRaw(blockHeader)
       (headHex, blockHeader.nextblockhash)
     }
   }
 
 
-  private def hashBlockHeaderRaw(blockHeader: GetBlockHeaderResult): String = {
+  private def hexBlockHeaderRaw(blockHeader: GetBlockHeaderResult): String = {
     // <i32s32sIII
     // little endian int | byte[32] | byte[32] | unsigned int | unsigned int | unsigned int
     val head = ByteBuffer.allocate(80)
@@ -94,33 +94,29 @@ case class Api4ElectrumCore(rpcCli: BitcoindRpcExtendedClient, config: Api4Elect
     }
   }
 
+  def getBlockHeaderCooked(blockhash: DoubleSha256DigestBE): Future[HeaderResult] = {
+    for {
+      blockHeader <- rpcCli.getBlockHeader(blockhash)
+    } yield {
+      val headerResult = HeaderResult(
+        blockHeader.height,
+        blockHeader.previousblockhash.map(_.hex).getOrElse("00" * 32),
+        blockHeader.time.toLong,
+        blockHeader.merkleroot.hex,
+        blockHeader.version,
+        blockHeader.nonce.toLong,
+        blockHeader.bits.toLong
+      )
+      headerResult
+    }
+  }
 
-  /**
-   *
-   * @param blockhash hash of the block
-   * @param raw true if we want header hash and heigh, false if we want HeaderResult
-   * @return Left if raw is false, Right if raw is true
-   */
-  def getBlockHeader(blockhash: DoubleSha256DigestBE, raw: Boolean = false): Future[Either[HeaderResult, HashHeight]] = {
-      for {
-        blockHeader <- rpcCli.getBlockHeader(blockhash)
-      } yield {
-        if (raw) {
-          val headHex: String = hashBlockHeaderRaw(blockHeader)
-          Right(HashHeight(headHex, blockHeader.height))
-        }
-        else {
-          val headerResult = HeaderResult(
-            blockHeader.height,
-            blockHeader.previousblockhash.map(_.hex).getOrElse("00" * 32),
-            blockHeader.time.toLong,
-            blockHeader.merkleroot.hex,
-            blockHeader.version,
-            blockHeader.nonce.toLong,
-            blockHeader.bits.toLong
-          )
-          Left(headerResult)
-        }
+  def getBlockHeaderRaw(blockhash: DoubleSha256DigestBE): Future[HexHeight] = {
+    for {
+      blockHeader <- rpcCli.getBlockHeader(blockhash)
+    } yield {
+      val headHex = hexBlockHeaderRaw(blockHeader)
+      HexHeight(headHex, blockHeader.height)
     }
   }
 
@@ -240,21 +236,30 @@ case class Api4ElectrumCore(rpcCli: BitcoindRpcExtendedClient, config: Api4Elect
     }
   }
 
-  def getCurrentHeader(raw: Boolean): Future[(String, Either[HeaderResult, HashHeight])] = {
+  def getCurrentHeaderCooked(): Future[(String, HeaderResult)] = {
     for {
       bestBlockHash <- rpcCli.getBestBlockHash
-      headerOrHashHeight <- getBlockHeader(bestBlockHash, raw)
+      header <- getBlockHeaderCooked(bestBlockHash)
     } yield {
-      (bestBlockHash.hex, headerOrHashHeight)
+      (bestBlockHash.hex, header)
     }
   }
 
-  def checkForNewBlockchainTip(raw: Boolean): Future[(Boolean, Either[HeaderResult, HashHeight])] = {
+  def getCurrentHeaderRaw(): Future[(String, HexHeight)] = {
     for {
-      (newBestBlockhash, headerOrHashHeight) <- getCurrentHeader(raw)
+      bestBlockHash <- rpcCli.getBestBlockHash
+      hexHeight <- getBlockHeaderRaw(bestBlockHash)
+    } yield {
+      (bestBlockHash.hex, hexHeight)
+    }
+  }
+
+  def checkForNewBlockchainTip(): Future[(Boolean, HexHeight)] = {
+    for {
+      (newBestBlockhash, hexHeight) <- getCurrentHeaderRaw()
     } yield {
       val isTipNew = !bestBlockHash.getAndUpdate(_ => Some(newBestBlockhash)).contains(newBestBlockhash)
-      (isTipNew, headerOrHashHeight)
+      (isTipNew, hexHeight)
     }
   }
 
