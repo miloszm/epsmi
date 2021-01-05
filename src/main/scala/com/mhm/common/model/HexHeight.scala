@@ -1,5 +1,5 @@
 package com.mhm.common.model
 
-case class HashHeight(hash: String, height: Int){
-  def asJson: String = s"""{"hex": "$hash", "height": $height}"""
+case class HexHeight(hex: String, height: Int){
+  def asJson: String = s"""{"hex": "$hex", "height": $height}"""
 }
