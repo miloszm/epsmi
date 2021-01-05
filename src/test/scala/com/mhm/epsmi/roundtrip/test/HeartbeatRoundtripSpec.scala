@@ -27,7 +27,7 @@ class HeartbeatRoundtripSpec extends FlatSpec {
     monitorState.addressHistory.m shouldBe Map(sh -> HistoryEntry(subscribed = false, List()))
     monitorState.getElectrumHistory(sh).getOrElse(fail).size shouldBe 0
 
-    println(s"subscribing address: $sh")
+    println(s"subscribing address: $sh (derived from spk: $dummySpk)")
     val monitorState2 = monitorState.subscribeAddress(sh)
     monitorState2.addressHistory.m shouldBe Map(sh -> HistoryEntry(subscribed = true, List()))
 
