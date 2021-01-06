@@ -50,14 +50,14 @@ class TransactionMonitorUnitTest extends FlatSpec {
   }
 
   "transaction monitor" should "have functionality for getInputAndOutputScriptpubkeys" in {
-    val ThisOutSpk = "abab"
-    val ThisInSpk = "cdcd"
+    val OutSpk = "abab"
+    val InSpk = "cdcd"
 
-    val(_, _, inputTx) = DummyTxCreator.createDummyFundingTx(outputSpkOpt = Some(ThisInSpk))
-    assert(inputTx.vout.scriptPubKey == ThisInSpk)
+    val(_, _, inputTx) = DummyTxCreator.createDummyFundingTx(outputSpkOpt = Some(InSpk))
+    assert(inputTx.vout.scriptPubKey == InSpk)
 
-    val(_, _, tx) = DummyTxCreator.createDummyFundingTx(outputSpkOpt = Some(ThisOutSpk), inputTxid = inputTx.txId)
-    assert(tx.vout.scriptPubKey == ThisOutSpk)
+    val(_, _, tx) = DummyTxCreator.createDummyFundingTx(outputSpkOpt = Some(OutSpk), inputTxid = inputTx.txId)
+    assert(tx.vout.scriptPubKey == OutSpk)
     assert(tx.vin.txId == inputTx.txId)
 
     val dummyBtcRpc = DummyBtcRpc(Seq(tx, inputTx))
@@ -65,8 +65,8 @@ class TransactionMonitorUnitTest extends FlatSpec {
     val(outputScriptpubkeys, inputScriptpubkeys, tr) = new TransactionMonitorImpl(dummyBtcRpc, nonWalletAllowed = false).getInputAndOutputScriptpubkeys(
       DoubleSha256DigestBE.fromHex(tx.txId)
     )
-    outputScriptpubkeys should contain theSameElementsAs Seq(ThisOutSpk)
-    inputScriptpubkeys should contain theSameElementsAs Seq(ThisInSpk)
+    outputScriptpubkeys should contain theSameElementsAs Seq(OutSpk)
+    inputScriptpubkeys should contain theSameElementsAs Seq(InSpk)
     tr.txid.hex shouldBe tx.txId
   }
 }

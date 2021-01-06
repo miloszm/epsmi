@@ -127,7 +127,7 @@ class TransactionMonitorImpl(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed
     logger.trace(s"started getInputAndOutputScriptpubkeys for ${txid.hex}")
     val getTx = wrap(rpcCli.getTransaction(txid))
     val txd: RpcTransaction = wrap(rpcCli.decodeRawTransaction(getTx.hex))
-    val outputScriptpubkeys: Seq[String] = txd.vout.map(_.scriptPubKey.hex)
+    val outputScriptpubkeys = txd.vout.map(_.scriptPubKey.hex)
     logger.trace(s"got ${outputScriptpubkeys.size} output scriptpubkeys: ${outputScriptpubkeys.mkString("|")}")
     logger.trace(s"processing ${txd.vin.size} transaction inputs")
     val inputScriptpubkeys = txd.vin.filterNot(_.isInstanceOf[CoinbaseInput]).flatMap{ inn =>
@@ -158,28 +158,26 @@ class TransactionMonitorImpl(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed
   }
 
   def generateNewHistoryElement(tx: Tx4HistoryGen, txd: RpcTransaction): HistoryElement = {
+    case class ValueConfirmedPair(v: BigDecimal, confirmed: Boolean)
     if (tx.confirmations == 0){
-      var unconfirmedInput = false
-      var totalInputValue = BigDecimal(0)
-      for (inn <- txd.vin){
+      val valueConfirmedPairs = txd.vin.flatMap{ inn =>
         logger.trace(s"calling getTxOut with ${inn.previousOutput.txIdBE}, ${inn.previousOutput.vout.toInt}")
         /**
          * Note - for utxo that is spent we will get exception so we use try here
          */
-        Try(wrap(rpcCli.getTxOut(inn.previousOutput.txIdBE, inn.previousOutput.vout.toInt), "getTxOut")).foreach{ utxo =>
-          totalInputValue = totalInputValue + utxo.value.toBigDecimal
-          unconfirmedInput = unconfirmedInput || utxo.confirmations == 0
-        }
+        Try(wrap(rpcCli.getTxOut(inn.previousOutput.txIdBE, inn.previousOutput.vout.toInt), "getTxOut")).fold(_ => None, utxo =>
+          Some(ValueConfirmedPair(utxo.value.toBigDecimal, utxo.confirmations > 0))
+        )
       }
+      val totalInputValue = valueConfirmedPairs.map(_.v).fold(BigDecimal(0))(_ + _)
+      val unconfirmedInput = !valueConfirmedPairs.map(_.confirmed).forall(_ == true)
       val height = if (unconfirmedInput) -1 else 0
-      val totalOut = (
-        for {out <- txd.vout} yield out.value.toBigDecimal
-      ).foldLeft(BigDecimal(0))(_ + _)
+      val totalOut = txd.vout.map(_.value.toBigDecimal).foldLeft(BigDecimal(0))(_ + _)
       val fee = totalInputValue - totalOut
       HistoryElement(tx.txid, height, fee)
     }
     else {
-      val blockHeader: GetBlockHeaderResult = wrap(rpcCli.getBlockHeader(tx.blockhashOpt.getOrElse(throw new IllegalArgumentException("blockhash missing"))))
+      val blockHeader = wrap(rpcCli.getBlockHeader(tx.blockhashOpt.getOrElse(throw new IllegalArgumentException("blockhash missing"))))
       HistoryElement(tx.txid, blockHeader.height)
     }
   }
