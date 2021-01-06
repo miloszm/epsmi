@@ -6,7 +6,7 @@ import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers.{contain, convertToAnyShouldWrapper}
 
-class TransactionMonitorDummyTest extends FlatSpec {
+class TransactionMonitorUnitTest extends FlatSpec {
 
   "transaction monitor" should "have functionality for generating new history element when number of confirmations is not zero" in {
     val BlockHeight = 133
