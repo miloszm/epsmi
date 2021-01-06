@@ -1,6 +1,6 @@
 package com.mhm.epsmi.monitor.unittest
 
-import com.mhm.bitcoin.{TransactionMonitor, TransactionMonitorFactory, Tx4HistoryGen}
+import com.mhm.bitcoin.{TransactionMonitorImpl, Tx4HistoryGen}
 import com.mhm.epsmi.dummymonitor.{DummyBtcRpc, DummyTxCreator}
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.scalatest.FlatSpec
@@ -12,9 +12,9 @@ class TransactionMonitorDummyTest extends FlatSpec {
     val BlockHeight = 133
     val(_, _, dummyTx) = DummyTxCreator.createDummyFundingTx()
 
-    val dummyBtcRpc = new DummyBtcRpc(Seq(dummyTx), Nil, Map(dummyTx.blockhash -> BlockHeight))
+    val dummyBtcRpc = DummyBtcRpc(Seq(dummyTx), Nil, Map(dummyTx.blockhash -> BlockHeight))
 
-    val transactionMonitor = TransactionMonitorFactory.create(dummyBtcRpc)
+    val transactionMonitor = new TransactionMonitorImpl(dummyBtcRpc, nonWalletAllowed = false)
 
     val tx = Tx4HistoryGen(
       dummyTx.confirmations,
@@ -32,9 +32,9 @@ class TransactionMonitorDummyTest extends FlatSpec {
     val(_, _, dummyTx) = DummyTxCreator.createDummyFundingTx(confirmations = 0)
 
     val utxoSet = Seq(dummyTx.vin)
-    val dummyBtcRpc = new DummyBtcRpc(Seq(dummyTx), utxoSet, Map(dummyTx.blockhash -> 133))
+    val dummyBtcRpc = DummyBtcRpc(Seq(dummyTx), utxoSet, Map(dummyTx.blockhash -> 133))
 
-    val transactionMonitor = TransactionMonitorFactory.create(dummyBtcRpc)
+    val transactionMonitor = new TransactionMonitorImpl(dummyBtcRpc, nonWalletAllowed = false)
 
     val tx = Tx4HistoryGen(
       dummyTx.confirmations,
@@ -60,9 +60,9 @@ class TransactionMonitorDummyTest extends FlatSpec {
     assert(tx.vout.scriptPubKey == ThisOutSpk)
     assert(tx.vin.txId == inputTx.txId)
 
-    val dummyBtcRpc = new DummyBtcRpc(Seq(tx, inputTx))
+    val dummyBtcRpc = DummyBtcRpc(Seq(tx, inputTx))
 
-    val(outputScriptpubkeys, inputScriptpubkeys, tr) = TransactionMonitorFactory.create(dummyBtcRpc).getInputAndOutputScriptpubkeys(
+    val(outputScriptpubkeys, inputScriptpubkeys, tr) = new TransactionMonitorImpl(dummyBtcRpc, nonWalletAllowed = false).getInputAndOutputScriptpubkeys(
       DoubleSha256DigestBE.fromHex(tx.txId)
     )
     outputScriptpubkeys should contain theSameElementsAs Seq(ThisOutSpk)

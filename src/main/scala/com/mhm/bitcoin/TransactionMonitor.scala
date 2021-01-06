@@ -6,11 +6,11 @@ import com.mhm.common.model.{AddressHistory, HistoryElement, HistoryEntry}
 import com.mhm.connectors.BitcoindRpcExtendedClient
 import com.mhm.connectors.RpcWrap.wrap
 import com.mhm.util.EpsmiDataOps
-import com.mhm.util.EpsmiDataOps.{optAddr2Str, optConfirmations2Int, optSha2Sha, optSha2Str}
+import com.mhm.util.EpsmiDataOps.{optAddr2Str, optConfirmations2Int, optSha2Str}
 import com.mhm.util.HashOps.script2ScriptHash
 import com.mhm.wallet.DeterministicWallet
 import grizzled.slf4j.Logging
-import org.bitcoins.commons.jsonmodels.bitcoind.{GetBlockHeaderResult, GetTxOutResult, ListTransactionsResult, RpcTransaction}
+import org.bitcoins.commons.jsonmodels.bitcoind.{GetBlockHeaderResult, ListTransactionsResult, RpcTransaction}
 import org.bitcoins.core.protocol.transaction.CoinbaseInput
 import org.bitcoins.crypto.DoubleSha256DigestBE
 
@@ -30,9 +30,6 @@ trait TransactionMonitor {
     deterministicWallets: Seq[DeterministicWallet]
   ): TransactionMonitorState
   def checkForUpdatedTxs(state: TransactionMonitorState): (Set[String], TransactionMonitorState)
-  def checkForNewTxs(stateArg: TransactionMonitorState): TransactionMonitorState
-  def generateNewHistoryElement(tx: Tx4HistoryGen, txd: RpcTransaction): HistoryElement
-  def getInputAndOutputScriptpubkeys(txid: DoubleSha256DigestBE): (Seq[String], Seq[String], RpcTransaction)
   def getAddressBalance(state: TransactionMonitorState, sh: String): Option[AddressBalance]
 }
 
