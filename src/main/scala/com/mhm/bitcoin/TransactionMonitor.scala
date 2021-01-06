@@ -185,9 +185,6 @@ class TransactionMonitorImpl(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed
   }
 
 
-  /**
-   * @return set of updated scripthashes
-   */
   def checkForNewTxs(stateArg: TransactionMonitorState): TransactionMonitorState = {
     val maxAttempts = 8 // log base 2 of 256
     val state = stateArg.resetUpdatedScripthashes()
