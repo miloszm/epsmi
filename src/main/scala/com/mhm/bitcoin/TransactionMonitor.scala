@@ -272,14 +272,14 @@ class TransactionMonitorImpl(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed
 
   def checkConfirmations(state: TransactionMonitorState): TransactionMonitorState = {
     @tailrec
-    def go(state: TransactionMonitorState, unconfirmedTxs: List[UnconfirmedTxEntry]): TransactionMonitorState = unconfirmedTxs match {
+    def processUnconfirmedTxs(state: TransactionMonitorState, unconfirmedTxs: List[UnconfirmedTxEntry]): TransactionMonitorState = unconfirmedTxs match {
       case Nil => state
       case UnconfirmedTxEntry(txid, shs) :: xs =>
         val unconfirmed = UnconfirmedTxEntry(txid, shs)
         val tx = wrap(rpcCli.getTransaction(DoubleSha256DigestBE.fromHex(txid)))
-        logger.debug(s"uc_txid=$txid => $tx")
+        logger.trace(s"uc_txid=$txid => $tx")
         if (tx.confirmations == 0){
-          go(state, xs) // still unconfirmed
+          processUnconfirmedTxs(state, xs) // still unconfirmed
         }
         else if (tx.confirmations > 0){
           logger.info(s"Transaction confirmed: $txid")
@@ -291,22 +291,22 @@ class TransactionMonitorImpl(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed
             .addReorganizableTx(ReorganizableTxEntry(txid, tx.blockhash.map(_.hex), blockHeight, shs))
             .removeUnconfirmed(Seq(unconfirmed))
             .addUpdatedScripthashes(shs)
-          go(newState, xs)
+          processUnconfirmedTxs(newState, xs)
         }
         else {
           logger.warn(s"Transaction conflicted: $txid")
           val newState = state
             .deleteHistoryItemForScripthashes(shs, txid)
             .addUpdatedScripthashes(shs)
-          go(newState, xs)
+          processUnconfirmedTxs(newState, xs)
         }
     }
-    val newState = go(state, state.unconfirmedTxes.map{case(k, v) => UnconfirmedTxEntry(k, v)}.toList)
-    logger.debug(s"finished checkConfirmations, unconfirmed=${newState.unconfirmedTxes.keys.mkString("|")}")
+    val newState = processUnconfirmedTxs(state, state.unconfirmedTxes.map{case(k, v) => UnconfirmedTxEntry(k, v)}.toList)
+    logger.trace(s"finished checkConfirmations, unconfirmed=${newState.unconfirmedTxes.keys.mkString("|")}")
     val unconfirmedInAh = newState.addressHistory.m.collect{
       case (_,h) => h.history.filter(_.height <= 0)
     }.flatten.map(_.txHash)
-    logger.debug(s"unconfirmed in ah: ${unconfirmedInAh.mkString("|")}")
+    logger.trace(s"unconfirmed in ah: ${unconfirmedInAh.mkString("|")}")
     newState
   }
 
@@ -315,14 +315,14 @@ class TransactionMonitorImpl(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed
    */
   def checkForReorganizations(state: TransactionMonitorState): TransactionMonitorState = {
     @tailrec
-    def go(state: TransactionMonitorState, reorganizableTxs: List[ReorganizableTxEntry]): TransactionMonitorState = reorganizableTxs match {
+    def processReorganizableTxs(state: TransactionMonitorState, reorganizableTxs: List[ReorganizableTxEntry]): TransactionMonitorState = reorganizableTxs match {
       case Nil => state
       case ReorganizableTxEntry(txid, blockhash, height, matchingShs) :: xs =>
         val reorganizable = ReorganizableTxEntry(txid, blockhash, height, matchingShs)
         val tx = wrap(rpcCli.getTransaction(DoubleSha256DigestBE.fromHex(txid)))
         if (tx.confirmations >= ConfirmationsSafeFromReorg){
           logger.debug(s"Transaction considered safe from reorg: $txid")
-          go(state.removeReorganizable(reorganizable), xs)
+          processReorganizableTxs(state.removeReorganizable(reorganizable), xs)
         } else if (tx.confirmations < 1){
           val state2 = if (tx.confirmations == 0){
             // transaction became unconfirmed in reorg
@@ -339,12 +339,12 @@ class TransactionMonitorImpl(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed
             logger.info(s"Transaction was double spent! $txid")
             state
           }
-          go(state2.addUpdatedScripthashes(matchingShs).removeReorganizable(reorganizable).deleteHistoryItems(matchingShs, txid, height), xs)
+          processReorganizableTxs(state2.addUpdatedScripthashes(matchingShs).removeReorganizable(reorganizable).deleteHistoryItems(matchingShs, txid, height), xs)
         } else if (!tx.blockhash.map(_.hex).contains(blockhash)){
           val block = wrap(rpcCli.getBlockHeader(tx.blockhash.getOrElse(throw new IllegalArgumentException("missing blockhash"))))
           if (block.height == height) { //reorg but height is the same
             logger.debug(s"Transaction was reorg'd but still confirmed at same height: $txid")
-            go(state, xs)
+            processReorganizableTxs(state, xs)
           }
           else {
             //reorged but still confirmed at a different height
@@ -354,14 +354,14 @@ class TransactionMonitorImpl(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed
               .updateHeightForScripthashes(matchingShs, txid, block.height)
               .addReorganizableTx(reorganizable.copy(height = block.height))
               .removeReorganizable(reorganizable)
-            go(state1, xs)
+            processReorganizableTxs(state1, xs)
           }
         } else {
-          go(state, xs)
+          processReorganizableTxs(state, xs)
         }
     }
-    val newState = go(state, state.reorganizableTxes.toList)
-    logger.debug("finished checkForReorganizations")
+    val newState = processReorganizableTxs(state, state.reorganizableTxes.toList)
+    logger.trace("finished checkForReorganizations")
     newState
   }
 
