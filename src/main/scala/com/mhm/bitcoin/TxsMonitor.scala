@@ -1,21 +1,22 @@
 package com.mhm.bitcoin
 
 import java.util.concurrent.atomic.{AtomicLong, AtomicReference}
-
+import scala.collection.concurrent
 
 trait TxsMonitorStateListener {
   def updated(newState: TransactionMonitorState): Unit
   def heartbeatTick(): Unit
-  def updatedShsTick(n: Int): Unit
+  def updatedShsTick(shs: Seq[String]): Unit
 }
 
 object NoopTxsMonitorStateListener extends TxsMonitorStateListener {
   override def updated(newState: TransactionMonitorState): Unit = ()
   override def heartbeatTick(): Unit = ()
-  override def updatedShsTick(n: Int): Unit = ()
+  override def updatedShsTick(shs: Seq[String]): Unit = ()
 }
 
 trait TxsMonitorMBean {
+  val HistoryMaxSize = 1000
   def getAddressHistory: Array[String]
   def getNonEmptyAddressHistory: Array[String]
   def getUnconfirmedTxs: Array[String]
@@ -26,6 +27,7 @@ trait TxsMonitorMBean {
   def getSubscribedToHeaders: Boolean
   def getHeartbeatTick: Long
   def getUpdatedShsTick: Long
+  def getUpdatedShsHistory: Array[String]
 
   // set methods to allow copy/paste in jconsole only
   def setAddressHistory(a: Array[String]) = ()
@@ -42,6 +44,7 @@ class TxsMonitor extends TxsMonitorMBean with TxsMonitorStateListener {
   val currentState = new AtomicReference[TransactionMonitorState]()
   val heartbeatCounter = new AtomicLong()
   val updatedShsCounter = new AtomicLong()
+  val updatedShsHistory: concurrent.Map[String, Long] = concurrent.TrieMap.empty
   override def getAddressHistory: Array[String] = {
     currentState.get.addressHistory.m.collect{
     case (sh, historyEntry) =>
@@ -85,12 +88,16 @@ class TxsMonitor extends TxsMonitorMBean with TxsMonitorStateListener {
   override def getHeartbeatTick: Long = {
     heartbeatCounter.get()
   }
-  override def updatedShsTick(n: Int): Unit = {
-    updatedShsCounter.addAndGet(n)
+  override def updatedShsTick(shs: Seq[String]): Unit = {
+    if (updatedShsCounter.addAndGet(shs.size) > HistoryMaxSize){
+      updatedShsHistory.clear()
+    }
+    shs.foreach{ updatedShsHistory.put(_, System.currentTimeMillis()) }
   }
-
   override def getUpdatedShsTick: Long = {
     updatedShsCounter.get()
   }
-
+  override def getUpdatedShsHistory: Array[String] = {
+    updatedShsHistory.collect{ case (k,v) => s"$v $k" }.toArray
+  }
 }

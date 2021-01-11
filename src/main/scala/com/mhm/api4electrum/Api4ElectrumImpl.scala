@@ -217,7 +217,7 @@ class Api4ElectrumImpl(core: Api4ElectrumCore, transactionMonitor: TransactionMo
       onBlockchainTipUpdated(tipHexHeight, outputStream)
     }
     val updatedShs = updateMonitorStateWithExtraResult(transactionMonitor.checkForUpdatedTxs)
-    monitorStateListener.updatedShsTick(updatedShs.size)
+    monitorStateListener.updatedShsTick(updatedShs.toSeq)
     onUpdatedScripthashes(updatedShs, outputStream)
   } catch {
     case e: java.util.concurrent.TimeoutException =>
