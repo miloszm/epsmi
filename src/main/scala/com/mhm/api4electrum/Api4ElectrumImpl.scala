@@ -3,7 +3,7 @@ package com.mhm.api4electrum
 import java.io.OutputStream
 import java.util.concurrent.atomic.AtomicReference
 
-import com.mhm.bitcoin.{TransactionMonitor, TransactionMonitorState}
+import com.mhm.bitcoin.{NoopTxsMonitorStateListener, TransactionMonitor, TransactionMonitorState, TxsMonitorStateListener}
 import com.mhm.common.model.HexHeight
 import com.mhm.connectors.RpcWrap.wrap
 import com.mhm.main.Constants
@@ -18,13 +18,13 @@ import scala.util.Try
  * Uses Api4ElectrumCore for everything else.
  */
 
-class Api4ElectrumImpl(core: Api4ElectrumCore, transactionMonitor: TransactionMonitor, monitorState: TransactionMonitorState) extends Api4Electrum with Logging {
+class Api4ElectrumImpl(core: Api4ElectrumCore, transactionMonitor: TransactionMonitor, monitorState: TransactionMonitorState, monitorStateListener: TxsMonitorStateListener = NoopTxsMonitorStateListener) extends Api4Electrum with Logging {
 
   val currentMonitorState = new AtomicReference(monitorState)
 
   def updateMonitorState(fun : TransactionMonitorState => TransactionMonitorState): Unit = {
     def uniFun(s: TransactionMonitorState): TransactionMonitorState = fun(s)
-    currentMonitorState.updateAndGet(uniFun)
+    monitorStateListener.updated(currentMonitorState.updateAndGet(uniFun))
   }
 
   def updateMonitorStateWithExtraResult[T](fun : TransactionMonitorState => (T, TransactionMonitorState)) : T = {
@@ -34,7 +34,7 @@ class Api4ElectrumImpl(core: Api4ElectrumCore, transactionMonitor: TransactionMo
       t = Some(a)
       b
     }
-    currentMonitorState.updateAndGet(uniFun)
+    monitorStateListener.updated(currentMonitorState.updateAndGet(uniFun))
     t.get
   }
 

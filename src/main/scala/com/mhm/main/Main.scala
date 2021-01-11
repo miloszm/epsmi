@@ -1,7 +1,7 @@
 package com.mhm.main
 
 import com.mhm.api4electrum.Api4ElectrumCoreConfig
-import com.mhm.bitcoin.{AddressImporter, ReScanner, RescanConfig, TransactionMonitorFactory}
+import com.mhm.bitcoin.{AddressImporter, NoopTxsMonitorStateListener, ReScanner, RescanConfig, TransactionMonitorFactory, TxsMonitor, TxsMonitorStateListener}
 import com.mhm.connectors.BitcoinSConnector
 import com.mhm.rpcserver.RpcServer
 import com.typesafe.config.ConfigFactory
@@ -10,6 +10,27 @@ import grizzled.slf4j.Logging
 import scala.sys.exit
 
 object Main extends App with Logging {
+
+  def initilizeJmx(): TxsMonitorStateListener = {
+    import javax.management.InstanceAlreadyExistsException
+    import javax.management.MBeanRegistrationException
+    import javax.management.MalformedObjectNameException
+    import javax.management.NotCompliantMBeanException
+    import javax.management.ObjectName
+    import java.lang.management.ManagementFactory
+    val txsMonitorStateListener = new TxsMonitor()
+    try {
+      val objectName = new ObjectName("com.mhm.epsmi:type=current,name=txsmonitor")
+      val server = ManagementFactory.getPlatformMBeanServer
+      server.registerMBean(txsMonitorStateListener, objectName)
+    } catch {
+      case e@(_: MalformedObjectNameException | _: InstanceAlreadyExistsException | _: MBeanRegistrationException | _: NotCompliantMBeanException) =>
+        logger.error("jmx initialization error", e)
+        throw e
+    }
+    txsMonitorStateListener
+  }
+
   def doMain(): Unit = {
     val config = ConfigFactory.load()
     val coreConfig = Api4ElectrumCoreConfig.init(config)
@@ -40,7 +61,8 @@ object Main extends App with Logging {
       } else {
         val transactionMonitor = TransactionMonitorFactory.create(bitcoinSConnector.rpcCli)
         val monitorState = transactionMonitor.buildAddressHistory(spksToMonitor, wallets)
-        val server = RpcServer.startServer(transactionMonitor, monitorState, coreConfig)
+        val txsMonitorStateListener = if (config.getBoolean("epsmi.jmx")) initilizeJmx() else NoopTxsMonitorStateListener
+        val server = RpcServer.startServer(transactionMonitor, monitorState, coreConfig, txsMonitorStateListener)
         logger.info(s"server started on port ${coreConfig.port}")
         Thread.sleep(31536000000L)
         server.stop()

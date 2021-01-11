@@ -8,21 +8,21 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.googlecode.jsonrpc4j.{JsonRpcBasicServer, JsonRpcInterceptor, RequestInterceptor, StreamServerWithHeartbeats}
 import com.mhm.api4electrum.{Api4Electrum, Api4ElectrumCore, Api4ElectrumCoreConfig, Api4ElectrumImpl}
-import com.mhm.bitcoin.{TransactionMonitor, TransactionMonitorState}
+import com.mhm.bitcoin.{NoopTxsMonitorStateListener, TransactionMonitor, TransactionMonitorState, TxsMonitorStateListener}
 import com.mhm.connectors.BitcoinSConnector
 import com.mhm.securesocket.SecureSocketMetaFactory
 import grizzled.slf4j.Logging
 import javax.net.ssl.SSLServerSocket
-import scala.concurrent.ExecutionContext.Implicits.global
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.jdk.CollectionConverters.SeqHasAsJava
 
 object RpcServer extends Logging{
   val maxThreads = 1
 
-  def startServer(transactionMonitor: TransactionMonitor, monitorState: TransactionMonitorState, coreConfig: Api4ElectrumCoreConfig): StreamServerWithHeartbeats = {
+  def startServer(transactionMonitor: TransactionMonitor, monitorState: TransactionMonitorState, coreConfig: Api4ElectrumCoreConfig, monitorStateListener: TxsMonitorStateListener = NoopTxsMonitorStateListener): StreamServerWithHeartbeats = {
     val bitcoinSConnector = BitcoinSConnector(coreConfig.isTestnet, coreConfig.btcRpcUsername, coreConfig.btcRpcPassword)
-    val service = new Api4ElectrumImpl(Api4ElectrumCore(bitcoinSConnector.rpcCli, coreConfig), transactionMonitor, monitorState)
+    val service = new Api4ElectrumImpl(Api4ElectrumCore(bitcoinSConnector.rpcCli, coreConfig), transactionMonitor, monitorState, monitorStateListener)
     val jsonRpcServer = new JsonRpcBasicServer(service, classOf[Api4Electrum])
 
     val requestInterceptor = new RequestInterceptor {
