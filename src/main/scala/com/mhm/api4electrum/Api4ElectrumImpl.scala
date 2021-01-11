@@ -216,8 +216,9 @@ class Api4ElectrumImpl(core: Api4ElectrumCore, transactionMonitor: TransactionMo
       logger.debug(s"Blockchain tip updated ${tipHexHeight.height}")
       onBlockchainTipUpdated(tipHexHeight, outputStream)
     }
-    val updatedTxs = updateMonitorStateWithExtraResult(transactionMonitor.checkForUpdatedTxs)
-    onUpdatedScripthashes(updatedTxs, outputStream)
+    val updatedShs = updateMonitorStateWithExtraResult(transactionMonitor.checkForUpdatedTxs)
+    monitorStateListener.updatedShsTick(updatedShs.size)
+    onUpdatedScripthashes(updatedShs, outputStream)
   } catch {
     case e: java.util.concurrent.TimeoutException =>
       logger.warn(s"timeout when processing heartbeat connected, caught: ${e.getClass.getCanonicalName} - ${e.getMessage}")
@@ -225,6 +226,7 @@ class Api4ElectrumImpl(core: Api4ElectrumCore, transactionMonitor: TransactionMo
       logger.error(s"exception caught while servicing heartbeat connected: ${e.getClass.getCanonicalName}", e)
       throw e
   } finally {
+    monitorStateListener.heartbeatTick()
     logger.debug("finished triggerHeartbeatConnected")
   }
 }

@@ -64,14 +64,14 @@ case class TransactionMonitorState(
     this.copy(addressHistory = this.addressHistory.copy(m = newMap))
   }
   def addReorganizableTx(reorganizableTxEntry: ReorganizableTxEntry): TransactionMonitorState = {
-    this.copy(reorganizableTxes = this.reorganizableTxes :+ reorganizableTxEntry)
+    this.copy(reorganizableTxes = this.reorganizableTxes.filterNot(_.txid == reorganizableTxEntry.txid) :+ reorganizableTxEntry)
   }
   def addUpdatedScripthashes(shs: Seq[String]): TransactionMonitorState = {
     this.copy(updatedScripthashes = this.updatedScripthashes ++ shs)
   }
   def addUnconfirmedScripthases(txid: String, shs: Seq[String]): TransactionMonitorState = {
-    val newShs = unconfirmedTxes.getOrElse(txid, Nil) ++ shs
-    val newUnconfirmedTxes = (unconfirmedTxes - txid) + (txid -> newShs)
+    val newShs = unconfirmedTxes.getOrElse(txid, Nil).toSet ++ shs.toSet
+    val newUnconfirmedTxes = (unconfirmedTxes - txid) + (txid -> newShs.toSeq)
     this.copy(unconfirmedTxes = newUnconfirmedTxes)
   }
   def setLastKnownTx(txidAddress: TxidAddress): TransactionMonitorState = {
