@@ -26,23 +26,23 @@ class TxsMonitor extends TxsMonitorMBean with TxsMonitorStateListener {
   override def getAddressHistory: Array[String] = {
     currentState.get.addressHistory.m.collect{
     case (sh, historyEntry) =>
-      s"sh=$sh -> ${historyEntry.history.map(he => s"tx=${he.txHash} height=${he.height}").mkString("|")}"
+      s"sh=$sh -> ${historyEntry.history.map(he => s"txid=${he.txHash} height=${he.height}").mkString("|")}"
     }.toArray
   }
   override def getNonEmptyAddressHistory: Array[String] = {
     currentState.get.addressHistory.m.collect{
     case (sh, historyEntry) if historyEntry.history.nonEmpty =>
-      s"sh=$sh -> ${historyEntry.history.map(he => s"tx=${he.txHash} height=${he.height}").mkString("|")}"
+      s"sh=$sh -> ${historyEntry.history.map(he => s"txid=${he.txHash} height=${he.height}").mkString("|")}"
     }.toArray
   }
   override def getUnconfirmedTxs: Array[String] = {
     currentState.get.unconfirmedTxes.map{ case (sh, txids) =>
-      s"sh=$sh -> ${txids.mkString("|")}"
+      s"txid=$sh -> shs=${txids.mkString("|")}"
     }.toArray
   }
   override def getReorganizableTxs: Array[String] = {
     currentState.get.reorganizableTxes.map{ entry =>
-      s"txid=${entry.txid} height=${entry.height} blockhash=${entry.blockhashOpt.getOrElse("n/a")} relevant shs=${entry.matchingShs.mkString("|")}"
+      s"txid=${entry.txid} height=${entry.height} blockhash=${entry.blockhashOpt.getOrElse("n/a")} shs=${entry.matchingShs.mkString("|")}"
     }.toArray
   }
   override def getLastKnownTx: String = {
