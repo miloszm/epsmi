@@ -109,14 +109,12 @@ case class TransactionMonitorState(
     this.copy(addressHistory = this.addressHistory.copy(m = newMap))
   }
   def initUnconfirmedTxs(): TransactionMonitorState = {
-    val mutableMap = scala.collection.mutable.HashMap[String, Seq[String]]()
-    addressHistory.m.foreach { case (sh, he) =>
-      val unconfirmedTxids = he.history.filter(_.height <= 0).map(_.txHash)
-      unconfirmedTxids.foreach { txid =>
-        mutableMap.put(txid, mutableMap.getOrElse(txid, Nil) :+ sh)
-      }
+    case class TxShPair(tx: String, sh: String)
+    val expanded = addressHistory.m.flatMap { case (sh, he) =>
+      he.history.filter(_.height <= 0).map(_.txHash).map(tx => TxShPair(tx, sh))
     }
-    this.copy(unconfirmedTxes = mutableMap.toMap)
+    val reduced = expanded.groupBy(_.tx).view.mapValues(_.map(_.sh).toSeq)
+    this.copy(unconfirmedTxes = reduced.toMap)
   }
   def getElectrumHistoryHash(sh: String): String = {
     val hashHeights = this.addressHistory.m.get(sh).map {
