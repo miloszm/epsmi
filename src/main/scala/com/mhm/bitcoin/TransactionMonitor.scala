@@ -115,7 +115,7 @@ class TransactionMonitorImpl(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed
     }
 
     val state2 = processListTransactions(skip = 0, obtainedTxids = Set(), state).sortAddressHistory()
-    val state3 = state2.initUnconfirmedTxes()
+    val state3 = state2.initUnconfirmedTxs()
     logger.trace(s"finished buildAddressHistory, history size = ${state3.addressHistory.m.size}, last known = ${state3.lastKnownTx.map(_.txid.substring(0,4))}")
     state3.addressHistory.m.foreach{ case (k, v) =>
       logger.trace(s"ah k=$k --> $v")

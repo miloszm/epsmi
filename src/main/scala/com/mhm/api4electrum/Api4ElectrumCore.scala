@@ -13,7 +13,6 @@ import com.mhm.main.Constants
 import com.mhm.main.Constants.{DONATION_ADDRESS, SERVER_VERSION}
 import com.mhm.util.EpsmiDataOps.{byteVectorOrZeroToArray, byteVectorToArray, intToArray, uint32ToArray}
 import com.mhm.util.{HashOps, MerkleProofOps}
-import com.typesafe.config.Config
 import grizzled.slf4j.Logging
 import javax.xml.bind.DatatypeConverter
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.FeeEstimationMode
@@ -33,7 +32,10 @@ import scala.util.{Failure, Success, Try}
  * to json rpc requirements.
  */
 
-case class Api4ElectrumCore(rpcCli: BitcoindRpcExtendedClient, config: Api4ElectrumCoreConfig = Api4ElectrumCoreConfig.getDefault)(implicit ec: ExecutionContext) extends Logging {
+case class Api4ElectrumCore(
+  rpcCli: BitcoindRpcExtendedClient,
+  config: Api4ElectrumCoreConfig = Api4ElectrumCoreConfig.getDefault
+)(implicit ec: ExecutionContext) extends Logging {
   val bestBlockHash = new AtomicReference[Option[String]](None)
   val printedSlowMempoolWarning = new AtomicBoolean(false)
 
