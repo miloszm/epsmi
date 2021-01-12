@@ -24,4 +24,17 @@ class TransactionMonitorStateTest extends FlatSpec {
     state.unconfirmedTxes("tx6") should contain theSameElementsAs Seq("sh5")
   }
 
+  "sort address history" should "sort according to height, putting unconfirmed last" in {
+    val addressHistory = AddressHistory(Map(
+      "sh1" -> HistoryEntry(subscribed = true, Seq(HistoryElement("tx3", -1), HistoryElement("tx3", 0), HistoryElement("tx3", 500000), HistoryElement("tx3", 600000))),
+      "sh2" -> HistoryEntry(subscribed = true, Seq(HistoryElement("tx3", 0), HistoryElement("tx3", 20), HistoryElement("tx3", 50), HistoryElement("tx3", 10))),
+      "sh3" -> HistoryEntry(subscribed = true, Seq(HistoryElement("tx3", 1000), HistoryElement("tx3", 999), HistoryElement("tx3", 998), HistoryElement("tx3", 900))),
+    ))
+    val state = TransactionMonitorState(addressHistory).sortAddressHistory()
+    def getHeights(sh: String) = state.addressHistory.m.getOrElse(sh, fail).history.map(_.height)
+    getHeights("sh1") should contain theSameElementsInOrderAs Seq(500000, 600000, -1, 0)
+    getHeights("sh2") should contain theSameElementsInOrderAs Seq(10, 20, 50, 0)
+    getHeights("sh3") should contain theSameElementsInOrderAs Seq(900, 998, 999, 1000)
+  }
+
 }

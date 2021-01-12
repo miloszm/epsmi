@@ -84,16 +84,14 @@ case class TransactionMonitorState(
     this.copy(lastKnownTx = None)
   }
   def sortAddressHistory(): TransactionMonitorState = {
+    def sortHistoryEntry(historyEntry: HistoryEntry): HistoryEntry = {
+      val (unconfirmedTxs, confirmedTxs) = historyEntry.history.partition(_.height <= 0)
+      historyEntry.copy(history = confirmedTxs.sortWith(_.height < _.height) ++ unconfirmedTxs)
+    }
     val newMap = addressHistory.m.collect {
-      case (k, v) => k -> sortAddressHistoryList(v)
+      case (k, v) => k -> sortHistoryEntry(v)
     }
     this.copy(addressHistory = this.addressHistory.copy(m = newMap))
-  }
-  private def sortAddressHistoryList(historyEntry: HistoryEntry): HistoryEntry = {
-    val unconfirmedTxs = historyEntry.history.filter(_.height <= 0)
-    val confirmedTxs = historyEntry.history.filter(_.height > 0)
-    val sortedConfirmedTxs = confirmedTxs.sortWith((e1, e2) => e1.height < e2.height)
-    historyEntry.copy(history = sortedConfirmedTxs ++ unconfirmedTxs)
   }
   def resetUpdatedScripthashes(): TransactionMonitorState = {
     this.copy(updatedScripthashes = Nil)
