@@ -15,8 +15,6 @@ import org.bitcoins.core.protocol.transaction.CoinbaseInput
 import org.bitcoins.crypto.DoubleSha256DigestBE
 
 import scala.annotation.tailrec
-import scala.collection.mutable.ListBuffer
-import scala.jdk.CollectionConverters.SetHasAsScala
 import scala.util.{Failure, Success, Try}
 
 case class Tx4HistoryGen(confirmations: Int, txid: String, blockhashOpt: Option[DoubleSha256DigestBE])
@@ -38,13 +36,9 @@ trait TransactionMonitor {
  * @param rpcCli bitcoin core client
  * @param nonWalletAllowed if true allows extracting input transactions when they are not wallet transactions
  */
-class TransactionMonitorImpl(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed: Boolean, initLastKnown: LastKnown = LastKnown(None)) extends TransactionMonitor with Logging {
+class TransactionMonitorImpl(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed: Boolean) extends TransactionMonitor with Logging {
   val ConfirmationsSafeFromReorg = 100
   val BATCH_SIZE = 1000
-
-  val unconfirmedTxes: ConcurrentHashMap[String,Seq[String]] = new java.util.concurrent.ConcurrentHashMap[String, Seq[String]]()
-
-  val reorganizableTxes = ListBuffer[ReorganizableTxEntry]()
 
   def isTxHistoryEligible(tx: ListTransactionsResult, obtainedTxids: Set[String]): Boolean = {
     tx.txid.isDefined && Set("receive", "send", "generate", "immature").contains(tx.category) &&
@@ -375,8 +369,8 @@ class TransactionMonitorImpl(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed
     val state3 = checkForReorganizations(state2)
     val updatedScripthashes = state3.sortAddressHistory().updatedScripthashes
     if (updatedScripthashes.nonEmpty) {
-      logger.debug(s"unconfirmed txes = ${unconfirmedTxes.keySet().asScala.mkString("|")}")
-      logger.debug(s"reorganizable_txes = ${reorganizableTxes.mkString("|")}")
+      logger.debug(s"unconfirmed txes = ${state3.unconfirmedTxes.keys.mkString("|")}")
+      logger.debug(s"reorganizable_txes = ${state3.reorganizableTxes.mkString("|")}")
       logger.debug(s"updated_scripthashes = ${updatedScripthashes.mkString("|")}")
     }
     val updated = updatedScripthashes.filter(sh => state3.addressHistory.m.contains(sh) && state3.addressHistory.m(sh).subscribed)
