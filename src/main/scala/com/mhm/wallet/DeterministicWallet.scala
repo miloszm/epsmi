@@ -38,12 +38,12 @@ abstract class DeterministicWallet(gapLimit: Int, val walletName: String, wallet
       spk.hex.drop(2)
     }
     @tailrec
-    def go(spki: Map[String, ChangeIndexPair], index: Int): Map[String, ChangeIndexPair] = index match {
+    def fillOutSpkIndex(spks: Seq[String], spki: Map[String, ChangeIndexPair], index: Int): Map[String, ChangeIndexPair] = index match {
       case i if i < spks.size =>
-        go((spki - spks(i)) + (spks(i) -> ChangeIndexPair(change, fromIndex + i)), i + 1)
+        fillOutSpkIndex(spks, (spki - spks(i)) + (spks(i) -> ChangeIndexPair(change, fromIndex + i)), i + 1)
       case _ => spki
     }
-    val newScriptPubKeyIndex = go(currentState.get.scriptPubKeyIndex, 0)
+    val newScriptPubKeyIndex = fillOutSpkIndex(spks, currentState.get.scriptPubKeyIndex, 0)
     val newNextIndex = (currentState.get.nextIndex - change) + (change -> Math.max(currentState.get.nextIndex.getOrElse(change, 0), fromIndex+count))
     walletStateListener.updated(currentState.updateAndGet(_.copy(nextIndex = newNextIndex, scriptPubKeyIndex = newScriptPubKeyIndex)))
     val result = AddrsSpksPair(addrs, spks)
