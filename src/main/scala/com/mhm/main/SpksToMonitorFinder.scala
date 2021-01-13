@@ -5,7 +5,7 @@ import java.util
 import com.mhm.connectors.BitcoindRpcExtendedClient
 import com.mhm.connectors.RpcWrap.wrap
 import com.mhm.util.HashOps
-import com.mhm.wallet.{AddrsSpks, DeterministicWallet}
+import com.mhm.wallet.{AddrsSpksPair, DeterministicWallet}
 import com.typesafe.config.{Config, ConfigValue}
 import grizzled.slf4j.Logging
 import org.bitcoins.core.config.{MainNet, NetworkParameters, RegTest, TestNet3}
@@ -58,7 +58,7 @@ class SpksToMonitorFinder(rpcCli: BitcoindRpcExtendedClient, config: Config) ext
       change <- 0 to 1
     } yield {
       logger.debug(s"getting $initialImportCount addresses from index 0 with change=$change")
-      val AddrsSpks(addrs, spks) = wal.getAddresses(rpcCli, change, 0, initialImportCount)
+      val AddrsSpksPair(addrs, spks) = wal.getAddresses(rpcCli, change, 0, initialImportCount)
       addrs.zip(spks).foreach { case (addr, spk) =>
         logger.trace(s"addr = $addr  <==>  spk = $spk  <==>  sh = ${HashOps.script2ScriptHash(spk)}")
       }
@@ -79,11 +79,11 @@ class SpksToMonitorFinder(rpcCli: BitcoindRpcExtendedClient, config: Config) ext
     logger.info(s"Displaying first $TEST_ADDR_COUNT addresses of each master public key:")
     val walletsToImport = keyAndWallets.flatMap { case (key, wal) =>
       logger.debug(s"getting $TEST_ADDR_COUNT addresses for wallet: $key")
-      val AddrsSpks(firstAddrs, _) = wal.getAddresses(rpcCli, 0, 0, count = TEST_ADDR_COUNT)
+      val AddrsSpksPair(firstAddrs, _) = wal.getAddresses(rpcCli, 0, 0, count = TEST_ADDR_COUNT)
       firstAddrs.foreach { addr => logger.info(s"        $addr") }
       val fromIndex = initialImportCount
       logger.debug(s"getting 1 address for wallet: $key from index ${fromIndex - 1}")
-      val AddrsSpks(lastAddrs, _) = wal.getAddresses(rpcCli, 0, fromIndex - 1, 1)
+      val AddrsSpksPair(lastAddrs, _) = wal.getAddresses(rpcCli, 0, fromIndex - 1, 1)
       if (!(firstAddrs ++ lastAddrs).toSet.subsetOf(importedAddresses.map(_.value))) {
         Some(wal)
       } else {

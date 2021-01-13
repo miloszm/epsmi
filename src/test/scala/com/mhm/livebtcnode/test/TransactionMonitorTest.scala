@@ -6,7 +6,7 @@ import com.mhm.epsmi.testbtcrpc.TestBitcoinSConnector.rpcCli
 import com.mhm.connectors.RpcWrap.wrap
 import com.mhm.epsmi.testbtcrpc.TestBitcoinSConnector
 import com.mhm.util.HashOps
-import com.mhm.wallet.{SingleSigWallet, XpubDescTempl}
+import com.mhm.wallet.{SingleSigWallet, XpubDescTemplPair}
 import org.bitcoins.commons.jsonmodels.bitcoind.GetRawTransactionResult
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.scalatest.FlatSpec
@@ -16,7 +16,7 @@ import scodec.bits.HexStringSyntax
 class TransactionMonitorTest extends FlatSpec {
 
   "transaction monitor" should "build history of transactions" in {
-    val args = XpubDescTempl("xpub661MyMwAqRbcGr3NH9q81huWmqC31HMwJ5PqDzHqGnYghQy9QgvxS86qZcBjJVCXbe2uvbP3nG7P8qKkeFp86AwS8vWzdbsoRXTimc7aAZj", "pkh({xpub}/{change}/*)")
+    val args = XpubDescTemplPair("xpub661MyMwAqRbcGr3NH9q81huWmqC31HMwJ5PqDzHqGnYghQy9QgvxS86qZcBjJVCXbe2uvbP3nG7P8qKkeFp86AwS8vWzdbsoRXTimc7aAZj", "pkh({xpub}/{change}/*)")
     val singleSigWallet = new SingleSigWallet(rpcCli, hex"0488b21e", args, gapLimit = 25, "wallet-1")
     val deterministicWallets = Seq(singleSigWallet)
 
