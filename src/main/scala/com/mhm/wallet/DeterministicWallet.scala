@@ -32,15 +32,10 @@ abstract class DeterministicWallet(gapLimit: Int, val walletName: String) extend
        */
       spk.hex.drop(2)
     }
-    logger.info(s"converted ${addrs.size} addresses into ${spks.size} scriptpubkeys, head is ${spks.headOption}")
     spks.indices.foreach{ index =>
       scriptPubKeyIndex.put(spks(index), ChangeIndex(change, fromIndex + index))
     }
-    scriptPubKeyIndex.foreach { case (spk, ci) =>
-      logger.trace(s"scriptPubKeyIndex spk=$spk => $ci")
-    }
     nextIndex.put(change, Math.max(nextIndex.getOrElse(change, 0), fromIndex+count))
-    logger.trace(s"next index = $nextIndex")
     AddrsSpks(addrs, spks)
   }
   val scriptPubKeyIndex = scala.collection.mutable.Map[String, ChangeIndex]()
@@ -93,14 +88,10 @@ abstract class DescriptorDeterministicWallet(xpubVbytes: ByteVector, args: XpubD
       }
     })
   }
-  var descriptors: List[String] = Nil
+  val descriptors: List[String] = Nil
   def deriveAddresses(rpcCli: DescriptorRpc, change: Int, fromIndex: Int, count: Int): Seq[String] = {
     val range: Vector[Double] = Vector(fromIndex, fromIndex + count - 1)
     val result: DeriveAddressesResult = wrap(rpcCli.deriveAddresses(descriptors(change), Some(range)), "deriveAddresses")
-    logger.info(s"derived ${result.addresses.size} addresses from descriptors ${descriptors(change)}, head is ${result.addresses.headOption}")
-    result.addresses.foreach{ ba =>
-      logger.trace(s"derived addr = ${ba.value}")
-    }
     result.addresses.map(_.value)
   }
 }
@@ -114,7 +105,7 @@ class SingleSigWallet(rpcCli: DescriptorRpc, xpubVbytes: ByteVector, args: XpubD
     }
     descriptorsWithoutChecksum
   }
-  this.descriptors = wrap(this.obtainDescriptors(rpcCli)).toList // TODO very very ugly!!!!!
+  override val descriptors = wrap(this.obtainDescriptors(rpcCli)).toList
   override def toString: String = {
     s"SingleSigWallet(xpubVbytes=${xpubVbytes.toHex} xpub=${args.xpub} descTemp=${args.descTempl} gapLimit=$gapLimit descriptors=${descriptors.mkString("|")})"
   }

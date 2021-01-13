@@ -1,6 +1,6 @@
 package com.mhm.epsmi.base
 
-import com.typesafe.config.{Config, ConfigFactory}
+import com.typesafe.config.ConfigFactory
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers.{convertToAnyShouldWrapper, have}
 
