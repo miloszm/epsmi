@@ -45,7 +45,7 @@ trait TxsMonitorMBean {
   def getWalletNextIndexMap: Array[String]
   def getAddrSpkMap: Array[String]
 
-  // set methods to allow copy/paste in jconsole only
+  // set methods to allow copying from fields in jconsole
   def setAddressHistory(a: Array[String]) = ()
   def setNonEmptyAddressHistory(a: Array[String]) = ()
   def setUnconfirmedTxs(a: Array[String]) = ()
@@ -54,6 +54,9 @@ trait TxsMonitorMBean {
   def setLastKnownTx(s: String) = ()
   def setLastKnownAddress(s: String) = ()
   def setSubscribedToHeaders(b: Boolean) = ()
+  def setWalletSPKIndexMap(a: Array[String]) = ()
+  def setWalletNextIndexMap(a: Array[String]) = ()
+  def setAddrSpkMap(a: Array[String]) = ()
 }
 
 class TxsMonitor extends TxsMonitorMBean with TxsMonitorStateListener with WalletStateListener {
