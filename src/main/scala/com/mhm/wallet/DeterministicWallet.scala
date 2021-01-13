@@ -73,15 +73,15 @@ abstract class DeterministicWallet(gapLimit: Int, val walletName: String, wallet
    * to see if we need to import more addresses
    */
   def haveScriptpubkeysOverrunGaplimit(scriptpubkeys: Seq[String]): Map[Int, Int] = {
-    val result = scala.collection.mutable.Map[Int, Int]()
-    scriptpubkeys.foreach { spk =>
-      currentState.get.scriptPubKeyIndex.get(spk).map { case ChangeIndexPair(change, index) =>
+    case class ChangeAddressesNeededPair(change: Int, addressesNeeded: Int)
+    val expanded = scriptpubkeys.flatMap { spk =>
+      currentState.get.scriptPubKeyIndex.get(spk).flatMap { case ChangeIndexPair(change, index) =>
         val distanceFromNext = currentState.get.nextIndex.getOrElse(change, 0) - index
-        if (distanceFromNext <= this.gapLimit)
-          result.put(change, Math.max(result.getOrElse(change, 0), this.gapLimit - distanceFromNext + 1))
+        if (distanceFromNext <= this.gapLimit) Some(ChangeAddressesNeededPair(change, this.gapLimit - distanceFromNext + 1)) else None
       }
     }
-    result.toMap
+    val reduced = expanded.groupBy(_.change).view.mapValues(_.map(_.addressesNeeded).max)
+    reduced.toMap
   }
 }
 
