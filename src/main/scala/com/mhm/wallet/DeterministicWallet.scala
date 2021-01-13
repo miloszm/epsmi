@@ -46,7 +46,9 @@ abstract class DeterministicWallet(gapLimit: Int, val walletName: String, wallet
     val newScriptPubKeyIndex = go(currentState.get.scriptPubKeyIndex, 0)
     val newNextIndex = (currentState.get.nextIndex - change) + (change -> Math.max(currentState.get.nextIndex.getOrElse(change, 0), fromIndex+count))
     walletStateListener.updated(currentState.updateAndGet(_.copy(nextIndex = newNextIndex, scriptPubKeyIndex = newScriptPubKeyIndex)))
-    AddrsSpksPair(addrs, spks)
+    val result = AddrsSpksPair(addrs, spks)
+    walletStateListener.setAddressSpkMap(result)
+    result
   }
   def getNewAddresses(rpcCli: DescriptorRpc with UtilRpc, change: Int, count: Int): AddrsSpksPair = {
     getAddresses(rpcCli, change, currentState.get.nextIndex.getOrElse(change, 0), count)

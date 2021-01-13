@@ -2,7 +2,7 @@ package com.mhm.bitcoin
 
 import java.util.concurrent.atomic.{AtomicLong, AtomicReference}
 
-import com.mhm.wallet.{ChangeIndexPair, DeterministicWalletState}
+import com.mhm.wallet.{AddrsSpksPair, ChangeIndexPair, DeterministicWalletState}
 
 import scala.collection.concurrent
 
@@ -20,10 +20,12 @@ object NoopTxsMonitorStateListener extends TxsMonitorStateListener {
 
 trait WalletStateListener {
   def updated(newState: DeterministicWalletState): Unit
+  def setAddressSpkMap(addrsSpks: AddrsSpksPair): Unit
 }
 
 object NoopWalletStateListener extends WalletStateListener {
   override def updated(newState: DeterministicWalletState): Unit = ()
+  override def setAddressSpkMap(addrsSpks: AddrsSpksPair): Unit = ()
 }
 
 trait TxsMonitorMBean {
@@ -41,6 +43,7 @@ trait TxsMonitorMBean {
   def getUpdatedShsHistory: Array[String]
   def getWalletSPKIndexMap: Array[String]
   def getWalletNextIndexMap: Array[String]
+  def getAddrSpkMap: Array[String]
 
   // set methods to allow copy/paste in jconsole only
   def setAddressHistory(a: Array[String]) = ()
@@ -59,6 +62,7 @@ class TxsMonitor extends TxsMonitorMBean with TxsMonitorStateListener with Walle
   val heartbeatCounter = new AtomicLong()
   val updatedShsCounter = new AtomicLong()
   val updatedShsHistory: concurrent.Map[String, Long] = concurrent.TrieMap.empty
+  val addrsSpksMap: concurrent.Map[String, String] = concurrent.TrieMap.empty
   override def getAddressHistory: Array[String] = {
     currentMonitorState.get.addressHistory.m.collect{
     case (sh, historyEntry) =>
@@ -129,6 +133,16 @@ class TxsMonitor extends TxsMonitorMBean with TxsMonitorStateListener with Walle
   }
   override def getWalletNextIndexMap: Array[String] = {
     currentWalletState.get.nextIndex.map { case (k, v) =>
+      s"$k -> $v"
+    }.toArray
+  }
+  override def setAddressSpkMap(addrsSpks: AddrsSpksPair): Unit = {
+    addrsSpks.addrs.indices.foreach { i =>
+      addrsSpksMap.put(addrsSpks.addrs(i), addrsSpks.spks(i))
+    }
+  }
+  override def getAddrSpkMap: Array[String] = {
+    addrsSpksMap.map { case (k, v) =>
       s"$k -> $v"
     }.toArray
   }
