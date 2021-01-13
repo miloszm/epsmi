@@ -2,6 +2,7 @@ package com.mhm.wallet
 
 import java.util.concurrent.atomic.AtomicReference
 
+import com.mhm.bitcoin.{NoopWalletStateListener, WalletStateListener}
 import com.mhm.connectors.RpcWrap.wrap
 import grizzled.slf4j.Logging
 import org.bitcoins.commons.jsonmodels.bitcoind.{DeriveAddressesResult, ValidateAddressResult}
@@ -21,8 +22,9 @@ case class ChangeIndexPair(change: Int, index: Int){
   override def toString: String = s"(change=$change, index=$index)"
 }
 
-abstract class DeterministicWallet(gapLimit: Int, val walletName: String) extends Logging {
+abstract class DeterministicWallet(gapLimit: Int, val walletName: String, walletStateListener: WalletStateListener = NoopWalletStateListener) extends Logging {
   val currentState = new AtomicReference[DeterministicWalletState](DeterministicWalletState.createEmpty())
+  walletStateListener.updated(currentState.get)
   def deriveAddresses(rpcCli: DescriptorRpc, change: Int, fromIndex: Int, count: Int): Seq[String]
   def getAddresses(rpcCli: DescriptorRpc with UtilRpc, change: Int, fromIndex: Int, count: Int): AddrsSpksPair = {
     val addrs = deriveAddresses(rpcCli, change, fromIndex, count)
@@ -43,7 +45,7 @@ abstract class DeterministicWallet(gapLimit: Int, val walletName: String) extend
     }
     val newScriptPubKeyIndex = go(currentState.get.scriptPubKeyIndex, 0)
     val newNextIndex = (currentState.get.nextIndex - change) + (change -> Math.max(currentState.get.nextIndex.getOrElse(change, 0), fromIndex+count))
-    currentState.updateAndGet(_.copy(nextIndex = newNextIndex, scriptPubKeyIndex = newScriptPubKeyIndex))
+    walletStateListener.updated(currentState.updateAndGet(_.copy(nextIndex = newNextIndex, scriptPubKeyIndex = newScriptPubKeyIndex)))
     AddrsSpksPair(addrs, spks)
   }
   def getNewAddresses(rpcCli: DescriptorRpc with UtilRpc, change: Int, count: Int): AddrsSpksPair = {
@@ -51,7 +53,7 @@ abstract class DeterministicWallet(gapLimit: Int, val walletName: String) extend
   }
   def rewindOne(change: Int): Unit = {
     val newNextIndex = (currentState.get.nextIndex - change) + (change -> (currentState.get.nextIndex.getOrElse(change, 1) - 1))
-    currentState.updateAndGet(_.copy(nextIndex = newNextIndex))
+    walletStateListener.updated(currentState.updateAndGet(_.copy(nextIndex = newNextIndex)))
   }
   def findFirstNotImported(rpcCli: DescriptorRpc with UtilRpc, change: Int, importedAddresses: Set[BitcoinAddress]): String = {
     @tailrec
@@ -81,7 +83,7 @@ abstract class DeterministicWallet(gapLimit: Int, val walletName: String) extend
   }
 }
 
-abstract class DescriptorDeterministicWallet(xpubVbytes: ByteVector, args: XpubDescTemplPair, gapLimit: Int, walletName: String) extends DeterministicWallet(gapLimit, walletName) {
+abstract class DescriptorDeterministicWallet(xpubVbytes: ByteVector, args: XpubDescTemplPair, gapLimit: Int, walletName: String, walletStateListener: WalletStateListener = NoopWalletStateListener) extends DeterministicWallet(gapLimit, walletName, walletStateListener) {
   def obtainDescriptorsWithoutChecksum(args: XpubDescTemplPair): Seq[String]
   def obtainDescriptors(rpcCli: DescriptorRpc): Future[Seq[String]] = {
     val dwc = obtainDescriptorsWithoutChecksum(args)
@@ -103,7 +105,7 @@ abstract class DescriptorDeterministicWallet(xpubVbytes: ByteVector, args: XpubD
   }
 }
 
-class SingleSigWallet(rpcCli: DescriptorRpc, xpubVbytes: ByteVector, args: XpubDescTemplPair, gapLimit: Int, walletName: String) extends DescriptorDeterministicWallet(xpubVbytes, args, gapLimit, walletName){
+class SingleSigWallet(rpcCli: DescriptorRpc, xpubVbytes: ByteVector, args: XpubDescTemplPair, gapLimit: Int, walletName: String, walletStateListener: WalletStateListener = NoopWalletStateListener) extends DescriptorDeterministicWallet(xpubVbytes, args, gapLimit, walletName, walletStateListener){
   override def obtainDescriptorsWithoutChecksum(args: XpubDescTemplPair): Seq[String] = {
     val xpub = WalletOps.convertToStandardXpub(args.xpub, xpubVbytes)
     val descriptorsWithoutChecksum = (0 to 1).map{ change =>
@@ -127,7 +129,7 @@ class SingleSigOldMnemonicWallet extends DeterministicWallet(gapLimit = 0, walle
 }
 
 object DeterministicWallet {
-  def parseElectrumMasterPublicKey(rpcCli: DescriptorRpc, keyData: String, gapLimit: Int, chain: String, walletName: String): DescriptorDeterministicWallet = {
+  def parseElectrumMasterPublicKey(rpcCli: DescriptorRpc, keyData: String, gapLimit: Int, chain: String, walletName: String, walletStateListener: WalletStateListener = NoopWalletStateListener): DescriptorDeterministicWallet = {
     val xpubVBytes: ByteVector = if (chain == "main") hex"0488b21e"
       else if (chain == "test" || chain == "regtest") hex"043587cf"
       else throw new IllegalStateException("unrecognized bitcoin chain")
@@ -142,7 +144,7 @@ object DeterministicWallet {
 
     val wallet = descriptorTemplateOpt match {
       case Some(descriptorTemplate) =>
-        new SingleSigWallet(rpcCli, xpubVBytes, XpubDescTemplPair(keyData, descriptorTemplate), gapLimit, walletName)
+        new SingleSigWallet(rpcCli, xpubVBytes, XpubDescTemplPair(keyData, descriptorTemplate), gapLimit, walletName, walletStateListener)
       case None =>
         throw new IllegalArgumentException("SingleSigOldMnemonicWallet not implemented yet")
     }

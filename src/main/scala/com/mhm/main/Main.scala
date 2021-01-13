@@ -1,7 +1,7 @@
 package com.mhm.main
 
 import com.mhm.api4electrum.Api4ElectrumCoreConfig
-import com.mhm.bitcoin.{AddressImporter, NoopTxsMonitorStateListener, ReScanner, RescanConfig, TransactionMonitorFactory, TxsMonitor, TxsMonitorStateListener}
+import com.mhm.bitcoin.{AddressImporter, NoopTxsMonitorStateListener, NoopWalletStateListener, ReScanner, RescanConfig, TransactionMonitorFactory, TxsMonitor, TxsMonitorStateListener, WalletStateListener}
 import com.mhm.connectors.BitcoinSConnector
 import com.mhm.rpcserver.RpcServer
 import com.typesafe.config.ConfigFactory
@@ -11,24 +11,24 @@ import scala.sys.exit
 
 object Main extends App with Logging {
 
-  def initilizeJmx(): TxsMonitorStateListener = {
+  def initilizeJmx(): TxsMonitorStateListener with WalletStateListener = {
     import javax.management.InstanceAlreadyExistsException
     import javax.management.MBeanRegistrationException
     import javax.management.MalformedObjectNameException
     import javax.management.NotCompliantMBeanException
     import javax.management.ObjectName
     import java.lang.management.ManagementFactory
-    val txsMonitorStateListener = new TxsMonitor()
+    val txsMonitor = new TxsMonitor()
     try {
       val objectName = new ObjectName("com.mhm.epsmi:type=current,name=txsmonitor")
       val server = ManagementFactory.getPlatformMBeanServer
-      server.registerMBean(txsMonitorStateListener, objectName)
+      server.registerMBean(txsMonitor, objectName)
     } catch {
       case e@(_: MalformedObjectNameException | _: InstanceAlreadyExistsException | _: MBeanRegistrationException | _: NotCompliantMBeanException) =>
         logger.error("jmx initialization error", e)
         throw e
     }
-    txsMonitorStateListener
+    txsMonitor
   }
 
   def doMain(): Unit = {
@@ -42,7 +42,9 @@ object Main extends App with Logging {
       ReScanner.rescan(bitcoinSConnector.rpcCli, rescanConfig.startBlock)
     }
     else {
-      val SpksToMonitorResult(importNeeded, spksToMonitor, wallets) = new SpksToMonitorFinder(bitcoinSConnector.rpcCli, config).getScriptPubKeysToMonitor()
+      val txsMonitorOpt = if (config.getBoolean("epsmi.jmx")) Some(initilizeJmx()) else None
+      val SpksToMonitorResult(importNeeded, spksToMonitor, wallets) =
+        new SpksToMonitorFinder(bitcoinSConnector.rpcCli, config).getScriptPubKeysToMonitor(txsMonitorOpt.getOrElse(NoopWalletStateListener))
       if (importNeeded) {
         AddressImporter.importAddresses(
           rpcCli = bitcoinSConnector.rpcCli,
@@ -61,8 +63,7 @@ object Main extends App with Logging {
       } else {
         val transactionMonitor = TransactionMonitorFactory.create(bitcoinSConnector.rpcCli)
         val monitorState = transactionMonitor.buildAddressHistory(spksToMonitor, wallets)
-        val txsMonitorStateListener = if (config.getBoolean("epsmi.jmx")) initilizeJmx() else NoopTxsMonitorStateListener
-        val server = RpcServer.startServer(transactionMonitor, monitorState, coreConfig, txsMonitorStateListener)
+        val server = RpcServer.startServer(transactionMonitor, monitorState, coreConfig, txsMonitorOpt.getOrElse(NoopTxsMonitorStateListener))
         logger.info(s"server started on port ${coreConfig.port}")
         Thread.sleep(31536000000L)
         server.stop()

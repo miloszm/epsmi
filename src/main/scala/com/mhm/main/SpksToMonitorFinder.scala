@@ -2,6 +2,7 @@ package com.mhm.main
 
 import java.util
 
+import com.mhm.bitcoin.{NoopWalletStateListener, WalletStateListener}
 import com.mhm.connectors.BitcoindRpcExtendedClient
 import com.mhm.connectors.RpcWrap.wrap
 import com.mhm.util.HashOps
@@ -19,7 +20,7 @@ class SpksToMonitorFinder(rpcCli: BitcoindRpcExtendedClient, config: Config) ext
   val TEST_ADDR_COUNT = 3
   type SetupRpc = BlockchainRpc with DescriptorRpc with V17LabelRpc with UtilRpc
 
-  def getScriptPubKeysToMonitor(): SpksToMonitorResult = {
+  def getScriptPubKeysToMonitor(walletStateListener: WalletStateListener = NoopWalletStateListener): SpksToMonitorResult = {
     logger.trace("started getScriptPubKeysToMonitor")
     val listedLabels = wrap(rpcCli.listLabels())
     val importedAddresses = if (listedLabels.contains(Constants.ADDRESSES_LABEL)) {
@@ -29,7 +30,7 @@ class SpksToMonitorFinder(rpcCli: BitcoindRpcExtendedClient, config: Config) ext
     logger.debug(s"imported ${importedAddresses.size} addresses, head is ${importedAddresses.headOption}")
     val setupConfig = SpksToMonitorFinderConfig.init(config)
 
-    val deterministicWallets = obtainDeterministicWallets(rpcCli, setupConfig.mpks)
+    val deterministicWallets = obtainDeterministicWallets(rpcCli, setupConfig.mpks, walletStateListener)
     val walletsToImport = determineWalletsToImport(deterministicWallets, setupConfig.mpks, setupConfig.initialImportCount, importedAddresses)
     val importNeededForWallets = walletsToImport.nonEmpty
 
@@ -100,14 +101,14 @@ class SpksToMonitorFinder(rpcCli: BitcoindRpcExtendedClient, config: Config) ext
       case TestNet3 => "test"
     }
 
-  private def obtainDeterministicWallets(rpcCli: BlockchainRpc with DescriptorRpc, mpks: Seq[util.Map.Entry[String, ConfigValue]]): Seq[DeterministicWallet] = {
+  private def obtainDeterministicWallets(rpcCli: BlockchainRpc with DescriptorRpc, mpks: Seq[util.Map.Entry[String, ConfigValue]], walletStateListener: WalletStateListener = NoopWalletStateListener): Seq[DeterministicWallet] = {
     logger.info("obtaining deterministic wallets")
     val chain = networkString(wrap(rpcCli.getBlockChainInfo, "getBlockChainInfo").chain)
     logger.info(s"chain is: $chain")
     val wallets = mpks.map { mpkEntry =>
       val mpk = mpkEntry.getValue.unwrapped().toString
       val gapLimit = config.getInt("epsmi.gap-limit")
-      val wallet = DeterministicWallet.parseElectrumMasterPublicKey(rpcCli, mpk, gapLimit, chain, mpkEntry.getKey)
+      val wallet = DeterministicWallet.parseElectrumMasterPublicKey(rpcCli, mpk, gapLimit, chain, mpkEntry.getKey, walletStateListener)
       wallet.asInstanceOf[DeterministicWallet]
     }
     logger.info(s"obtained ${wallets.size} deterministic wallet(s), head is ${wallets.headOption.map(w => w.walletName).getOrElse("unknown")}")
