@@ -76,15 +76,16 @@ class DeterministicWalletTest extends FlatSpec {
     val state = DeterministicWalletState(
       Map(
         "spk1" -> ChangeIndexPair(0, 5),
-        "spk2" -> ChangeIndexPair(1, 7)
+        "spk2" -> ChangeIndexPair(1, 7),
+        "spk3" -> ChangeIndexPair(1, 9)
       ),
       Map(0 -> 20, 1 -> 25)
     )
     singleSigWallet.currentState.set(state)
-    val result = singleSigWallet.haveScriptpubkeysOverrunGaplimit(Seq("spk1", "spk2"))
+    val result = singleSigWallet.haveScriptpubkeysOverrunGaplimit(Seq("spk1", "spk2", "spk3"))
     result.keys should contain theSameElementsAs Seq(0, 1)
     result(0) shouldBe (GapLimit - (20 - 5) + 1)
-    result(1) shouldBe (GapLimit - (25 - 7) + 1)
+    result(1) shouldBe (GapLimit - (25 - 9) + 1)
   }
 
 }
