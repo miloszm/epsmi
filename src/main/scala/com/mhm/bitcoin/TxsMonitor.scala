@@ -2,7 +2,7 @@ package com.mhm.bitcoin
 
 import java.util.concurrent.atomic.{AtomicLong, AtomicReference}
 
-import com.mhm.wallet.DeterministicWalletState
+import com.mhm.wallet.{ChangeIndexPair, DeterministicWalletState}
 
 import scala.collection.concurrent
 
@@ -118,7 +118,12 @@ class TxsMonitor extends TxsMonitorMBean with TxsMonitorStateListener with Walle
     currentWalletState.set(newState)
   }
   override def getWalletSPKIndexMap: Array[String] = {
-    currentWalletState.get.scriptPubKeyIndex.map { case (k, v) =>
+    def sortingFun(p1: (String, ChangeIndexPair), p2: (String, ChangeIndexPair)): Boolean = {
+      val (_, l) = p1
+      val (_, r) = p2
+      if (l.change == r.change) l.index < r.index else l.change < r.change
+    }
+    currentWalletState.get.scriptPubKeyIndex.toList.sortWith(sortingFun).map { case (k, v) =>
       s"$k -> change=${v.change} index=${v.index}"
     }.toArray
   }
