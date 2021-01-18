@@ -9,7 +9,7 @@ import com.mhm.util.HashOps.doHash
 import javax.xml.bind.DatatypeConverter
 
 import scala.annotation.tailrec
-import scala.collection.mutable.{ArrayBuffer, ListBuffer}
+//import scala.collection.mutable.ListBuffer
 
 object MerkleProofOps {
   def isBitSet(b: Byte, pos: Int): Boolean = (b & (1 << pos)) != 0
