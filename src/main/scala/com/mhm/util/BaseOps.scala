@@ -7,6 +7,8 @@ import scala.annotation.tailrec
 
 object BaseOps {
 
+  def byteToUnsignedInt(b: Byte): Int = b.toInt & 0xff
+
   def decodeBase256(s: String): BigInt = {
     val v = ByteVector(DatatypeConverter.parseHexBinary(s))
     decodeBytesBase256(v)

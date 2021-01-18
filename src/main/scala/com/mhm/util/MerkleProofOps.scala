@@ -3,6 +3,7 @@ package com.mhm.util
 import java.nio.ByteBuffer
 
 import com.mhm.common.model.ElectrumMerkleProof
+import com.mhm.util.BaseOps.byteToUnsignedInt
 import com.mhm.util.EpsmiDataOps.intCeilLog2
 import com.mhm.util.HashOps.doHash
 import javax.xml.bind.DatatypeConverter
@@ -106,26 +107,30 @@ object MerkleProofOps {
     if (!right.isTuple) acc3 :+ right.value else acc3
   }
 
+  case class ReadResult[T](newPos: Int, value: T)
+
+  def readVarInt(buf: Array[Byte], pos: Int): ReadResult[Long] = {
+    val v = byteToUnsignedInt(buf(pos))
+    if ( v < 253)
+      ReadResult(pos + 1, v)
+    else {
+      val numBytes = Math.pow(2.0, v - 252).toInt
+      val newPos = pos + 1 + numBytes
+      val intBytes = ByteBuffer.wrap(buf.slice(newPos - numBytes, newPos).reverse)
+      numBytes match {
+        case 2 => ReadResult(newPos, intBytes.getShort)
+        case 4 => ReadResult(newPos, intBytes.getInt)
+        case 8 => ReadResult(newPos, intBytes.getLong)
+      }
+    }
+  }
 
   def convertCoreToElectrumMerkleProof(merkleBlockHex: String): ElectrumMerkleProof = {
 
-    case class ReadResult[T](newPos: Int, value: T)
-
     def readAsInt(buf: Array[Byte], pos: Int, bytez: Int): ReadResult[Int] = {
       val newPos = pos + bytez
-      val intBytes = ByteBuffer.wrap(buf.slice(80, 84).reverse)
+      val intBytes = ByteBuffer.wrap(buf.slice(pos, pos + bytez).reverse)
       ReadResult(newPos, intBytes.getInt)
-    }
-
-    def readVarInt(buf: Array[Byte], pos: Int): ReadResult[Int] = {
-      val v = buf(pos)
-      if ( v < 253)
-        ReadResult(pos + 1, v)
-      else {
-        val newPos = pos + 1 + Math.pow(2.0, v-252).toInt // TODO make sure this `else` part is tested
-        val intBytes = ByteBuffer.wrap(buf.slice(newPos, newPos+4).reverse)
-        ReadResult(newPos, intBytes.getInt)
-      }
     }
 
     def readBytes(buf: Array[Byte], pos: Int, bytez: Int): ReadResult[Array[Byte]] = {
@@ -144,14 +149,14 @@ object MerkleProofOps {
     pos = p2
 
     val hashes = new ArrayBuffer[String]
-    for (_ <- 0 until hashCount){
+    for (_ <- 0 until hashCount.toInt){
       val ReadResult(p, h) = readBytes(proof, pos, 32)
       hashes.addOne(DatatypeConverter.printHexBinary(h))
       pos = p
     }
 
     val ReadResult(pos3, flagsCount) = readVarInt(proof, pos)
-    val ReadResult(_, flagsReversed) = readBytes(proof, pos3, flagsCount)
+    val ReadResult(_, flagsReversed) = readBytes(proof, pos3, flagsCount.toInt)
     val flags = flagsReversed.reverse
 
     val rootNode = deserializeCoreFormatMerkleProof(hashes.toArray, flags, txCount)
