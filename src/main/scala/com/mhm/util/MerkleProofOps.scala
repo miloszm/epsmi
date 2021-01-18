@@ -8,6 +8,7 @@ import com.mhm.util.EpsmiDataOps.intCeilLog2
 import com.mhm.util.HashOps.doHash
 import javax.xml.bind.DatatypeConverter
 
+import scala.annotation.tailrec
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
 object MerkleProofOps {
@@ -138,25 +139,25 @@ object MerkleProofOps {
       ReadResult(newPos, buf.slice(newPos - bytez, newPos).reverse)
     }
 
-    var pos = 80
+    val pos = 80
     val proof = DatatypeConverter.parseHexBinary(merkleBlockHex)
     val merkleRoot = Array.ofDim[Byte](32)
     Array.copy(proof, 36, merkleRoot, 0, 32)
-    val ReadResult(p1, txCount) = readAsInt(proof, pos, 4)
-    pos = p1
+    val ReadResult(pos1, txCount) = readAsInt(proof, pos, 4)
 
-    val ReadResult(p2, hashCount) = readVarInt(proof, pos)
-    pos = p2
+    val ReadResult(pos2, hashCount) = readVarInt(proof, pos1)
 
-    val hashes = new ArrayBuffer[String]
-    for (_ <- 0 until hashCount.toInt){
-      val ReadResult(p, h) = readBytes(proof, pos, 32)
-      hashes.addOne(DatatypeConverter.printHexBinary(h))
-      pos = p
+    @tailrec
+    def readHashes(curIndex: Int, curPos: Int, hashes: List[String]): (Int, List[String]) = curIndex match {
+      case i if i == hashCount.toInt => (curPos, hashes)
+      case i =>
+        val ReadResult(p, h) = readBytes(proof, curPos, 32)
+        readHashes(i + 1, p, hashes :+ DatatypeConverter.printHexBinary(h))
     }
+    val (pos3, hashes) = readHashes(0, pos2, Nil)
 
-    val ReadResult(pos3, flagsCount) = readVarInt(proof, pos)
-    val ReadResult(_, flagsReversed) = readBytes(proof, pos3, flagsCount.toInt)
+    val ReadResult(pos4, flagsCount) = readVarInt(proof, pos3)
+    val ReadResult(_, flagsReversed) = readBytes(proof, pos4, flagsCount.toInt)
     val flags = flagsReversed.reverse
 
     val rootNode = deserializeCoreFormatMerkleProof(hashes.toArray, flags, txCount)
@@ -166,7 +167,7 @@ object MerkleProofOps {
       val tx = hashesList.remove(if (hashesList(1).startsWith("tx")) 1 else 0)
       val tokens = tx.split(":")
       if (hashesList.head.startsWith("tx")){
-        val h0 = hashesList.remove(0)
+        hashesList.remove(0)
         hashesList.prepend(tokens(2))
       }
       val txPos = tokens(1).toIntOption.getOrElse(0)
