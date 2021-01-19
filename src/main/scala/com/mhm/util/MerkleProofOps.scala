@@ -126,41 +126,41 @@ object MerkleProofOps {
     }
   }
 
+  def readAsInt(buf: Array[Byte], pos: Int, bytez: Int): ReadResult[Int] = {
+    val newPos = pos + bytez
+    val intBytes = ByteBuffer.wrap(buf.slice(pos, pos + bytez).reverse)
+    ReadResult(newPos, intBytes.getInt)
+  }
+
+  def readBytes(buf: Array[Byte], pos: Int, bytez: Int): ReadResult[Array[Byte]] = {
+    val newPos = pos + bytez
+    ReadResult(newPos, buf.slice(newPos - bytez, newPos).reverse)
+  }
+
+  case class CurrentPositionHashesPair(curPos: Int, hashes: List[String])
+
+  def readHashes(curPos: Int, hashCount: Int, proof: Array[Byte]): CurrentPositionHashesPair = {
+    @tailrec
+    def doReadHashes(curIndex: Int, curPos: Int, hashes: List[String]): CurrentPositionHashesPair = curIndex match {
+      case i if i == hashCount => CurrentPositionHashesPair(curPos, hashes)
+      case i =>
+        val ReadResult(p, h) = readBytes(proof, curPos, 32)
+        doReadHashes(i + 1, p, hashes :+ DatatypeConverter.printHexBinary(h))
+    }
+    doReadHashes(0, curPos, Nil)
+  }
+
   def convertCoreToElectrumMerkleProof(merkleBlockHex: String): ElectrumMerkleProof = {
-
-    def readAsInt(buf: Array[Byte], pos: Int, bytez: Int): ReadResult[Int] = {
-      val newPos = pos + bytez
-      val intBytes = ByteBuffer.wrap(buf.slice(pos, pos + bytez).reverse)
-      ReadResult(newPos, intBytes.getInt)
-    }
-
-    def readBytes(buf: Array[Byte], pos: Int, bytez: Int): ReadResult[Array[Byte]] = {
-      val newPos = pos + bytez
-      ReadResult(newPos, buf.slice(newPos - bytez, newPos).reverse)
-    }
-
     val pos = 80
     val proof = DatatypeConverter.parseHexBinary(merkleBlockHex)
     val merkleRoot = Array.ofDim[Byte](32)
     Array.copy(proof, 36, merkleRoot, 0, 32)
     val ReadResult(pos1, txCount) = readAsInt(proof, pos, 4)
-
     val ReadResult(pos2, hashCount) = readVarInt(proof, pos1)
-
-    @tailrec
-    def readHashes(curIndex: Int, curPos: Int, hashes: List[String]): (Int, List[String]) = curIndex match {
-      case i if i == hashCount.toInt => (curPos, hashes)
-      case i =>
-        val ReadResult(p, h) = readBytes(proof, curPos, 32)
-        readHashes(i + 1, p, hashes :+ DatatypeConverter.printHexBinary(h))
-    }
-    val (pos3, hashes) = readHashes(0, pos2, Nil)
-
+    val CurrentPositionHashesPair(pos3, hashes) = readHashes(pos2, hashCount.toInt, proof)
     val ReadResult(pos4, flagsCount) = readVarInt(proof, pos3)
     val ReadResult(_, flagsReversed) = readBytes(proof, pos4, flagsCount.toInt)
-    val flags = flagsReversed.reverse
-
-    val rootNode = deserializeCoreFormatMerkleProof(hashes.toArray, flags, txCount)
+    val rootNode = deserializeCoreFormatMerkleProof(hashes.toArray, flagsReversed.reverse, txCount)
 
     if (rootNode.isTuple) {
       val hashesList = ListBuffer(expandTreeElectrumFormatMerkleProof(rootNode.asInstanceOf[TupleMerkleNode], Nil): _*)
