@@ -56,4 +56,36 @@ object BaseOps {
     encodeBase256(decodeBase58(s))
   }
 
+  def hexDecode(hs: String): Array[Byte] = {
+    DatatypeConverter.parseHexBinary(hs)
+  }
+
+  def hexDecodeBV(hs: String): ByteVector = {
+    ByteVector.fromHex(hs).getOrElse(throw new IllegalArgumentException("incorrect hex string"))
+  }
+
+  def hexEncode(b: Array[Byte]): String = {
+    DatatypeConverter.printHexBinary(b)
+  }
+
+  def hexEncodeBV(b: ByteVector): String = {
+    b.toHex.toUpperCase
+  }
+
+  def hexDecodeRev(hs: String): Array[Byte] = {
+    DatatypeConverter.parseHexBinary(hs).reverse
+  }
+
+  def hexDecodeRevBV(hs: String): ByteVector = {
+    hexDecodeBV(hs).reverse
+  }
+
+  def hexEncodeRev(b: Array[Byte]): String = {
+    DatatypeConverter.printHexBinary(b.reverse)
+  }
+
+  def hexEncodeRevBV(b: ByteVector): String = {
+    hexEncodeBV(b.reverse)
+  }
+
 }

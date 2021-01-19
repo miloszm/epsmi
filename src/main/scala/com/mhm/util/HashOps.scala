@@ -3,24 +3,22 @@ package com.mhm.util
 import java.security.MessageDigest
 
 import com.mhm.common.model.HexHeight
-import com.mhm.util.MerkleProofOps.hashDecodeRev
-import javax.xml.bind.DatatypeConverter
+import com.mhm.util.BaseOps.{hexDecodeRevBV, hexEncodeRevBV}
 import javax.xml.bind.DatatypeConverter.printHexBinary
 import scodec.bits.ByteVector
 
 object HashOps {
 
-  // TODO convert to ByteVector
   def hashMerkleRoot(merkle: Array[String], targetHash: String, pos: Int): String = {
-    var h = hashDecodeRev(targetHash)
+    var h = hexDecodeRevBV(targetHash)
     for (i <- merkle.indices){
       val item = merkle(i)
       h = if (((pos >> i) & 1) != 0)
-        doHash(hashDecodeRev(item) ++ h)
+        doHashBV(hexDecodeRevBV(item) ++ h)
       else
-        doHash(h ++ hashDecodeRev(item))
+        doHashBV(h ++ hexDecodeRevBV(item))
     }
-    MerkleProofOps.hashEncodeRev(h)
+    hexEncodeRevBV(h)
   }
 
   def sha256(a: Array[Byte]): Array[Byte] = {
@@ -36,13 +34,16 @@ object HashOps {
     sha256(sha256(a))
   }
 
+  def doHashBV(a: ByteVector): ByteVector = {
+    sha256BV(sha256BV(a))
+  }
+
   def binDblSha256(v: ByteVector): ByteVector = {
-    ByteVector(doHash(v.toArray))
+    doHashBV(v)
   }
 
   def script2ScriptHash(s: String): String = {
-    val h = sha256BV(ByteVector.fromHex(s).getOrElse(throw new IllegalArgumentException(s"could not convert to hex: '$s'"))).take(32)
-    h.reverse.toHex
+    sha256BV(BaseOps.hexDecodeBV(s)).take(32).reverse.toHex
   }
 
 //  # 'result' field in the blockchain.scripthash.subscribe method

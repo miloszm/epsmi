@@ -3,9 +3,9 @@ package com.mhm.util
 import java.nio.ByteBuffer
 
 import com.mhm.common.model.ElectrumMerkleProof
-import com.mhm.util.BaseOps.byteToUnsignedInt
+import com.mhm.util.BaseOps.{byteToUnsignedInt, hexDecodeRevBV, hexEncodeRevBV}
 import com.mhm.util.EpsmiDataOps.intCeilLog2
-import com.mhm.util.HashOps.doHash
+import com.mhm.util.HashOps.doHashBV
 import javax.xml.bind.DatatypeConverter
 
 import scala.annotation.tailrec
@@ -13,22 +13,6 @@ import scala.collection.mutable.ListBuffer
 
 object MerkleProofOps {
   def isBitSet(b: Byte, pos: Int): Boolean = (b & (1 << pos)) != 0
-
-  def hashDecode(hs: String): Array[Byte] = {
-    DatatypeConverter.parseHexBinary(hs)
-  }
-
-  def hashEncode(b: Array[Byte]): String = {
-    DatatypeConverter.printHexBinary(b)
-  }
-
-  def hashDecodeRev(hs: String): Array[Byte] = {
-    DatatypeConverter.parseHexBinary(hs).reverse
-  }
-
-  def hashEncodeRev(b: Array[Byte]): String = {
-    DatatypeConverter.printHexBinary(b.reverse)
-  }
 
   def calcTreeWidth(height: Int, txCount: Int): Int = {
     (txCount + (1 << height) - 1) >> height
@@ -52,7 +36,7 @@ object MerkleProofOps {
       expandTreeHashing(right.asInstanceOf[TupleMerkleNode])
     else
       StrMerkleNode(getNodeHash(right.value))
-    val hs = hashEncodeRev(doHash(hashDecodeRev(hashLeft.value) ++ hashDecodeRev(hashRight.value)))
+    val hs = hexEncodeRevBV(doHashBV(hexDecodeRevBV(hashLeft.value) ++ hexDecodeRevBV(hashRight.value)))
     StrMerkleNode(hs)
   }
 
