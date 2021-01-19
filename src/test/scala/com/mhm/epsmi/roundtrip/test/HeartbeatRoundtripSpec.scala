@@ -7,7 +7,7 @@ import com.mhm.bitcoin.TransactionMonitorFactory
 import com.mhm.common.model.{HistoryElement, HistoryEntry}
 import com.mhm.connectors.RpcWrap.wrap
 import com.mhm.epsmi.dummymonitor.DummyTxCreator.createDummyFundingTx
-import com.mhm.epsmi.dummymonitor.{DummyBtcRpc, DummyDeterministicWallet}
+import com.mhm.epsmi.dummymonitor.DummyDeterministicWallet
 import com.mhm.util.HashOps
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers.{contain, convertToAnyShouldWrapper}
@@ -20,7 +20,7 @@ class HeartbeatRoundtripSpec extends FlatSpec {
 
     val (dummySpk, containingBlockHeight, dummyTx) = createDummyFundingTx(confirmations = 0)
     val sh = HashOps.script2ScriptHash(dummySpk)
-    val rpc = DummyBtcRpc(Nil, Seq(dummyTx.vin), Map(dummyTx.blockhash -> containingBlockHeight))
+    val rpc = DummyRoundtripBtcRpc(Nil, Seq(dummyTx.vin), Map(dummyTx.blockhash -> containingBlockHeight))
     val monitor = TransactionMonitorFactory.create(rpc)
     val monitorState = monitor.buildAddressHistory(Seq(dummySpk), Seq(new DummyDeterministicWallet))
     monitorState.addressHistory.m.size shouldBe 1

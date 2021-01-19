@@ -1,24 +1,20 @@
 package com.mhm.epsmi.dummymonitor
 
-import com.mhm.connectors.{BitcoinSConnector, BitcoindRpcExtendedClient}
-import com.mhm.epsmi.dummymonitor.DummyTxCreator.{DummyTx, DummyVin, DummyVout}
-import com.mhm.epsmi.dummyprotocol.DummyBtcProtocolRpc
+import com.mhm.connectors.BitcoindRpcExtendedClient
+import com.mhm.epsmi.dummymonitor.DummyBtcRpc.{toGetTransactionResult, toGetTxOutResult, toListTransactionsResult, toRpcTransaction}
+import com.mhm.epsmi.dummymonitor.DummyTxCreator.{DummyTx, DummyVin}
 import com.mhm.epsmi.testbtcrpc.TestBitcoinSConnector
 import org.bitcoins.commons.jsonmodels.bitcoind._
-import org.bitcoins.core.currency.{Bitcoins, Satoshis}
+import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.protocol.transaction.{BaseTransaction, Transaction, TransactionInput}
+import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput}
 import org.bitcoins.core.script.ScriptType.PUBKEYHASH
-import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
+import org.bitcoins.crypto.DoubleSha256DigestBE
 
 import scala.concurrent.Future
 
-case class DummyBtcRpc(txList: Seq[DummyTx], utxoSet: Seq[DummyVin] = Nil, blockHeights: Map[String, Int] = Map())
-  extends BitcoindRpcExtendedClient(TestBitcoinSConnector.bitcoindInstance, TestBitcoinSConnector.system){
-
-  val protocolRpc = DummyBtcProtocolRpc()
-
+object DummyBtcRpc {
   def toListTransactionsResult(tx: DummyTx): ListTransactionsResult = {
     ListTransactionsResult(
       account = None,
@@ -136,6 +132,10 @@ case class DummyBtcRpc(txList: Seq[DummyTx], utxoSet: Seq[DummyVin] = Nil, block
       coinbase = false
     )
   }
+}
+
+case class DummyBtcRpc(txList: Seq[DummyTx], utxoSet: Seq[DummyVin] = Nil, blockHeights: Map[String, Int] = Map())
+  extends BitcoindRpcExtendedClient(TestBitcoinSConnector.bitcoindInstance, TestBitcoinSConnector.system){
 
   override def listTransactions(account: String, count: Int, skip: Int, includeWatchOnly: Boolean): Future[Vector[ListTransactionsResult]] = {
     Future.successful(txList.reverse.slice(skip, skip + count).map(toListTransactionsResult).toVector.reverse)
@@ -163,23 +163,9 @@ case class DummyBtcRpc(txList: Seq[DummyTx], utxoSet: Seq[DummyVin] = Nil, block
   }
 
   override def getBlockHeader(headerHash: DoubleSha256DigestBE): Future[GetBlockHeaderResult] = {
-    if (!blockHeights.contains(headerHash.hex)){
-      protocolRpc.getBlockHeader(headerHash) // TODO we marry 2 dummies here, to make big roundtrip test possible, clean this up
-    }
-    else {
       val height = blockHeights.getOrElse(headerHash.hex, throw new IllegalArgumentException("block header not found"))
       Future.successful(
         GetBlockHeaderResult(null, 0, height, 0, org.bitcoins.core.number.Int32(0), null, UInt32(0), UInt32(0), UInt32(0), UInt32(0), 0, "", None, None)
       )
-    }
   }
-
-  override def getBestBlockHash: Future[DoubleSha256DigestBE] = {
-    protocolRpc.getBestBlockHash
-  }
-
-  override def getBlockHash(height: Int): Future[DoubleSha256DigestBE] = {
-    protocolRpc.getBlockHash(height)
-  }
-
 }

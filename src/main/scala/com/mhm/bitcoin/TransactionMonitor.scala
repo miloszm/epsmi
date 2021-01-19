@@ -159,7 +159,7 @@ class TransactionMonitorImpl(rpcCli: BitcoindRpcExtendedClient, nonWalletAllowed
         /**
          * Note - for utxo that is spent we will get exception so we use try here
          */
-        Try(wrap(rpcCli.getTxOut(inn.previousOutput.txIdBE, inn.previousOutput.vout.toInt), "getTxOut")).fold(_ => None, utxo =>
+        Try(wrap(rpcCli.getTxOut(inn.previousOutput.txIdBE, inn.previousOutput.vout.toInt))).fold(_ => None, utxo =>
           Some(ValueConfirmedPair(utxo.value.toBigDecimal, utxo.confirmations > 0))
         )
       }

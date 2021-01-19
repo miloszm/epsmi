@@ -1,6 +1,7 @@
 package com.mhm.epsmi.monitor.unittest
 
 import com.mhm.bitcoin.{TransactionMonitorImpl, Tx4HistoryGen}
+import com.mhm.epsmi.dummymonitor.DummyBtcRpc.toRpcTransaction
 import com.mhm.epsmi.dummymonitor.{DummyBtcRpc, DummyTxCreator}
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.scalatest.FlatSpec
@@ -21,7 +22,7 @@ class TransactionMonitorUnitTest extends FlatSpec {
       dummyTx.txId,
       Some(DoubleSha256DigestBE.fromHex(dummyTx.blockhash))
     )
-    val txd = dummyBtcRpc.toRpcTransaction(dummyTx)
+    val txd = toRpcTransaction(dummyTx)
 
     val newHistoryElement = transactionMonitor.generateNewHistoryElement(tx, txd)
     newHistoryElement.height shouldBe BlockHeight
@@ -41,7 +42,7 @@ class TransactionMonitorUnitTest extends FlatSpec {
       dummyTx.txId,
       Some(DoubleSha256DigestBE.fromHex(dummyTx.blockhash))
     )
-    val txd = dummyBtcRpc.toRpcTransaction(dummyTx)
+    val txd = toRpcTransaction(dummyTx)
 
     val newHistoryElement = transactionMonitor.generateNewHistoryElement(tx, txd)
     newHistoryElement.height shouldBe 0
