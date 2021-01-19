@@ -1,68 +1,24 @@
 package com.mhm.rpcclient
 
-import java.io.OutputStream
-import java.net.{InetAddress, Socket}
-
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.node.ObjectNode
-import com.googlecode.jsonrpc4j.{JsonRpcClient, JsonRpcClientException, ProxyUtil}
-import com.mhm.api4electrum.{Api4Electrum, HeaderResult, MerkleResult}
-import com.mhm.securesocket.SecureSocketMetaFactory
+import com.googlecode.jsonrpc4j.JsonRpcClientException
+import com.mhm.api4electrum.{Api4Electrum, MerkleResult}
+import com.mhm.rpcclient.RpcClient.createClient
 
 import scala.util.Try
 
 
-class LfObjectMapper extends ObjectMapper {
-  override def writeValue(out: OutputStream, value: Any): Unit = {
-    val str = value.toString + "\n"
-    out.write(str.getBytes("UTF-8"))
-  }
-}
-
-
-case class EpsmiClient(client: Api4Electrum, socket: Socket){
-  def close(): Unit = socket.close()
-}
-
-
 /**
- * Rudimentary test (proof of concept) client to call server APIs.
+ * Rudimentary test app for the client to call server APIs.
  * This code is for "manual" troubleshooting, it is not an automated test.
  * You need to run a server on the same port when running this test.
  * Make sure your local Electrum wallet is not running, as EPSMI
  * accepts only one connection at a time.
  */
 
-object RpcPOCClient extends App {
-  val port = 50002
 
-  def createClient(port: Int = port): EpsmiClient = {
-    val socket = createSocket(InetAddress.getByName("127.0.0.1"), port)
-    val rpcClient = new JsonRpcClient(new LfObjectMapper())
-    val listener = new JsonRpcClient.RequestListener(){
-      override def onBeforeRequestSent(client: JsonRpcClient, request: ObjectNode): Unit = {
-        println(s"request=$request")
-        val method = request.get("method")
-        if (method.asText() == "blockchain.transaction.id_from_pos_merkle_true"){
-          request.asInstanceOf[ObjectNode].put("method", "blockchain.transaction.id_from_pos")
-        }
-      }
-      override def onBeforeResponseProcessed(client: JsonRpcClient, response: ObjectNode): Unit = {
-        /**
-         * for compatibility with EPS we want to remove 'data' in 'error'
-         * so that JsonRpcClientException is returned rather than the original server exception
-         */
-        val e = response.get("error")
-        if (e != null) {
-          e.asInstanceOf[ObjectNode].remove("data")
-        }
-        println(s"response=$response")
-      }
-    }
-    rpcClient.setRequestListener(listener)
-    val client = ProxyUtil.createClientProxy(this.getClass.getClassLoader, classOf[Api4Electrum], rpcClient, socket)
-    EpsmiClient(client, socket)
-  }
+object RpcClientTestApp extends App {
+  val port = 50002
 
   private def callApiBlockchainScripthashGetBalance(client: Api4Electrum) = {
     println("=========== blockchain.scripthash.get_balance =============")
@@ -92,7 +48,7 @@ object RpcPOCClient extends App {
 
   private def callApiBlockchainScripthashSubscribe(client: Api4Electrum) = {
     println("=========== blockchain.scripthash.subscribe =============")
-    // you need to have actual wallet for that created
+    // you need to have the actual wallet for that created
     val subscriptionResponse = client.blockchainScripthashSubcribe("5be022609383d23e2d545b3b359446466c269686c1e697b60355424ed30490d2")
     println(s"blockchainScripthashSubcribe result = ")
     println(s"   $subscriptionResponse")
@@ -184,11 +140,6 @@ object RpcPOCClient extends App {
     result.zipWithIndex.foreach { case (e, i) => println(s"$i = $e") }
   }
 
-  private def createSocket(address: InetAddress, port: Int): Socket = {
-    val socketFactory = SecureSocketMetaFactory.createSocketFactory()
-    socketFactory.createSocket(address, port)
-  }
-
   def performServerApiCalls: Unit = {
     val epsmiClient = createClient()
     val client = epsmiClient.client
@@ -213,4 +164,5 @@ object RpcPOCClient extends App {
   }
 
   performServerApiCalls
+
 }
