@@ -60,7 +60,6 @@ case class Api4ElectrumCore(
     }
   }
 
-
   private def hexBlockHeaderRaw(blockHeader: GetBlockHeaderResult): String = {
     // <i32s32sIII
     // little endian int | byte[32] | byte[32] | unsigned int | unsigned int | unsigned int
@@ -76,10 +75,7 @@ case class Api4ElectrumCore(
     headHex.toLowerCase
   }
 
-  // TODO don't know which getBlockHeader is needed,
-  // based on height, blockhash, or both
-  // this one is only needed by Api4ElectrumImpl
-  def getBlockHeaderX(blockHeight: Int): Future[HeaderResult] = {
+  def getBlockHeader(blockHeight: Int): Future[HeaderResult] = {
     for {
       blockHash <- rpcCli.getBlockHash(blockHeight)
       blockHeader <- rpcCli.getBlockHeader(blockHash)

@@ -52,7 +52,7 @@ class Api4ElectrumImpl(core: Api4ElectrumCore, transactionMonitor: TransactionMo
   }
 
   override def blockchainBlockGetHeader(height: Int): HeaderResult = {
-    Try(wrap(core.getBlockHeaderX(height))).fold(
+    Try(wrap(core.getBlockHeader(height))).fold(
       { t =>
         println(s"server caught: $t")
         throw new IllegalArgumentException(s"height $height out of range")
@@ -152,8 +152,10 @@ class Api4ElectrumImpl(core: Api4ElectrumCore, transactionMonitor: TransactionMo
       HistoryItem(height = e.height, tx_hash = e.txHash, fee = Math.max(0, e.fee.toInt))
     }
     if (history.isEmpty){
-      //logger.warn(s"Address history not known to server, hash(address) = $sh")
-      // TODO original eps skips sending response at all, I don't know how to do it in jsonrpc4j
+      logger.warn(s"Address history not known to server, hash(address) = $sh")
+      /**
+       * NOTE original eps skips sending response at all
+       */
       Array()
     }
     else {
@@ -165,7 +167,7 @@ class Api4ElectrumImpl(core: Api4ElectrumCore, transactionMonitor: TransactionMo
 
   override def blockchainScripthashGetBalance(sh: String): GetBalanceResult = {
     transactionMonitor.getAddressBalance(currentMonitorState.get, sh) match {
-      case None => throw new IllegalArgumentException(s"script hash not known") // TODO implement UnknownScriphashError(scrhash)
+      case None => throw new IllegalArgumentException(s"script hash not known")
       case Some(balance) => GetBalanceResult(balance.confirmed, balance.unconfirmed)
     }
   }
