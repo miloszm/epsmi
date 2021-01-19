@@ -7,7 +7,7 @@ import com.mhm.common.model.OwnNode
 import com.mhm.connectors.BitcoinSConnector
 import com.mhm.epsmi.testbtcrpc.TestBitcoinSConnector
 import com.mhm.main.SpksToMonitorFinder
-import com.mhm.rpcclient.{EpsmiClient, RpcClient}
+import com.mhm.rpcclient.{EpsmiClient, RpcPOCClient}
 import com.mhm.rpcserver.RpcServer
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{BeforeAndAfterAll, FlatSpecLike}
@@ -35,7 +35,7 @@ trait IntTestFixture extends FlatSpecLike with BeforeAndAfterAll {
     scriptPubKeysToMonitorResult.wallets
   )
 
-  lazy val fixture = Fixture(RpcServer.startServer(transactionMonitor, monitorState, coreConfig), RpcClient.createClient(port))
+  lazy val fixture = Fixture(RpcServer.startServer(transactionMonitor, monitorState, coreConfig), RpcPOCClient.createClient(port))
 
   override protected def afterAll(): Unit = {
     fixture.epsmiClient.close()
