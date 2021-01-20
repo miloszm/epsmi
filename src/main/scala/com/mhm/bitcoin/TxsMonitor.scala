@@ -14,8 +14,8 @@ trait TxsMonitorStateListener {
 
 object NoopTxsMonitorStateListener extends TxsMonitorStateListener {
   override def updated(newState: TransactionMonitorState): Unit = ()
-  override def heartbeatTick(): Unit = ()
-  override def updatedShsTick(shs: Seq[String]): Unit = ()
+  override def heartbeatTick(): Unit                            = ()
+  override def updatedShsTick(shs: Seq[String]): Unit           = ()
 }
 
 trait WalletStateListener {
@@ -25,7 +25,7 @@ trait WalletStateListener {
 
 object NoopWalletStateListener extends WalletStateListener {
   override def updated(newState: DeterministicWalletState): Unit = ()
-  override def setAddressSpkMap(addrsSpks: AddrsSpksPair): Unit = ()
+  override def setAddressSpkMap(addrsSpks: AddrsSpksPair): Unit  = ()
 }
 
 trait TxsMonitorMBean {
@@ -46,56 +46,58 @@ trait TxsMonitorMBean {
   def getAddrSpkMap: Array[String]
 
   // set methods to allow copying from fields in jconsole
-  def setAddressHistory(a: Array[String]) = ()
+  def setAddressHistory(a: Array[String])         = ()
   def setNonEmptyAddressHistory(a: Array[String]) = ()
-  def setUnconfirmedTxs(a: Array[String]) = ()
-  def setReorganizableTxs(a: Array[String]) = ()
-  def setUpdatedShs(a: Array[String]) = ()
-  def setLastKnownTx(s: String) = ()
-  def setLastKnownAddress(s: String) = ()
-  def setSubscribedToHeaders(b: Boolean) = ()
-  def setWalletSPKIndexMap(a: Array[String]) = ()
-  def setWalletNextIndexMap(a: Array[String]) = ()
-  def setAddrSpkMap(a: Array[String]) = ()
+  def setUnconfirmedTxs(a: Array[String])         = ()
+  def setReorganizableTxs(a: Array[String])       = ()
+  def setUpdatedShs(a: Array[String])             = ()
+  def setLastKnownTx(s: String)                   = ()
+  def setLastKnownAddress(s: String)              = ()
+  def setSubscribedToHeaders(b: Boolean)          = ()
+  def setWalletSPKIndexMap(a: Array[String])      = ()
+  def setWalletNextIndexMap(a: Array[String])     = ()
+  def setAddrSpkMap(a: Array[String])             = ()
 }
 
 class TxsMonitor extends TxsMonitorMBean with TxsMonitorStateListener with WalletStateListener {
-  val currentMonitorState = new AtomicReference[TransactionMonitorState]()
-  val currentWalletState = new AtomicReference[DeterministicWalletState]()
-  val heartbeatCounter = new AtomicLong()
-  val updatedShsCounter = new AtomicLong()
+  val currentMonitorState                             = new AtomicReference[TransactionMonitorState]()
+  val currentWalletState                              = new AtomicReference[DeterministicWalletState]()
+  val heartbeatCounter                                = new AtomicLong()
+  val updatedShsCounter                               = new AtomicLong()
   val updatedShsHistory: concurrent.Map[String, Long] = concurrent.TrieMap.empty
-  val addrsSpksMap: concurrent.Map[String, String] = concurrent.TrieMap.empty
+  val addrsSpksMap: concurrent.Map[String, String]    = concurrent.TrieMap.empty
   override def getAddressHistory: Array[String] = {
-    currentMonitorState.get.addressHistory.m.collect{
-    case (sh, historyEntry) =>
-      s"sh=$sh -> ${historyEntry.history.map(he => s"txid=${he.txHash} height=${he.height}").mkString("|")}"
+    currentMonitorState.get.addressHistory.m.collect {
+      case (sh, historyEntry) =>
+        s"sh=$sh -> ${historyEntry.history.map(he => s"txid=${he.txHash} height=${he.height}").mkString("|")}"
     }.toArray
   }
   override def getNonEmptyAddressHistory: Array[String] = {
-    currentMonitorState.get.addressHistory.m.collect{
-    case (sh, historyEntry) if historyEntry.history.nonEmpty =>
-      s"sh=$sh -> ${historyEntry.history.map(he => s"txid=${he.txHash} height=${he.height}").mkString("|")}"
+    currentMonitorState.get.addressHistory.m.collect {
+      case (sh, historyEntry) if historyEntry.history.nonEmpty =>
+        s"sh=$sh -> ${historyEntry.history.map(he => s"txid=${he.txHash} height=${he.height}").mkString("|")}"
     }.toArray
   }
   override def getUnconfirmedTxs: Array[String] = {
-    currentMonitorState.get.unconfirmedTxes.map{ case (sh, txids) =>
-      s"txid=$sh -> shs=${txids.mkString("|")}"
+    currentMonitorState.get.unconfirmedTxes.map {
+      case (sh, txids) =>
+        s"txid=$sh -> shs=${txids.mkString("|")}"
     }.toArray
   }
   override def getReorganizableTxs: Array[String] = {
-    currentMonitorState.get.reorganizableTxes.map{ entry =>
-      s"txid=${entry.txid} height=${entry.height} blockhash=${entry.blockhashOpt.getOrElse("n/a")} shs=${entry.matchingShs.mkString("|")}"
+    currentMonitorState.get.reorganizableTxes.map { entry =>
+      s"txid=${entry.txid} height=${entry.height} blockhash=${entry.blockhashOpt.getOrElse("n/a")} shs=${entry.matchingShs
+        .mkString("|")}"
     }.toArray
   }
   override def getUpdatedShs: Array[String] = {
     currentMonitorState.get.updatedScripthashes.toArray
   }
   override def getLastKnownTx: String = {
-    currentMonitorState.get.lastKnownTx.map{ _.txid }.getOrElse("n/a")
+    currentMonitorState.get.lastKnownTx.map { _.txid }.getOrElse("n/a")
   }
   override def getLastKnownAddress: String = {
-    currentMonitorState.get.lastKnownTx.map{ _.address }.getOrElse("n/a")
+    currentMonitorState.get.lastKnownTx.map { _.address }.getOrElse("n/a")
   }
   override def getSubscribedToHeaders: Boolean = {
     currentMonitorState.get().subscribedToHeaders
@@ -110,16 +112,16 @@ class TxsMonitor extends TxsMonitorMBean with TxsMonitorStateListener with Walle
     heartbeatCounter.get()
   }
   override def updatedShsTick(shs: Seq[String]): Unit = {
-    if (updatedShsCounter.addAndGet(shs.size) > HistoryMaxSize){
+    if (updatedShsCounter.addAndGet(shs.size) > HistoryMaxSize) {
       updatedShsHistory.clear()
     }
-    shs.foreach{ updatedShsHistory.put(_, System.currentTimeMillis()) }
+    shs.foreach { updatedShsHistory.put(_, System.currentTimeMillis()) }
   }
   override def getUpdatedShsTick: Long = {
     updatedShsCounter.get()
   }
   override def getUpdatedShsHistory: Array[String] = {
-    updatedShsHistory.collect{ case (k,v) => s"$v $k" }.toArray
+    updatedShsHistory.collect { case (k, v) => s"$v $k" }.toArray
   }
   override def updated(newState: DeterministicWalletState): Unit = {
     currentWalletState.set(newState)
@@ -130,13 +132,18 @@ class TxsMonitor extends TxsMonitorMBean with TxsMonitorStateListener with Walle
       val (_, r) = p2
       if (l.change == r.change) l.index < r.index else l.change < r.change
     }
-    currentWalletState.get.scriptPubKeyIndex.toList.sortWith(sortingFun).map { case (k, v) =>
-      s"$k -> change=${v.change} index=${v.index}"
-    }.toArray
+    currentWalletState.get.scriptPubKeyIndex.toList
+      .sortWith(sortingFun)
+      .map {
+        case (k, v) =>
+          s"$k -> change=${v.change} index=${v.index}"
+      }
+      .toArray
   }
   override def getWalletNextIndexMap: Array[String] = {
-    currentWalletState.get.nextIndex.map { case (k, v) =>
-      s"$k -> $v"
+    currentWalletState.get.nextIndex.map {
+      case (k, v) =>
+        s"$k -> $v"
     }.toArray
   }
   override def setAddressSpkMap(addrsSpks: AddrsSpksPair): Unit = {
@@ -145,8 +152,9 @@ class TxsMonitor extends TxsMonitorMBean with TxsMonitorStateListener with Walle
     }
   }
   override def getAddrSpkMap: Array[String] = {
-    addrsSpksMap.map { case (k, v) =>
-      s"$k -> $v"
+    addrsSpksMap.map {
+      case (k, v) =>
+        s"$k -> $v"
     }.toArray
   }
 }

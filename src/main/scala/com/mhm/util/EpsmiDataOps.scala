@@ -8,6 +8,7 @@ import org.bitcoins.crypto.DoubleSha256DigestBE
 import scodec.bits.ByteVector
 
 object EpsmiDataOps {
+
   def reverse(array: Array[Byte]): Array[Byte] = {
     val l = array.length
     val a = Array.ofDim[Byte](l)
@@ -44,8 +45,9 @@ object EpsmiDataOps {
   }
 
   def intCeilLog2(x: Int): Int = {
-    if (x <= 0) 0 else
-    Math.ceil(Math.log(x) / Math.log(2)).toInt
+    if (x <= 0) 0
+    else
+      Math.ceil(Math.log(x) / Math.log(2)).toInt
   }
 
   def optSha2Str(osha: Option[DoubleSha256DigestBE]): String = {

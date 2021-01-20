@@ -25,23 +25,21 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.math.BigDecimal.RoundingMode
 import scala.util.{Failure, Success, Try}
 
-
-
 /**
- * This class is futurized and does not necessarily conform
- * to json rpc requirements.
- */
-
+  * This class is futurized and does not necessarily conform
+  * to json rpc requirements.
+  */
 case class Api4ElectrumCore(
   rpcCli: BitcoindRpcExtendedClient,
   config: Api4ElectrumCoreConfig = Api4ElectrumCoreConfig.getDefault
-)(implicit ec: ExecutionContext) extends Logging {
-  val bestBlockHash = new AtomicReference[Option[String]](None)
+)(implicit ec: ExecutionContext)
+    extends Logging {
+  val bestBlockHash             = new AtomicReference[Option[String]](None)
   val printedSlowMempoolWarning = new AtomicBoolean(false)
 
   def getBlockHeaderHash(blockHeight: Int): Future[String] = {
     for {
-      blockHash <- rpcCli.getBlockHash(blockHeight)
+      blockHash            <- rpcCli.getBlockHash(blockHeight)
       (blockHeaderHash, _) <- getBlockHeaderHashFromBlockHash(blockHash)
     } yield {
       blockHeaderHash
@@ -49,9 +47,11 @@ case class Api4ElectrumCore(
   }
 
   /**
-   * returns block header hash and next block hash
-   */
-  def getBlockHeaderHashFromBlockHash(blockHash: DoubleSha256DigestBE): Future[(String,Option[DoubleSha256DigestBE])] = {
+    * returns block header hash and next block hash
+    */
+  def getBlockHeaderHashFromBlockHash(
+    blockHash: DoubleSha256DigestBE
+  ): Future[(String, Option[DoubleSha256DigestBE])] = {
     for {
       blockHeader <- rpcCli.getBlockHeader(blockHash)
     } yield {
@@ -77,12 +77,12 @@ case class Api4ElectrumCore(
 
   def getBlockHeader(blockHeight: Int): Future[HeaderResult] = {
     for {
-      blockHash <- rpcCli.getBlockHash(blockHeight)
+      blockHash   <- rpcCli.getBlockHash(blockHeight)
       blockHeader <- rpcCli.getBlockHeader(blockHash)
     } yield {
       HeaderResult(
         blockHeader.height,
-        blockHeader.previousblockhash.map(_.hex).getOrElse("00"*32),
+        blockHeader.previousblockhash.map(_.hex).getOrElse("00" * 32),
         blockHeader.time.toLong,
         blockHeader.merkleroot.hex,
         blockHeader.version,
@@ -124,7 +124,7 @@ case class Api4ElectrumCore(
     } yield {
       val fr = smartFeeResult.feerate match {
         case Some(fee) => BigDecimal(fee.toLong) / BigDecimal(100000)
-        case _ => BigDecimal(0.0001)
+        case _         => BigDecimal(0.0001)
       }
       fr.setScale(8, RoundingMode.FLOOR)
     }
@@ -140,13 +140,13 @@ case class Api4ElectrumCore(
         (headerHashes, count)
       }
     }
-    if (count <= 0){
+    if (count <= 0) {
       Future.successful(("", 0))
     } else {
       Try(wrap(rpcCli.getBlockHash(startHeight))) match {
         case Success(firstBlockHash) =>
           val (headerHashes, restCount) = go(Some(firstBlockHash), Nil, count)
-          Future.successful((headerHashes.reverse.mkString, count-restCount))
+          Future.successful((headerHashes.reverse.mkString, count - restCount))
         case Failure(_) =>
           Future.successful(("", 0))
       }
@@ -157,11 +157,11 @@ case class Api4ElectrumCore(
     val RETARGET_INTERVAL = 2016
     for {
       blockchainInfoResult <- rpcCli.getBlockChainInfo
-      tipHeight = blockchainInfoResult.headers
-      nextHeight = tipHeight + 1
-      startHeight = Math.min(index*RETARGET_INTERVAL, nextHeight)
-      count = Math.min(nextHeight - startHeight, RETARGET_INTERVAL)
-      (headersHex,_) <- doGetBlockHeaders(startHeight, count)
+      tipHeight   = blockchainInfoResult.headers
+      nextHeight  = tipHeight + 1
+      startHeight = Math.min(index * RETARGET_INTERVAL, nextHeight)
+      count       = Math.min(nextHeight - startHeight, RETARGET_INTERVAL)
+      (headersHex, _) <- doGetBlockHeaders(startHeight, count)
     } yield {
       headersHex
     }
@@ -169,7 +169,7 @@ case class Api4ElectrumCore(
 
   def getBlockHeaders(startHeight: Int, count: Int): Future[BlockHeadersResult] = {
     val MAX_CHUNK_SIZE = 2016
-    val minCount = Math.min(count, MAX_CHUNK_SIZE)
+    val minCount       = Math.min(count, MAX_CHUNK_SIZE)
     for {
       (headersHex, effectiveCount) <- doGetBlockHeaders(startHeight, minCount)
     } yield {
@@ -179,7 +179,7 @@ case class Api4ElectrumCore(
 
   def getTransaction(txId: String): Future[String] = {
     val sha = DoubleSha256DigestBE.fromHex(txId.toUpperCase)
-    rpcCli.getTransaction(sha).map(_.hex.hex).recoverWith{ _ =>
+    rpcCli.getTransaction(sha).map(_.hex.hex).recoverWith { _ =>
       rpcCli.getRawTransaction(sha).map(_.hex.hex)
     }
   }
@@ -194,26 +194,26 @@ case class Api4ElectrumCore(
   private def trIdFromPosMerkleFalse(height: Int, txPos: Int): Future[String] = {
     for {
       blockHash <- rpcCli.getBlockHash(height)
-      block <- rpcCli.getBlock(blockHash)
+      block     <- rpcCli.getBlock(blockHash)
     } yield {
-        val txId = block.tx(txPos)
-        txId.hex
+      val txId = block.tx(txPos)
+      txId.hex
     }
   }
 
   private def trIdFromPosMerkleTrue(height: Int, txPos: Int): Future[String] = {
     val merkleResultFuture = for {
       blockHash <- rpcCli.getBlockHash(height)
-      block <- rpcCli.getBlock(blockHash)
+      block     <- rpcCli.getBlock(blockHash)
       txId = block.tx(txPos)
       merkleBlock <- rpcCli.getTxOutProof(Vector(txId), blockHash)
     } yield {
       val emp = MerkleProofOps.convertCoreToElectrumMerkleProof(merkleBlock.hex)
       MerkleResult(txId.hex, emp.merkle)
     }
-    merkleResultFuture.map{mr =>
+    merkleResultFuture.map { mr =>
       val objectMapper = new ObjectMapper()
-      val out = new ByteArrayOutputStream()
+      val out          = new ByteArrayOutputStream()
       objectMapper.writeValue(out, mr)
       out.toString
     }
@@ -223,13 +223,24 @@ case class Api4ElectrumCore(
     val sha = DoubleSha256DigestBE.fromHex(txId.toUpperCase)
     for {
       transactionResult <- rpcCli.getRawTransaction(sha)
-      blockHeader <- rpcCli.getBlockHeader(transactionResult.blockhash.getOrElse(throw new IllegalStateException(s"blockhash missing for $txId")))
-      coreProof <- rpcCli.getTxOutProof(Vector(sha), transactionResult.blockhash.getOrElse(throw new IllegalStateException(s"blockhash missing for $txId")))
+      blockHeader <- rpcCli.getBlockHeader(
+        transactionResult.blockhash.getOrElse(throw new IllegalStateException(s"blockhash missing for $txId"))
+      )
+      coreProof <- rpcCli.getTxOutProof(
+        Vector(sha),
+        transactionResult.blockhash.getOrElse(throw new IllegalStateException(s"blockhash missing for $txId"))
+      )
     } yield {
-      val electrumProof = MerkleProofOps.convertCoreToElectrumMerkleProof(coreProof.hex)
-      val impliedMerkleRoot = HashOps.hashMerkleRoot(electrumProof.merkle, txId, electrumProof.pos)
+      val electrumProof =
+        MerkleProofOps.convertCoreToElectrumMerkleProof(coreProof.hex)
+      val impliedMerkleRoot =
+        HashOps.hashMerkleRoot(electrumProof.merkle, txId, electrumProof.pos)
       if (impliedMerkleRoot != electrumProof.merkleRoot)
-        throw new IllegalStateException(s"value error in get merkle for $txId, implied merkle root: $impliedMerkleRoot is not equal Electrum merkle root: ${electrumProof.merkleRoot}")
+        throw new IllegalStateException(
+          s"value error in get merkle for $txId, "
+            + s"implied merkle root: $impliedMerkleRoot "
+            + s"is not equal Electrum merkle root: ${electrumProof.merkleRoot}"
+        )
       GetMerkleResult(blockHeader.height, electrumProof.pos, electrumProof.merkle)
     }
   }
@@ -237,7 +248,7 @@ case class Api4ElectrumCore(
   def getCurrentHeaderCooked(): Future[(String, HeaderResult)] = {
     for {
       bestBlockHash <- rpcCli.getBestBlockHash
-      header <- getBlockHeaderCooked(bestBlockHash)
+      header        <- getBlockHeaderCooked(bestBlockHash)
     } yield {
       (bestBlockHash.hex, header)
     }
@@ -246,7 +257,7 @@ case class Api4ElectrumCore(
   def getCurrentHeaderRaw(): Future[(String, HexHeight)] = {
     for {
       bestBlockHash <- rpcCli.getBestBlockHash
-      hexHeight <- getBlockHeaderRaw(bestBlockHash)
+      hexHeight     <- getBlockHeaderRaw(bestBlockHash)
     } yield {
       (bestBlockHash.hex, hexHeight)
     }
@@ -256,7 +267,8 @@ case class Api4ElectrumCore(
     for {
       (newBestBlockhash, hexHeight) <- getCurrentHeaderRaw()
     } yield {
-      val isTipNew = !bestBlockHash.getAndUpdate(_ => Some(newBestBlockhash)).contains(newBestBlockhash)
+      val isTipNew =
+        !bestBlockHash.getAndUpdate(_ => Some(newBestBlockhash)).contains(newBestBlockhash)
       (isTipNew, hexHeight)
     }
   }
@@ -268,13 +280,13 @@ case class Api4ElectrumCore(
 
   def serverBanner(monitorState: TransactionMonitorState): String = {
     wrap(for {
-      networkInfo <- rpcCli.getNetworkInfo
+      networkInfo    <- rpcCli.getNetworkInfo
       blockchainInfo <- rpcCli.getBlockChainInfo
-      uptime <- rpcCli.uptime
+      uptime         <- rpcCli.uptime
       //nettotals <- rpcCli.getNetTotals
     } yield {
-      val uptimeDays = uptime.toInt / 86400
-      val numWallets = monitorState.deterministicWallets.size
+      val uptimeDays   = uptime.toInt / 86400
+      val numWallets   = monitorState.deterministicWallets.size
       val numAddresses = monitorState.addressHistory.m.size
 
       val banner = s"""Welcome to EPSMI $SERVER_VERSION (based on Electrum Personal Server).""" + "\n" +
@@ -303,49 +315,63 @@ case class Api4ElectrumCore(
   //  #algorithm copied from the relevant place in ElectrumX
   //  #https://github.com/kyuupichan/electrumx/blob/e92c9bd4861c1e35989ad2773d33e01219d33280/server/mempool.py
   private def feeHistogram(mempool: Map[DoubleSha256DigestBE, GetMemPoolResult]): Array[Array[Int]] = {
-    val feeHistogram = mempool.values.collect { case memPoolResult if memPoolResult.fee.isDefined =>
-      memPoolResult.fee.get.toBigDecimal * 100000000 -> memPoolResult.size
-    }.toList.sortWith((a,b) => a._1 < b._1)
+    val feeHistogram = mempool.values.collect {
+      case memPoolResult if memPoolResult.fee.isDefined =>
+        memPoolResult.fee.get.toBigDecimal * 100000000 -> memPoolResult.size
+    }.toList.sortWith((a, b) => a._1 < b._1)
     @tailrec
-    def go(histo: List[(BigDecimal, Int)], binSize: Double, r: Double, size: Int, acc: List[(BigDecimal, Int)]): List[(BigDecimal, Int)] = histo match {
-      case Nil => acc
-      case (feeRate, s)::xs =>
-        val sz = size + s
-        if ((sz + r) > binSize)
-          go(xs, binSize*1.1, r + sz - binSize, 0, acc :+ (feeRate, s))
-        else
-          go(xs, binSize, r, sz, acc)
-    }
+    def go(histo: List[(BigDecimal, Int)],
+           binSize: Double,
+           r: Double,
+           size: Int,
+           acc: List[(BigDecimal, Int)]): List[(BigDecimal, Int)] =
+      histo match {
+        case Nil => acc
+        case (feeRate, s) :: xs =>
+          val sz = size + s
+          if ((sz + r) > binSize)
+            go(xs, binSize * 1.1, r + sz - binSize, 0, acc :+ (feeRate, s))
+          else
+            go(xs, binSize, r, sz, acc)
+      }
     val result = go(feeHistogram, 100000.0, 0, 0, Nil)
-    result.map{case(feeRate, sz) => Array(feeRate, BigDecimal(sz)).map(_.toInt)}.toArray
+    result.map {
+      case (feeRate, sz) => Array(feeRate, BigDecimal(sz)).map(_.toInt)
+    }.toArray
   }
 
   def mempoolGetFeeHistogram(): Array[Array[Int]] = {
-    if (config.enableMempoolFeeHistogram){
-      val start = System.currentTimeMillis()
+    if (config.enableMempoolFeeHistogram) {
+      val start                                                = System.currentTimeMillis()
       val mempool: Map[DoubleSha256DigestBE, GetMemPoolResult] = wrap(rpcCli.getRawMemPoolWithTransactions)
-      val stop = System.currentTimeMillis()
-      if ((stop-start) > Constants.MEMPOOL_WARNING_DURATION*1000){
-        printedSlowMempoolWarning.compareAndSet(false, {
-          def f(u: Unit): Boolean = { true }
-          f(logger.warn(s"Mempool very large resulting in slow response by server (${(stop-start)/1000} seconds)." +
-            "Consider setting 'enable_mempool_fee_histogram = false'"))
-        })
+      val stop                                                 = System.currentTimeMillis()
+      if ((stop - start) > Constants.MEMPOOL_WARNING_DURATION * 1000) {
+        printedSlowMempoolWarning.compareAndSet(
+          false, {
+            def f(u: Unit): Boolean = { true }
+            f(
+              logger.warn(
+                s"Mempool very large resulting in slow response by server (${(stop - start) / 1000} seconds)." +
+                  "Consider setting 'enable_mempool_fee_histogram = false'"
+              )
+            )
+          }
+        )
       }
       feeHistogram(mempool)
     } else {
-      Array(Array(0,0))
+      Array(Array(0, 0))
     }
   }
 
   def blockchainTransactionBroadcast(txhex: String): String = {
     val transaction = Transaction.fromHex(txhex)
-    val txReport = wrap(rpcCli.testMempoolAccept(transaction))
-    if (txReport.allowed){
+    val txReport    = wrap(rpcCli.testMempoolAccept(transaction))
+    if (txReport.allowed) {
       logger.info(s"broadcasting tx ${txReport.txid}")
-      if (config.broadcastMethod == OwnNode){
+      if (config.broadcastMethod == OwnNode) {
         val localRelay = wrap(rpcCli.getNetworkInfo).localrelay
-        if (localRelay){
+        if (localRelay) {
           wrap(rpcCli.sendRawTransaction(transaction))
           txReport.txid.hex
         } else {
@@ -356,7 +382,9 @@ case class Api4ElectrumCore(
         throw new IllegalArgumentException(s"unsupported broadcast method: ${config.broadcastMethod}")
       }
     } else {
-      throw new IllegalStateException(s"broadcast not possible for the following reject reason: ${txReport.rejectReason.getOrElse("unknown")}")
+      throw new IllegalStateException(
+        s"broadcast not possible for the following reject reason: ${txReport.rejectReason.getOrElse("unknown")}"
+      )
     }
   }
 

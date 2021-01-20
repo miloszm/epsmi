@@ -1,7 +1,17 @@
 package com.mhm.main
 
 import com.mhm.api4electrum.Api4ElectrumCoreConfig
-import com.mhm.bitcoin.{AddressImporter, NoopTxsMonitorStateListener, NoopWalletStateListener, ReScanner, RescanConfig, TransactionMonitorFactory, TxsMonitor, TxsMonitorStateListener, WalletStateListener}
+import com.mhm.bitcoin.{
+  AddressImporter,
+  NoopTxsMonitorStateListener,
+  NoopWalletStateListener,
+  ReScanner,
+  RescanConfig,
+  TransactionMonitorFactory,
+  TxsMonitor,
+  TxsMonitorStateListener,
+  WalletStateListener
+}
 import com.mhm.connectors.BitcoinSConnector
 import com.mhm.rpcserver.RpcServer
 import com.typesafe.config.ConfigFactory
@@ -21,10 +31,11 @@ object Main extends App with Logging {
     val txsMonitor = new TxsMonitor()
     try {
       val objectName = new ObjectName("com.mhm.epsmi:type=current,name=txsmonitor")
-      val server = ManagementFactory.getPlatformMBeanServer
+      val server     = ManagementFactory.getPlatformMBeanServer
       server.registerMBean(txsMonitor, objectName)
     } catch {
-      case e@(_: MalformedObjectNameException | _: InstanceAlreadyExistsException | _: MBeanRegistrationException | _: NotCompliantMBeanException) =>
+      case e @ (_: MalformedObjectNameException | _: InstanceAlreadyExistsException | _: MBeanRegistrationException |
+          _: NotCompliantMBeanException) =>
         logger.error("jmx initialization error", e)
         throw e
     }
@@ -32,26 +43,27 @@ object Main extends App with Logging {
   }
 
   def doMain(): Unit = {
-    val config = ConfigFactory.load()
-    val coreConfig = Api4ElectrumCoreConfig.init(config)
+    val config       = ConfigFactory.load()
+    val coreConfig   = Api4ElectrumCoreConfig.init(config)
     val rescanConfig = RescanConfig.init(config)
 
-    val bitcoinSConnector = BitcoinSConnector(coreConfig.isTestnet, coreConfig.btcRpcUsername, coreConfig.btcRpcPassword)
+    val bitcoinSConnector =
+      BitcoinSConnector(coreConfig.isTestnet, coreConfig.btcRpcUsername, coreConfig.btcRpcPassword)
 
-    if (rescanConfig.rescan){
+    if (rescanConfig.rescan) {
       ReScanner.rescan(bitcoinSConnector.rpcCli, rescanConfig.startBlock)
-    }
-    else {
+    } else {
       val txsMonitorOpt = if (config.getBoolean("epsmi.jmx")) Some(initilizeJmx()) else None
       val SpksToMonitorResult(importNeeded, spksToMonitor, wallets) =
-        new SpksToMonitorFinder(bitcoinSConnector.rpcCli, config).getScriptPubKeysToMonitor(txsMonitorOpt.getOrElse(NoopWalletStateListener))
+        new SpksToMonitorFinder(bitcoinSConnector.rpcCli, config)
+          .getScriptPubKeysToMonitor(txsMonitorOpt.getOrElse(NoopWalletStateListener))
       if (importNeeded) {
         AddressImporter.importAddresses(
-          rpcCli = bitcoinSConnector.rpcCli,
+          rpcCli             = bitcoinSConnector.rpcCli,
           watchonlyAddresses = spksToMonitor,
-          wallets = wallets,
-          changeParam = -1,
-          count = coreConfig.initialImportCount
+          wallets            = wallets,
+          changeParam        = -1,
+          count              = coreConfig.initialImportCount
         )
         logger.info(
           "Import done. " +
@@ -62,8 +74,13 @@ object Main extends App with Logging {
         )
       } else {
         val transactionMonitor = TransactionMonitorFactory.create(bitcoinSConnector.rpcCli)
-        val monitorState = transactionMonitor.buildAddressHistory(spksToMonitor, wallets)
-        val server = RpcServer.startServer(transactionMonitor, monitorState, coreConfig, txsMonitorOpt.getOrElse(NoopTxsMonitorStateListener))
+        val monitorState       = transactionMonitor.buildAddressHistory(spksToMonitor, wallets)
+        val server = RpcServer.startServer(
+          transactionMonitor,
+          monitorState,
+          coreConfig,
+          txsMonitorOpt.getOrElse(NoopTxsMonitorStateListener)
+        )
         logger.info(s"server started on port ${coreConfig.port}")
         Thread.sleep(31536000000L)
         server.stop()
@@ -73,15 +90,12 @@ object Main extends App with Logging {
 
   try {
     doMain
-  }
-  catch {
-    case e:
-      Throwable =>
-        logger.error(s"exception caught in main: ${e.getClass.getName}", e)
-        logger.info(s"${Constants.SERVER_NAME} exiting...")
-        exit(1)
-  }
-  finally {
+  } catch {
+    case e: Throwable =>
+      logger.error(s"exception caught in main: ${e.getClass.getName}", e)
+      logger.info(s"${Constants.SERVER_NAME} exiting...")
+      exit(1)
+  } finally {
     logger.info(s"${Constants.SERVER_NAME} terminating...")
     exit(0)
   }

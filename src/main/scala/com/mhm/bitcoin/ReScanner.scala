@@ -5,17 +5,12 @@ import com.mhm.connectors.RpcWrap.wrap
 import com.typesafe.config.Config
 import grizzled.slf4j.Logging
 
-case class RescanConfig (
-  rescan: Boolean,
-  startBlock: Int
-)
+case class RescanConfig(rescan: Boolean, startBlock: Int)
 
 object RescanConfig {
+
   def init(config: Config): RescanConfig = {
-    RescanConfig(
-      config.getBoolean("epsmi.rescan"),
-      config.getInt("epsmi.rescan-start-block")
-    )
+    RescanConfig(config.getBoolean("epsmi.rescan"), config.getInt("epsmi.rescan-start-block"))
   }
 }
 

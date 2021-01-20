@@ -11,19 +11,19 @@ object HashOps {
 
   def hashMerkleRoot(merkle: Array[String], targetHash: String, pos: Int): String = {
     var h = hexDecodeRevBV(targetHash)
-    for (i <- merkle.indices){
+    for (i <- merkle.indices) {
       val item = merkle(i)
-      h = if (((pos >> i) & 1) != 0)
-        doHashBV(hexDecodeRevBV(item) ++ h)
-      else
-        doHashBV(h ++ hexDecodeRevBV(item))
+      h =
+        if (((pos >> i) & 1) != 0)
+          doHashBV(hexDecodeRevBV(item) ++ h)
+        else
+          doHashBV(h ++ hexDecodeRevBV(item))
     }
     hexEncodeRevBV(h)
   }
 
   def sha256(a: Array[Byte]): Array[Byte] = {
-    MessageDigest.getInstance("SHA-256")
-      .digest(a)
+    MessageDigest.getInstance("SHA-256").digest(a)
   }
 
   def sha256BV(a: ByteVector): ByteVector = {
@@ -49,7 +49,8 @@ object HashOps {
 //  # 'result' field in the blockchain.scripthash.subscribe method
 //  # reply uses this as a summary of the address
   def getStatusElectrum(h: List[HexHeight]): String = {
-    if (h.isEmpty) "" else {
+    if (h.isEmpty) ""
+    else {
       val status = h.map(hh => s"${hh.hex}:${hh.height}:").mkString
       printHexBinary(sha256(status.getBytes)).toLowerCase
     }

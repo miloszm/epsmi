@@ -8,62 +8,50 @@ import com.mhm.common.model.HistoryElement
 import scala.beans.BeanProperty
 
 @JsonSerialize
-case class HeaderResult (
-  @BeanProperty @JsonProperty("block_height") block_height: Int,
-  @BeanProperty @JsonProperty("prev_block_hash") prev_block_hash: String,
-  @BeanProperty @JsonProperty("timestamp") timestamp: Long,
-  @BeanProperty @JsonProperty("merkle_root") merkle_root: String,
-  @BeanProperty @JsonProperty("version") version: Long,
-  @BeanProperty @JsonProperty("nonce") nonce: Long,
-  @BeanProperty @JsonProperty("bits") bits: Long
+case class HeaderResult(@BeanProperty @JsonProperty("block_height") block_height: Int,
+                        @BeanProperty @JsonProperty("prev_block_hash") prev_block_hash: String,
+                        @BeanProperty @JsonProperty("timestamp") timestamp: Long,
+                        @BeanProperty @JsonProperty("merkle_root") merkle_root: String,
+                        @BeanProperty @JsonProperty("version") version: Long,
+                        @BeanProperty @JsonProperty("nonce") nonce: Long,
+                        @BeanProperty @JsonProperty("bits") bits: Long)
+
+@JsonSerialize
+case class BlockHeadersResult(@BeanProperty @JsonProperty("hex") hex: String,
+                              @BeanProperty @JsonProperty("count") count: Int,
+                              @BeanProperty @JsonProperty("max") max: Int,
 )
 
 @JsonSerialize
-case class BlockHeadersResult (
-  @BeanProperty @JsonProperty("hex") hex: String,
-  @BeanProperty @JsonProperty("count") count: Int,
-  @BeanProperty @JsonProperty("max") max: Int,
-)
+case class MerkleResult(@BeanProperty @JsonProperty("tx_hash") tx_hash: String,
+                        @BeanProperty @JsonProperty("merkle") merkle: Array[String])
 
 @JsonSerialize
-case class MerkleResult (
-  @BeanProperty @JsonProperty("tx_hash") tx_hash: String,
-  @BeanProperty @JsonProperty("merkle") merkle: Array[String]
-)
+case class GetMerkleResult(@BeanProperty @JsonProperty("block_height") block_height: Int,
+                           @BeanProperty @JsonProperty("pos") pos: Int,
+                           @BeanProperty @JsonProperty("merkle") merkle: Array[String])
 
 @JsonSerialize
-case class GetMerkleResult (
-  @BeanProperty @JsonProperty("block_height") block_height: Int,
-  @BeanProperty @JsonProperty("pos") pos: Int,
-  @BeanProperty @JsonProperty("merkle") merkle: Array[String]
-)
+case class HeadersSubscribeResult(@BeanProperty @JsonProperty("height") height: Int,
+                                  @BeanProperty @JsonProperty("hex") hex: String)
 
 @JsonSerialize
-case class HeadersSubscribeResult (
-  @BeanProperty @JsonProperty("height") height: Int,
-  @BeanProperty @JsonProperty("hex") hex: String
-)
+case class HistoryItem(@BeanProperty @JsonProperty("height") height: Int,
+                       @BeanProperty @JsonProperty("tx_hash") tx_hash: String,
+                       @BeanProperty @JsonProperty("fee") fee: Long)
 
 @JsonSerialize
-case class HistoryItem (
-  @BeanProperty @JsonProperty("height") height: Int,
-  @BeanProperty @JsonProperty("tx_hash") tx_hash: String,
-  @BeanProperty @JsonProperty("fee") fee: Long
-)
-
-@JsonSerialize
-case class GetBalanceResult (
-  @BeanProperty @JsonProperty("confirmed") confirmed: BigDecimal,
-  @BeanProperty @JsonProperty("unconfirmed") unconfirmed: BigDecimal
-)
+case class GetBalanceResult(@BeanProperty @JsonProperty("confirmed") confirmed: BigDecimal,
+                            @BeanProperty @JsonProperty("unconfirmed") unconfirmed: BigDecimal)
 
 trait Api4Electrum {
+
   @JsonRpcMethod("server.version")
   def serverVersion(v1: String, v2: String): Array[String]
 
   /**
-   * this annotation overrides error code but not the exception
-   */
+    * this annotation overrides error code but not the exception
+    */
   @JsonRpcErrors(Array(new JsonRpcError(exception = classOf[IllegalArgumentException], code = -1)))
   @JsonRpcMethod("blockchain.block.header")
   def blockchainBlockHeader(height: Int): String

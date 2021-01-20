@@ -15,8 +15,7 @@ object RpcWrap extends Logging {
     }
     try {
       Await.result(awaitable, BTC_RPC_TIMEOUT.seconds)
-    }
-    catch {
+    } catch {
       case e: Throwable =>
         logger.error(s"caught: ${e.getClass.getCanonicalName} - ${e.getMessage} - $callDescription")
         throw e
