@@ -24,26 +24,30 @@ class HashOpsTest extends FlatSpec {
       "55EC3D5F6059A947DE3D3CFA57EFFC2001E7DD4E2773F59D43099585AB51A357",
       "126A3DC903183FD81CD3BFB80FD558A746B5442010C5E2CBE5DECFB92C589F10"
     )
-    val targetHash = "5ce117fa1878fabc0d4c3153dad4e904593fc80c31aec6ebf4b3b5106f12c8d2"
-    val pos = 5
+    val targetHash       = "5ce117fa1878fabc0d4c3153dad4e904593fc80c31aec6ebf4b3b5106f12c8d2"
+    val pos              = 5
     val hashedMerkleRoot = HashOps.hashMerkleRoot(merkle, targetHash, pos)
     hashedMerkleRoot shouldBe "7AA87286736257006137F68298068B06139FFECDDBD7A1D6C25356F2336D13A7"
   }
 
   "sha256" should "produce valid hash" in {
-    val in = "A9F44FFFEB404F994D4D0BB5EA924CFF7521FCFAE4D8F9874348A7440A1E1A15D2C8126F10B5B3F4EBC6AE310CC83F5904E9D4DA53314C0DBCFA7818FA17E15C"
+    val in =
+      "A9F44FFFEB404F994D4D0BB5EA924CFF7521FCFAE4D8F9874348A7440A1E1A15D2C8126F10B5B3F4EBC6AE310CC83F5904E9D4DA53314C0DBCFA7818FA17E15C"
     val hashed = HashOps.sha256(DatatypeConverter.parseHexBinary(in))
     DatatypeConverter.printHexBinary(hashed) shouldBe "C8330B9DAC36A8ACAC871647D809DDCEE1180D113207C7BB54E75593ABDBE5B5"
   }
 
   "doHash" should "produce valid double hash" in {
-    val in = "A9F44FFFEB404F994D4D0BB5EA924CFF7521FCFAE4D8F9874348A7440A1E1A15D2C8126F10B5B3F4EBC6AE310CC83F5904E9D4DA53314C0DBCFA7818FA17E15C"
+    val in =
+      "A9F44FFFEB404F994D4D0BB5EA924CFF7521FCFAE4D8F9874348A7440A1E1A15D2C8126F10B5B3F4EBC6AE310CC83F5904E9D4DA53314C0DBCFA7818FA17E15C"
     val doubleHashed = HashOps.doHash(DatatypeConverter.parseHexBinary(in))
     DatatypeConverter.printHexBinary(doubleHashed) shouldBe "3365A6D9582C22E89060433F8FF6AB11467071F6831E96FEC70D769EA0AA0DC0"
   }
 
   "binDblSha256" should "produce valid double hash" in {
-    val dblSha = HashOps.binDblSha256(hex"043587cf000000000000000000d801acec5ee718de5c99b50791e2febecf2490733ebbf16128ab6b56b48303ec026fca11cede24f656a8dd74564a9e7fd5307378688ae41c8912dab6562761fb37")
+    val dblSha = HashOps.binDblSha256(
+      hex"043587cf000000000000000000d801acec5ee718de5c99b50791e2febecf2490733ebbf16128ab6b56b48303ec026fca11cede24f656a8dd74564a9e7fd5307378688ae41c8912dab6562761fb37"
+    )
     dblSha shouldBe hex"a4565d6fee32837dcd44133ffa67b8373ef10ecc9e2a5eda5b5c3729acb5370c"
   }
 
@@ -55,7 +59,7 @@ class HashOpsTest extends FlatSpec {
   "getStatusElectrum" should "return correct hash" in {
     val hashHeight1 = HexHeight("0ttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt", 500)
     val hashHeight2 = HexHeight("1ttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt", 500)
-    val status = HashOps.getStatusElectrum(List(hashHeight1, hashHeight2))
+    val status      = HashOps.getStatusElectrum(List(hashHeight1, hashHeight2))
     status shouldBe "801fe9bd87c8f1c5282d6eaf7bc2c7f474eb78fa8ea3fd4c916bdafdae64954d"
   }
 

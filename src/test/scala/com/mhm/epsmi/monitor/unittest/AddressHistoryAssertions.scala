@@ -6,7 +6,11 @@ import org.scalatest.Matchers
 
 trait AddressHistoryAssertions extends Matchers {
 
-  def assertAddressHistoryTx(addressHistory: AddressHistory, spk: String, height: Int, txId: String, subscribed: Boolean): Unit = {
+  def assertAddressHistoryTx(addressHistory: AddressHistory,
+                             spk: String,
+                             height: Int,
+                             txId: String,
+                             subscribed: Boolean): Unit = {
     val historyEntry = addressHistory.m.getOrElse(script2ScriptHash(spk), fail)
     historyEntry.history.head.height shouldBe height
     historyEntry.history.head.txHash shouldBe txId

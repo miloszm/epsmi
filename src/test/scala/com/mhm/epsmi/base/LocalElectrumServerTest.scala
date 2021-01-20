@@ -24,11 +24,11 @@ object LocalElectrumServerTest extends App {
   val is = new FileInputStream(new File("/Users/miloszm/proj/epsmi/cert.crt"))
   // You could get a resource as a stream instead.
 
-  val cf = CertificateFactory.getInstance("X.509")
+  val cf     = CertificateFactory.getInstance("X.509")
   val caCert = cf.generateCertificate(is)
 
   val tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm)
-  val ks = KeyStore.getInstance(KeyStore.getDefaultType)
+  val ks  = KeyStore.getInstance(KeyStore.getDefaultType)
   ks.load(null) // You don't need the KeyStore instance to come from a file.
 
   ks.setCertificateEntry("ca", caCert)
@@ -39,12 +39,11 @@ object LocalElectrumServerTest extends App {
   sslContext.init(null, tmf.getTrustManagers, new SecureRandom())
 //  rpcClient.setSslContext(sslContext)
 
-
   javax.net.ssl.HttpsURLConnection.setDefaultHostnameVerifier(new HostnameVerifier() {
     override def verify(hostname: String, sslSession: SSLSession): Boolean = hostname == "localhost"
   })
 
-  val listener = new JsonRpcClient.RequestListener(){
+  val listener = new JsonRpcClient.RequestListener() {
     override def onBeforeRequestSent(client: JsonRpcClient, request: ObjectNode): Unit = {
       println(request)
     }

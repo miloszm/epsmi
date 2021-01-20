@@ -14,8 +14,8 @@ import org.scalatest.{BeforeAndAfterAll, FlatSpecLike}
 trait IntTestFixture extends FlatSpecLike with BeforeAndAfterAll {
 
   val EXTERNAL_EPS_PORT = 50002
-  val EPSMI_PORT = 1420
-  val port = EPSMI_PORT
+  val EPSMI_PORT        = 1420
+  val port              = EPSMI_PORT
 
   // -Djavax.net.ssl.keyStore=/Users/miloszm/proj/epsmi/rpcserver2.jks -Djavax.net.ssl.keyStorePassword=123456
 
@@ -24,17 +24,27 @@ trait IntTestFixture extends FlatSpecLike with BeforeAndAfterAll {
   }
 
   val config = ConfigFactory.load()
-  val coreConfig = Api4ElectrumCoreConfig(enableMempoolFeeHistogram = false, broadcastMethod = OwnNode, port = port, isTestnet = false, btcRpcUsername = "foo", btcRpcPassword = "bar", initialImportCount = 1000)
-  val scriptPubKeysToMonitorResult = new SpksToMonitorFinder(TestBitcoinSConnector.rpcCli, config).getScriptPubKeysToMonitor()
+
+  val coreConfig = Api4ElectrumCoreConfig(
+    enableMempoolFeeHistogram = false,
+    broadcastMethod           = OwnNode,
+    port                      = port,
+    isTestnet                 = false,
+    btcRpcUsername            = "foo",
+    btcRpcPassword            = "bar",
+    initialImportCount        = 1000
+  )
+
+  val scriptPubKeysToMonitorResult =
+    new SpksToMonitorFinder(TestBitcoinSConnector.rpcCli, config).getScriptPubKeysToMonitor()
 
   val transactionMonitor = TransactionMonitorFactory.create(TestBitcoinSConnector.rpcCli)
 
-  val monitorState = transactionMonitor.buildAddressHistory(
-    scriptPubKeysToMonitorResult.spksToMonitor,
-    scriptPubKeysToMonitorResult.wallets
-  )
+  val monitorState = transactionMonitor
+    .buildAddressHistory(scriptPubKeysToMonitorResult.spksToMonitor, scriptPubKeysToMonitorResult.wallets)
 
-  lazy val fixture = Fixture(RpcServer.startServer(transactionMonitor, monitorState, coreConfig), RpcClient.createClient(port))
+  lazy val fixture =
+    Fixture(RpcServer.startServer(transactionMonitor, monitorState, coreConfig), RpcClient.createClient(port))
 
   override protected def afterAll(): Unit = {
     fixture.epsmiClient.close()

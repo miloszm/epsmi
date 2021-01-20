@@ -9,9 +9,9 @@ class UnrelatedTxTest extends FlatSpec with AddressHistoryAssertions {
 
   "transaction that has nothing to do with our wallet" should "not enter history" in {
     val (_, containingBlockHeight, dummyTx) = createDummyFundingTx(confirmations = 0)
-    val ourDummySpk = "beef" * 16
+    val ourDummySpk                         = "beef" * 16
 
-    val rpc = DummyBtcRpc(Seq(dummyTx), Seq(dummyTx.vin), Map(dummyTx.blockhash -> containingBlockHeight))
+    val rpc     = DummyBtcRpc(Seq(dummyTx), Seq(dummyTx.vin), Map(dummyTx.blockhash -> containingBlockHeight))
     val monitor = TransactionMonitorFactory.create(rpc)
 
     val monitorState = monitor.buildAddressHistory(Seq(ourDummySpk), Seq(new DummyDeterministicWallet))

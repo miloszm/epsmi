@@ -7,7 +7,6 @@ import com.typesafe.config.ConfigFactory
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers.convertToAnyShouldWrapper
 
-
 class SetupTest extends FlatSpec {
 
   "setup" should "obtain list of script pub keys to monitor" in {

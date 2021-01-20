@@ -9,7 +9,8 @@ import scodec.bits._
 class WalletOpsTest extends FlatSpec {
 
   "convertToStandardXpub" should "return standard xpub" in {
-    val mpk = "tpubD6NzVbkrYhZ4YVMVzC7wZeRfz3bhqcHvV8M3UiULCfzFtLtp5nwvi6LnBQegrkxYGPkSzXUEvcPEHcKdda8W1YShVBkhFBGkLxjSQ1Nx3cJ"
+    val mpk =
+      "tpubD6NzVbkrYhZ4YVMVzC7wZeRfz3bhqcHvV8M3UiULCfzFtLtp5nwvi6LnBQegrkxYGPkSzXUEvcPEHcKdda8W1YShVBkhFBGkLxjSQ1Nx3cJ"
     val xpub = WalletOps.convertToStandardXpub(mpk, hex"0488b21e")
     xpub shouldBe "xpub661MyMwAqRbcGhAeY18rMj6JevW3rDnrwVkk8ARBrmEN94E71a6qZefwwNZuLG1JUVDYNwxNPWZBbRq2EiHG86zQRb1PZecWm192dyCt7SJ"
   }
@@ -28,7 +29,9 @@ class WalletOpsTest extends FlatSpec {
   }
 
   "bip32Deserialize for extended key" should "return elements as in BIP32 serialization format" in {
-    val xKeyRawTuple = WalletOps.bip32Deserialize("tpubD6NzVbkrYhZ4YVMVzC7wZeRfz3bhqcHvV8M3UiULCfzFtLtp5nwvi6LnBQegrkxYGPkSzXUEvcPEHcKdda8W1YShVBkhFBGkLxjSQ1Nx3cJ")
+    val xKeyRawTuple = WalletOps.bip32Deserialize(
+      "tpubD6NzVbkrYhZ4YVMVzC7wZeRfz3bhqcHvV8M3UiULCfzFtLtp5nwvi6LnBQegrkxYGPkSzXUEvcPEHcKdda8W1YShVBkhFBGkLxjSQ1Nx3cJ"
+    )
     xKeyRawTuple.vbytes shouldBe hex"043587cf"
     xKeyRawTuple.i shouldBe 0
     xKeyRawTuple.fingerprint shouldBe hex"00000000"

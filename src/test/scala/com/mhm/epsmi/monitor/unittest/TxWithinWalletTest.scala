@@ -13,10 +13,11 @@ class TxWithinWalletTest extends FlatSpec {
     val (dummySpk1, containingBlockHeight1, dummyTx1) = createDummyFundingTx()
     val (dummySpk2, containingBlockHeight2, dummyTx2) = createDummyFundingTx(inputTxid = dummyTx1.txId)
 
-    val rpc = DummyBtcRpc(Seq(dummyTx1, dummyTx2), Nil, Map(
-      dummyTx1.blockhash -> containingBlockHeight1,
-      dummyTx2.blockhash -> containingBlockHeight2
-    ))
+    val rpc = DummyBtcRpc(
+      Seq(dummyTx1, dummyTx2),
+      Nil,
+      Map(dummyTx1.blockhash -> containingBlockHeight1, dummyTx2.blockhash -> containingBlockHeight2)
+    )
 
     val monitor = TransactionMonitorFactory.create(rpc)
 
@@ -29,8 +30,8 @@ class TxWithinWalletTest extends FlatSpec {
     dummySpk1History.map(_.txHash) should contain(dummySpk2History.map(_.txHash).head)
 
     /**
-     * dummyTx1 is in block 1000 and its history is that it is a VIN in dummyTx2 in block 1001
-     * dummyTx2 is in block 1001 and does not have any subsequent history (within wallet)
-     */
+    * dummyTx1 is in block 1000 and its history is that it is a VIN in dummyTx2 in block 1001
+    * dummyTx2 is in block 1001 and does not have any subsequent history (within wallet)
+    */
   }
 }

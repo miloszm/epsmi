@@ -7,22 +7,21 @@ import com.mhm.rpcclient.RpcClient.createClient
 
 import scala.util.Try
 
-
 /**
- * Rudimentary test app for the client to call server APIs.
- * This code is for "manual" troubleshooting, it is not an automated test.
- * You need to run a server on the same port when running this test.
- * Make sure your local Electrum wallet is not running, as EPSMI
- * accepts only one connection at a time.
- */
-
+  * Rudimentary test app for the client to call server APIs.
+  * This code is for "manual" troubleshooting, it is not an automated test.
+  * You need to run a server on the same port when running this test.
+  * Make sure your local Electrum wallet is not running, as EPSMI
+  * accepts only one connection at a time.
+  */
 
 object RpcClientTestApp extends App {
   val port = 50002
 
   private def callApiBlockchainScripthashGetBalance(client: Api4Electrum) = {
     println("=========== blockchain.scripthash.get_balance =============")
-    val balanceResponse = client.blockchainScripthashGetBalance("5be022609383d23e2d545b3b359446466c269686c1e697b60355424ed30490d2")
+    val balanceResponse =
+      client.blockchainScripthashGetBalance("5be022609383d23e2d545b3b359446466c269686c1e697b60355424ed30490d2")
     println(s"balanceResponse = $balanceResponse")
   }
 
@@ -34,7 +33,8 @@ object RpcClientTestApp extends App {
 
   private def callApiBlockchainScripthashGetHistory(client: Api4Electrum) = {
     println("=========== blockchain.scripthash.get_history =============")
-    val history = client.blockchainScripthashGetHistory("5be022609383d23e2d545b3b359446466c269686c1e697b60355424ed30490d2")
+    val history =
+      client.blockchainScripthashGetHistory("5be022609383d23e2d545b3b359446466c269686c1e697b60355424ed30490d2")
     println(s"blockchainScripthashGetHistory result = ${history.map(_.toString).mkString("|")}")
   }
 
@@ -49,7 +49,8 @@ object RpcClientTestApp extends App {
   private def callApiBlockchainScripthashSubscribe(client: Api4Electrum) = {
     println("=========== blockchain.scripthash.subscribe =============")
     // you need to have the actual wallet for that created
-    val subscriptionResponse = client.blockchainScripthashSubcribe("5be022609383d23e2d545b3b359446466c269686c1e697b60355424ed30490d2")
+    val subscriptionResponse =
+      client.blockchainScripthashSubcribe("5be022609383d23e2d545b3b359446466c269686c1e697b60355424ed30490d2")
     println(s"blockchainScripthashSubcribe result = ")
     println(s"   $subscriptionResponse")
   }
@@ -57,7 +58,7 @@ object RpcClientTestApp extends App {
   private def callApiBlockchainTransactionGetMerkle(client: Api4Electrum) = {
     println("=========== blockchain.transaction.get_merkle =============")
     val txId4GetMerkle = client.blockchainTrIdFromPos(652742, 5, false) // otherwise it won't be found
-    val merkle = client.blockchainTransactionGetMerkle(txId4GetMerkle, 0)
+    val merkle         = client.blockchainTransactionGetMerkle(txId4GetMerkle, 0)
     println(s"get merkle result = ")
     println(s"   blockHeight=${merkle.block_height}")
     println(s"   pos=${merkle.pos}")
@@ -90,7 +91,8 @@ object RpcClientTestApp extends App {
 
   private def callApiBlockchainTransactionGet(client: Api4Electrum) = {
     println("=========== blockchain.transaction.get =============")
-    val transactionHex = client.blockchainTransactionGet("0e3e2357e806b6cdb1f70b54c3a3a17b6714ee1f0e68bebb44a74b1efd512098")
+    val transactionHex =
+      client.blockchainTransactionGet("0e3e2357e806b6cdb1f70b54c3a3a17b6714ee1f0e68bebb44a74b1efd512098")
     println(s"transaction result = $transactionHex")
   }
 
@@ -121,15 +123,12 @@ object RpcClientTestApp extends App {
   private def callApiBlockChainBlockHeader(client: Api4Electrum) = {
     println("=========== blockchain.block.header =============")
     val hexTry = Try(client.blockchainBlockHeader(652221))
-    hexTry.fold(
-      { e =>
-        println(s"json RPC exception caught: $e")
-        if (e.isInstanceOf[JsonRpcClientException]) println(s"code = ${e.asInstanceOf[JsonRpcClientException].getCode}")
-      },
-      {
-        hex => println(s"result hex = $hex")
-      }
-    )
+    hexTry.fold({ e =>
+      println(s"json RPC exception caught: $e")
+      if (e.isInstanceOf[JsonRpcClientException]) println(s"code = ${e.asInstanceOf[JsonRpcClientException].getCode}")
+    }, { hex =>
+      println(s"result hex = $hex")
+    })
   }
 
   private def callApiServerVersion(client: Api4Electrum) = {
@@ -142,7 +141,7 @@ object RpcClientTestApp extends App {
 
   def performServerApiCalls: Unit = {
     val epsmiClient = createClient()
-    val client = epsmiClient.client
+    val client      = epsmiClient.client
 
     callApiServerVersion(client)
     callApiBlockChainBlockHeader(client)

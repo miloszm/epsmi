@@ -1,6 +1,6 @@
 package com.mhm.epsmi.monitor.unittest
 
-import com.mhm.bitcoin.{TransactionMonitor, TransactionMonitorFactory}
+import com.mhm.bitcoin.TransactionMonitorFactory
 import com.mhm.epsmi.dummymonitor.{DummyBtcRpc, DummyDeterministicWallet}
 import org.scalatest.FlatSpec
 import com.mhm.epsmi.dummymonitor.DummyTxCreator.createDummyFundingTx

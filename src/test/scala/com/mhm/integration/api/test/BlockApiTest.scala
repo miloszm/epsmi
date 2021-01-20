@@ -7,14 +7,15 @@ class BlockApiTest extends FlatSpec with IntTestFixture {
 
   "blockchain.block.headers" should "return block headers" in {
     val headersResult = fixture.client.blockchainBlockHeaders(652510, 512)
-    val source = scala.io.Source.fromInputStream(this.getClass.getResourceAsStream("/blocktest/blockheaders.txt"))
-    val expectedResult = try source.mkString finally source.close()
+    val source        = scala.io.Source.fromInputStream(this.getClass.getResourceAsStream("/blocktest/blockheaders.txt"))
+    val expectedResult = try source.mkString
+    finally source.close()
     headersResult.hex shouldBe expectedResult
   }
 
   "blockchain.block.header" should "return block header" in {
-     val hex = fixture.client.blockchainBlockHeader(652221)
-     hex shouldBe "00004020e028cc7a4447b6edb4a70c9165b7e11e2908c50483aa000000000000000000005df5cc1d04d234630bd7db39936d231a5f1ebb877d53be3961d88d37ed1be12340c9825fde950e172ea7194d"
+    val hex = fixture.client.blockchainBlockHeader(652221)
+    hex shouldBe "00004020e028cc7a4447b6edb4a70c9165b7e11e2908c50483aa000000000000000000005df5cc1d04d234630bd7db39936d231a5f1ebb877d53be3961d88d37ed1be12340c9825fde950e172ea7194d"
   }
 
   "blockchain.block.get_header" should "return block header information" in {

@@ -13,16 +13,15 @@ import org.scalatest.FlatSpec
 import org.scalatest.Matchers.{contain, convertToAnyShouldWrapper}
 import com.mhm.epsmi.testbtcrpc.TestBitcoinSConnector.ec
 
-
 class HeartbeatRoundtripSpec extends FlatSpec {
 
   "heartbeat connected" should "trigger processing and eventually notifications about a new transaction" in {
 
     val (dummySpk, containingBlockHeight, dummyTx) = createDummyFundingTx(confirmations = 0)
-    val sh = HashOps.script2ScriptHash(dummySpk)
-    val rpc = DummyRoundtripBtcRpc(Nil, Seq(dummyTx.vin), Map(dummyTx.blockhash -> containingBlockHeight))
-    val monitor = TransactionMonitorFactory.create(rpc)
-    val monitorState = monitor.buildAddressHistory(Seq(dummySpk), Seq(new DummyDeterministicWallet))
+    val sh                                         = HashOps.script2ScriptHash(dummySpk)
+    val rpc                                        = DummyRoundtripBtcRpc(Nil, Seq(dummyTx.vin), Map(dummyTx.blockhash -> containingBlockHeight))
+    val monitor                                    = TransactionMonitorFactory.create(rpc)
+    val monitorState                               = monitor.buildAddressHistory(Seq(dummySpk), Seq(new DummyDeterministicWallet))
     monitorState.addressHistory.m.size shouldBe 1
     monitorState.addressHistory.m shouldBe Map(sh -> HistoryEntry(subscribed = false, List()))
     monitorState.getElectrumHistory(sh).getOrElse(fail).size shouldBe 0
@@ -35,7 +34,7 @@ class HeartbeatRoundtripSpec extends FlatSpec {
     updatedTxs.isEmpty shouldBe true
     monitorState3.updatedScripthashes shouldBe Nil
 
-    val rpc2 = rpc.copy(txList = Seq(dummyTx))
+    val rpc2     = rpc.copy(txList = Seq(dummyTx))
     val monitor2 = TransactionMonitorFactory.create(rpc2)
 
     val protocol = new Api4ElectrumImpl(Api4ElectrumCore(rpc2), monitor2, monitorState3)
@@ -45,13 +44,15 @@ class HeartbeatRoundtripSpec extends FlatSpec {
     protocol.triggerHeartbeatConnected(streamOutput)
 
     protocol.currentMonitorState.get().getElectrumHistory(sh).getOrElse(fail).size shouldBe 1
-    protocol.currentMonitorState.get().addressHistory.m shouldBe Map(sh -> HistoryEntry(subscribed = true, List(HistoryElement(dummyTx.txId, 0, 2))))
-    val output = streamOutput.toString
+    protocol.currentMonitorState.get().addressHistory.m shouldBe Map(
+      sh -> HistoryEntry(subscribed = true, List(HistoryElement(dummyTx.txId, 0, 2)))
+    )
+    val output              = streamOutput.toString
     val expectedHistoryHash = protocol.currentMonitorState.get.getElectrumHistoryHash(sh)
     output shouldBe s"""{"jsonrpc": "2.0", "method": "blockchain.scripthash.subscribe", "params": ["$sh", "$expectedHistoryHash"]}""" + "\n"
 
     val monitorState4 = monitorState3.subscribeToHeaders(true)
-    val protocol2 = new Api4ElectrumImpl(Api4ElectrumCore(rpc2), monitor2, monitorState4)
+    val protocol2     = new Api4ElectrumImpl(Api4ElectrumCore(rpc2), monitor2, monitorState4)
     val streamOutput2 = new ByteArrayOutputStream()
     protocol2.triggerHeartbeatConnected(streamOutput2)
     val output2 = streamOutput2.toString
@@ -63,6 +64,6 @@ class HeartbeatRoundtripSpec extends FlatSpec {
 
     output2 shouldBe expected
 
-    protocol2.blockchainScripthashGetHistory(sh).map(_.tx_hash) should contain theSameElementsAs Seq(dummyTx.txId)
+    (protocol2.blockchainScripthashGetHistory(sh).map(_.tx_hash) should contain).theSameElementsAs(Seq(dummyTx.txId))
   }
 }

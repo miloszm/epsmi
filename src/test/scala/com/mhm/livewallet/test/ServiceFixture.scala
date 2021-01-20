@@ -9,10 +9,10 @@ import com.typesafe.config.ConfigFactory
 
 trait ServiceFixture {
 
-  private val config = ConfigFactory.load()
-  private val spksToMonitor = new SpksToMonitorFinder(TestBitcoinSConnector.rpcCli, config).getScriptPubKeysToMonitor()
+  private val config             = ConfigFactory.load()
+  private val spksToMonitor      = new SpksToMonitorFinder(TestBitcoinSConnector.rpcCli, config).getScriptPubKeysToMonitor()
   private val transactionMonitor = TransactionMonitorFactory.create(TestBitcoinSConnector.rpcCli)
-  private val monitorState = transactionMonitor.buildAddressHistory(spksToMonitor.spksToMonitor, spksToMonitor.wallets)
-  val service = new Api4ElectrumImpl(Api4ElectrumCore(TestBitcoinSConnector.rpcCli), transactionMonitor, monitorState)
+  private val monitorState       = transactionMonitor.buildAddressHistory(spksToMonitor.spksToMonitor, spksToMonitor.wallets)
+  val service                    = new Api4ElectrumImpl(Api4ElectrumCore(TestBitcoinSConnector.rpcCli), transactionMonitor, monitorState)
 
 }

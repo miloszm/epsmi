@@ -8,10 +8,10 @@ import org.scalatest.FlatSpec
 import org.scalatest.Matchers.convertToAnyShouldWrapper
 
 class ConflictedTxTest extends FlatSpec {
-  val(dummySpk, containingBlockHeight, dummyTx) = createDummyFundingTx(confirmations = -1)
-  val rpc = DummyBtcRpc(Seq(dummyTx), Nil, Map())
-  val monitor = TransactionMonitorFactory.create(rpc)
-  val sh = script2ScriptHash(dummySpk)
+  val (dummySpk, containingBlockHeight, dummyTx) = createDummyFundingTx(confirmations = -1)
+  val rpc                                        = DummyBtcRpc(Seq(dummyTx), Nil, Map())
+  val monitor                                    = TransactionMonitorFactory.create(rpc)
+  val sh                                         = script2ScriptHash(dummySpk)
 
   val monitorState = monitor.buildAddressHistory(Seq(dummySpk), Seq(new DummyDeterministicWallet))
   monitorState.addressHistory.m.size shouldBe 1
@@ -20,9 +20,9 @@ class ConflictedTxTest extends FlatSpec {
     // #shouldnt show up after build history because conflicted
     monitorState.getElectrumHistory(sh).getOrElse(fail).size shouldBe 0
 
-    val (_, _, conflictedDummyTx2) = createDummyFundingTx(confirmations = -1, outputSpkOpt = Some(dummySpk))
-    val rpc2 = rpc.copy(txList = rpc.txList ++ Seq(conflictedDummyTx2))
-    val monitor2 = TransactionMonitorFactory.create(rpc2)
+    val (_, _, conflictedDummyTx2)  = createDummyFundingTx(confirmations = -1, outputSpkOpt = Some(dummySpk))
+    val rpc2                        = rpc.copy(txList = rpc.txList ++ Seq(conflictedDummyTx2))
+    val monitor2                    = TransactionMonitorFactory.create(rpc2)
     val (updatedTxs, monitorState2) = monitor2.checkForUpdatedTxs(monitorState)
     updatedTxs.size shouldBe 0
 

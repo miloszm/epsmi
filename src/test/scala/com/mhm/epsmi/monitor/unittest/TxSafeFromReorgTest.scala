@@ -12,15 +12,15 @@ import org.scalatest.Matchers.convertToAnyShouldWrapper
 class TxSafeFromReorgTest extends FlatSpec {
   "transaction confirmed beyond reorg threshold" should "be removed from the reorganizable list" in {
     val (dummySpk1, containingBlockHeight1, dummyTx1) = createDummyFundingTx()
-    val rpc = DummyBtcRpc(Seq(dummyTx1), Nil, Map(dummyTx1.blockhash -> containingBlockHeight1))
-    val monitor = TransactionMonitorFactory.create(rpc)
-    val monitorState = monitor.buildAddressHistory(Seq(dummySpk1), Seq(new DummyDeterministicWallet))
-    val (updatedTxs, monitorState2) = monitor.checkForUpdatedTxs(monitorState)
+    val rpc                                           = DummyBtcRpc(Seq(dummyTx1), Nil, Map(dummyTx1.blockhash -> containingBlockHeight1))
+    val monitor                                       = TransactionMonitorFactory.create(rpc)
+    val monitorState                                  = monitor.buildAddressHistory(Seq(dummySpk1), Seq(new DummyDeterministicWallet))
+    val (updatedTxs, monitorState2)                   = monitor.checkForUpdatedTxs(monitorState)
     updatedTxs.size shouldBe 0
     monitorState2.reorganizableTxes.size shouldBe 1
-    val dummyTx1Unreorganizable = dummyTx1.copy(confirmations = 2000)
-    val rpc2 = rpc.copy(txList = Seq(dummyTx1Unreorganizable))
-    val monitor2 = TransactionMonitorFactory.create(rpc2)
+    val dummyTx1Unreorganizable      = dummyTx1.copy(confirmations = 2000)
+    val rpc2                         = rpc.copy(txList = Seq(dummyTx1Unreorganizable))
+    val monitor2                     = TransactionMonitorFactory.create(rpc2)
     val (updatedTxs2, monitorState3) = monitor2.checkForUpdatedTxs(monitorState2)
     updatedTxs2.size shouldBe 0
     monitorState3.reorganizableTxes.size shouldBe 0
