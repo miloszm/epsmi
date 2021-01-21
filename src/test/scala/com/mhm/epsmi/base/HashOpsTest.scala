@@ -37,11 +37,25 @@ class HashOpsTest extends FlatSpec {
     DatatypeConverter.printHexBinary(hashed) shouldBe "C8330B9DAC36A8ACAC871647D809DDCEE1180D113207C7BB54E75593ABDBE5B5"
   }
 
+  "sha256BV" should "produce valid hash" in {
+    val in =
+      hex"A9F44FFFEB404F994D4D0BB5EA924CFF7521FCFAE4D8F9874348A7440A1E1A15D2C8126F10B5B3F4EBC6AE310CC83F5904E9D4DA53314C0DBCFA7818FA17E15C"
+    val hashed = HashOps.sha256BV(in)
+    hashed.toHex shouldBe "c8330b9dac36a8acac871647d809ddcee1180d113207c7bb54e75593abdbe5b5"
+  }
+
   "doHash" should "produce valid double hash" in {
     val in =
       "A9F44FFFEB404F994D4D0BB5EA924CFF7521FCFAE4D8F9874348A7440A1E1A15D2C8126F10B5B3F4EBC6AE310CC83F5904E9D4DA53314C0DBCFA7818FA17E15C"
     val doubleHashed = HashOps.doHash(DatatypeConverter.parseHexBinary(in))
     DatatypeConverter.printHexBinary(doubleHashed) shouldBe "3365A6D9582C22E89060433F8FF6AB11467071F6831E96FEC70D769EA0AA0DC0"
+  }
+
+  "doHashBV" should "produce valid double hash" in {
+    val in =
+      hex"A9F44FFFEB404F994D4D0BB5EA924CFF7521FCFAE4D8F9874348A7440A1E1A15D2C8126F10B5B3F4EBC6AE310CC83F5904E9D4DA53314C0DBCFA7818FA17E15C"
+    val doubleHashed = HashOps.doHashBV(in)
+    doubleHashed.toHex shouldBe "3365a6d9582c22e89060433f8ff6ab11467071f6831e96fec70d769ea0aa0dc0"
   }
 
   "binDblSha256" should "produce valid double hash" in {
