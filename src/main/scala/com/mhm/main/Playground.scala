@@ -127,15 +127,23 @@ object BitcoinSUtil extends BitcoinSUtil
 
 object Playground extends App {
 
+  def printTx(tx: Transaction): Unit ={
+    println(s"tx[txId]=${tx.txId}")
+    println(s"tx[inputs]=${tx.inputs}")
+    println(s"tx[outputs]=${tx.outputs}")
+  }
+
   val FundingTxid = "dd91b944e8b743b1cdb8d106161e8d1f1a666597cc16a6291f7fd4baca891508"
+  val FundingVoutIndex = 0
   val FundingAddress = "mtj9vxnzy9rP9A2fUJ3bZBpdYFWn6w1QQC"
   val FundingScriptPubKey = "76a91490e8571c1e4d5f37e736474ca076b67b11ff778788ac"
   val FundingPrivKey = "cN9XS1bFNhMmmvXTNudnwZd7zyuRwCk4HmEVy4xbSxtPArC4KcoE"
   val LockUntil = 1614459600L
+  val OutputAmount = 69220
 
 
   val util = BitcoinSUtil
-  val outpoint = TransactionOutPoint(DoubleSha256DigestBE.fromHex(FundingTxid), UInt32(1))
+  val outpoint = TransactionOutPoint(DoubleSha256DigestBE.fromHex(FundingTxid), UInt32(FundingVoutIndex))
   val unsignedInput = TransactionInput(outpoint, EmptyScriptSignature, UInt32(0))
   val fundingPrivKey = org.bitcoins.core.crypto.ECPrivateKeyUtil.fromWIFToPrivateKey(FundingPrivKey)
   val fundingPublicKey = fundingPrivKey.publicKey
@@ -143,22 +151,31 @@ object Playground extends App {
 
   // construct CLTV transaction
   val cltvPrivKey = ECPrivateKey()
+  println(s"cltvPrivKey=${cltvPrivKey.hex}")
   val cltvPubKey = cltvPrivKey.publicKey
+  println(s"cltvPubKey=${cltvPubKey.hex}")
   val p2pkh = P2PKHScriptPubKey(cltvPubKey)
+  println(s"p2pkh=${p2pkh.asm.mkString(" ")}")
 
   val redeemScript = CLTVScriptPubKey(ScriptNumber(LockUntil), p2pkh)
+  println(s"redeemScript=${redeemScript.asm.mkString(" ")}")
   val p2sh = P2SHScriptPubKey(redeemScript)
-  val cltvOutput = TransactionOutput(Satoshis(Int64(4180000)), p2sh)
+  val cltvOutput = TransactionOutput(Satoshis(Int64(OutputAmount)), p2sh)
   val unsignedTx = Transaction.newBuilder.setVersion(Int32(1)).addInputs(Seq(unsignedInput)).addOutputs(Seq(cltvOutput)).setLockTime(UInt32(0)).result().toBaseTransaction
 
-  val txOutput = TransactionOutput(Satoshis(Int64(4180000)), fundingScriptPubKey)
-  val txSigComponent = TxSigComponent.apply(unsignedTx, UInt32(0), txOutput, Policy.standardScriptVerifyFlags)
+  println("unsigned tx:")
+  printTx(unsignedTx)
+
+  val txOutput = TransactionOutput(Satoshis(Int64(OutputAmount)), fundingScriptPubKey)
+  val txSigComponent = TxSigComponent(unsignedTx, UInt32(0), txOutput, Policy.standardScriptVerifyFlags)
   val sig = TransactionSignatureCreator.createSig(txSigComponent, fundingPrivKey, HashType.sigHashAll)
   val scriptSig = P2PKHScriptSignature(sig, fundingPublicKey)
   val signedInput = TransactionInput(outpoint, scriptSig, UInt32(0))
   val signedTx = Transaction.newBuilder.setVersion(Int32(1)).addInputs(Seq(signedInput)).addOutputs(Seq(cltvOutput)).setLockTime(UInt32(0)).result().toBaseTransaction
 
   println("signed tx:")
-  println(signedTx.hex)
+  printTx(signedTx)
 
+  println("tx to be pushed:")
+  println(signedTx.hex)
 }
